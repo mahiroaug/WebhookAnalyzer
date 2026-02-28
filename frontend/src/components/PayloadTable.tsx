@@ -15,6 +15,8 @@ interface PayloadTableProps {
   analysisDescriptions?: Record<string, string>;
   /** 辞書テンプレートに含まれるパス集合 */
   knownFieldPaths?: Set<string>;
+  /** US-144: マスキング有効時、該当フィールドの値を *** で表示 */
+  maskEnabled?: boolean;
 }
 
 /** クリップボードにコピー */
@@ -52,6 +54,19 @@ function formatValue(val: unknown): string {
   return String(val);
 }
 
+/** US-144: マスキング対象のキーパターン（小文字で部分一致） */
+const DEFAULT_MASK_PATTERNS = [
+  "private_key", "api_key", "apikey", "secret", "token", "password", "authorization",
+  "address", "wallet", "signature", "encrypted", "credential",
+];
+
+function shouldMask(path: string, keyName: string, maskEnabled: boolean): boolean {
+  if (!maskEnabled) return false;
+  const fullPath = path === keyName ? path : `${path}.${keyName}`;
+  const lower = fullPath.toLowerCase();
+  return DEFAULT_MASK_PATTERNS.some((p) => lower.includes(p));
+}
+
 interface FieldRowProps {
   path: string;
   keyName: string;
@@ -60,6 +75,7 @@ interface FieldRowProps {
   templateDescriptions?: Map<string, string>;
   analysisDescriptions?: Record<string, string>;
   knownFieldPaths?: Set<string>;
+  maskEnabled?: boolean;
 }
 
 function FieldRow({
@@ -70,6 +86,7 @@ function FieldRow({
   templateDescriptions,
   analysisDescriptions,
   knownFieldPaths,
+  maskEnabled = false,
 }: FieldRowProps) {
   const [expanded, setExpanded] = useState(depth < 2);
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -131,9 +148,9 @@ function FieldRow({
             <span
               className="cursor-pointer group-hover:underline"
               title="クリックでコピー"
-              onClick={() => handleCopy(typeof value === "string" ? value : String(value), "value")}
+              onClick={() => handleCopy(shouldMask(path, keyName, maskEnabled) ? "[masked]" : typeof value === "string" ? value : String(value), "value")}
             >
-              {copiedField === "value" ? "Copied!" : formatValue(value)}
+              {copiedField === "value" ? "Copied!" : (shouldMask(path, keyName, maskEnabled) ? "***" : formatValue(value))}
             </span>
           )}
         </td>
@@ -173,6 +190,7 @@ function FieldRow({
                         templateDescriptions={templateDescriptions}
                         analysisDescriptions={analysisDescriptions}
                         knownFieldPaths={knownFieldPaths}
+                        maskEnabled={maskEnabled}
                       />
                     ))}
                   {isArray &&
@@ -186,6 +204,7 @@ function FieldRow({
                         templateDescriptions={templateDescriptions}
                         analysisDescriptions={analysisDescriptions}
                         knownFieldPaths={knownFieldPaths}
+                        maskEnabled={maskEnabled}
                       />
                     ))}
                 </tbody>
@@ -203,6 +222,7 @@ export function PayloadTable({
   templateDescriptions,
   analysisDescriptions,
   knownFieldPaths,
+  maskEnabled = false,
 }: PayloadTableProps) {
   return (
     <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
@@ -232,6 +252,7 @@ export function PayloadTable({
               templateDescriptions={templateDescriptions}
               analysisDescriptions={analysisDescriptions}
               knownFieldPaths={knownFieldPaths}
+              maskEnabled={maskEnabled}
             />
           ))}
         </tbody>

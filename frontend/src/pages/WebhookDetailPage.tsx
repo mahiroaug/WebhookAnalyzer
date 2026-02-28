@@ -153,6 +153,18 @@ export function WebhookDetailPage() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
 
+  /** US-144: マスキング ON/OFF（localStorage で永続化、デフォルト ON） */
+  const [maskEnabled, setMaskEnabled] = useState(() => {
+    try {
+      return localStorage.getItem("webhook-mask-enabled") !== "0";
+    } catch { return true; }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("webhook-mask-enabled", maskEnabled ? "1" : "0");
+    } catch { /* ignore */ }
+  }, [maskEnabled]);
+
   async function handleAnalyze() {
     if (!id) return;
     setAnalyzing(true);
@@ -273,8 +285,20 @@ export function WebhookDetailPage() {
       )}
 
       <AccordionSection id="payload" title="Payload" defaultOpen={true}>
+        <div className="flex items-center gap-2 mb-2">
+          <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={maskEnabled}
+              onChange={(e) => setMaskEnabled(e.target.checked)}
+              className="rounded border-slate-500"
+            />
+            <span>機密情報をマスク</span>
+          </label>
+        </div>
         <PayloadTable
           data={webhook.payload}
+          maskEnabled={maskEnabled}
           templateDescriptions={
             fieldTemplate?.fields?.length
               ? new Map(fieldTemplate.fields.map((f) => [f.path, f.description]))
