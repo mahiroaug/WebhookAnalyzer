@@ -413,3 +413,14 @@ Web3エンジニアとして、同一 event_type のpayload構造変化（追加
   - Given AI 分析ボタン、When 確認、Then ゴーストスタイル（枠線 + テキスト、DIM テーマに調和）で表示される
   - Given Payload テーブルのネスト行、When 確認、Then 値・型・説明の列幅が親行と揃っている
   - Given 文字列値、When Payload テーブルで表示、Then ダブルクォーテーションなしで表示される（型列の "string" で判別可能）
+
+### US-121 AI 分析の JSON パース堅牢化（P0）【完了】
+
+開発者として、LLM が想定外の形式を返しても分析結果が壊れないようにしたい。  
+なぜなら「unexpected: "summary"」のような不明エラーでは原因特定ができないから。
+
+- 受け入れ基準
+  - Given LLM が JSON でなくプレーンテキストを返す、When 分析実行、Then 「[分析失敗] LLM 出力が JSON ではありません」と表示される
+  - Given LLM が {"summary": "..."} のみ（field_descriptions なし）を返す、When 分析実行、Then summary のみ表示され field_descriptions は空で正常処理される
+  - Given LLM 応答の parsed が dict でない（リスト・文字列等）、When 分析実行、Then 「[分析失敗] 不正な応答形式」と表示される
+  - Given 分析失敗、When ログを確認、Then LLM の生出力（先頭 500 文字）がログに記録されている

@@ -28,17 +28,6 @@
 
 ### Phase 8: UI バグ修正と検索体験の強化
 
-#### US-121 AI 分析の JSON パース堅牢化（P0）【実装中】
-
-開発者として、LLM が想定外の形式を返しても分析結果が壊れないようにしたい。  
-なぜなら「unexpected: "summary"」のような不明エラーでは原因特定ができないから。
-
-- 受け入れ基準
-  - Given LLM が JSON でなくプレーンテキストを返す、When 分析実行、Then 「[分析失敗] LLM 出力が JSON ではありません」と表示される
-  - Given LLM が {"summary": "..."} のみ（field_descriptions なし）を返す、When 分析実行、Then summary のみ表示され field_descriptions は空で正常処理される
-  - Given LLM 応答の parsed が dict でない（リスト・文字列等）、When 分析実行、Then 「[分析失敗] 不正な応答形式」と表示される
-  - Given 分析失敗、When ログを確認、Then LLM の生出力（先頭 500 文字）がログに記録されている
-
 #### US-122 Payload 全文検索と検索結果一覧モード（P0）【未着手】
 
 開発者として、トランザクションハッシュやアドレス等の値で Webhook を横断検索したい。  

@@ -97,3 +97,4 @@
 |----|---------|-------------|------|
 | US-119 | 一覧ペインの UI バグ修正と source アイコン表示 | OK | フィルタ縦積み、source プルダウン、SourceIcon（fireblocks/bitgo/alchemy/quicknode+ジェネリック）、py-1.5 行 |
 | US-120 | 詳細ペインの UI バグ修正とボタン改善 | OK | RequestHeadersDetails 開閉維持、再分析 1 箇所、ゴーストボタン、Payload 表 colgroup・文字列クォート除去 |
+| US-121 | AI 分析の JSON パース堅牢化 | OK | プレーンテキスト→「LLM 出力が JSON ではありません」、parsed非dict→「不正な応答形式」、raw 500chars ログ、summary のみ許容 |
