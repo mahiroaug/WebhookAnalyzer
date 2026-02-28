@@ -1,14 +1,17 @@
 /**
  * 左ペイン: Webhook 一覧リスト（webhook.site 風コンパクト表示）
  * US-111: 2ペインレイアウトの左側
+ * US-119: フィルタ縦積み、source アイコン、コンパクト行、source プルダウン
  */
 import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { useWebhookWebSocket } from "../hooks/useWebhookWebSocket";
 import {
   listWebhooks,
+  getStats,
   type WebhookListItem,
 } from "../services/api";
+import { SourceIcon } from "./SourceIcon";
 
 const PAGE_SIZE = 50;
 
@@ -34,6 +37,8 @@ export function WebhookListPane({
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [newArrivalIds, setNewArrivalIds] = useState<Set<string>>(new Set());
+  const [availableSources, setAvailableSources] = useState<string[]>([]);
+  const [sourceDropdownOpen, setSourceDropdownOpen] = useState(false);
 
   const loadRef = useRef<(newId?: string) => void>(() => {});
 
@@ -69,6 +74,12 @@ export function WebhookListPane({
 
   useEffect(() => { load(); }, [filterSource, filterEventType, page]);
 
+  useEffect(() => {
+    getStats()
+      .then((s) => setAvailableSources(Object.keys(s.by_source).sort()))
+      .catch(() => setAvailableSources([]));
+  }, []);
+
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
@@ -88,20 +99,51 @@ export function WebhookListPane({
             )}
           </span>
         </div>
-        <div className="flex gap-1">
-          <input
-            type="text"
-            placeholder="source"
-            value={filterSource}
-            onChange={(e) => onFilterSourceChange(e.target.value)}
-            className="flex-1 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/50 px-2 py-1 text-xs"
-          />
+        {/* US-119: 縦積みで 200px 幅でも崩れない、source はプルダウン+テキスト入力可 */}
+        <div className="flex flex-col gap-1 min-w-0">
+          <div className="relative min-w-0">
+            <input
+              type="text"
+              placeholder="source"
+              value={filterSource}
+              onChange={(e) => onFilterSourceChange(e.target.value)}
+              onFocus={() => setSourceDropdownOpen(true)}
+              onBlur={() => setTimeout(() => setSourceDropdownOpen(false), 150)}
+              className="w-full min-w-0 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/50 px-2 py-1 text-xs"
+            />
+            {sourceDropdownOpen && (
+              <div
+                className="absolute left-0 right-0 top-full mt-0.5 max-h-32 overflow-y-auto rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-lg z-10"
+                onMouseDown={(e) => e.preventDefault()}
+              >
+                <button
+                  type="button"
+                  onClick={() => { onFilterSourceChange(""); setSourceDropdownOpen(false); }}
+                  className="block w-full px-2 py-1 text-left text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700"
+                >
+                  （クリア）
+                </button>
+                {availableSources
+                  .filter((s) => !filterSource || s.toLowerCase().includes(filterSource.toLowerCase()))
+                  .map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => { onFilterSourceChange(s); setSourceDropdownOpen(false); }}
+                      className="block w-full px-2 py-1 text-left text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
+                    >
+                      {s}
+                    </button>
+                  ))}
+              </div>
+            )}
+          </div>
           <input
             type="text"
             placeholder="event_type"
             value={filterEventType}
             onChange={(e) => onFilterEventTypeChange(e.target.value)}
-            className="flex-1 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/50 px-2 py-1 text-xs"
+            className="w-full min-w-0 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/50 px-2 py-1 text-xs"
           />
         </div>
       </div>
@@ -122,25 +164,28 @@ export function WebhookListPane({
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.2 }}
                 onClick={() => onSelect(w.id)}
-                className={`px-3 py-2 border-b border-slate-100 dark:border-slate-700/40 cursor-pointer transition-colors text-xs ${
+                className={`px-3 py-1.5 border-b border-slate-100 dark:border-slate-700/40 cursor-pointer transition-colors text-xs flex items-start gap-2 ${
                   isSelected
                     ? "bg-blue-50 dark:bg-blue-900/30 border-l-2 border-l-blue-400"
                     : "hover:bg-slate-50 dark:hover:bg-slate-800/40"
                 } ${isNew ? "bg-emerald-50 dark:bg-emerald-900/20" : ""}`}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono font-medium text-blue-500 dark:text-blue-400">
-                    {w.sequence_index != null ? `#${w.sequence_index}` : `#${String(w.id).slice(0, 6)}`}
-                  </span>
-                  <span className="text-slate-400 dark:text-dim-text-muted truncate">
-                    {w.http_method || "POST"} {w.remote_ip || ""}
-                  </span>
-                </div>
-                <div className="mt-0.5 truncate text-slate-700 dark:text-slate-300">
-                  {w.source} / {w.event_type}
-                </div>
-                <div className="mt-0.5 text-slate-400 dark:text-dim-text-muted">
-                  {new Date(w.received_at).toLocaleString()}
+                <SourceIcon source={w.source} className="w-4 h-4 mt-0.5 shrink-0 text-slate-500 dark:text-dim-text-muted" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono font-medium text-blue-500 dark:text-blue-400">
+                      {w.sequence_index != null ? `#${w.sequence_index}` : `#${String(w.id).slice(0, 6)}`}
+                    </span>
+                    <span className="text-slate-400 dark:text-dim-text-muted truncate text-right">
+                      {w.http_method || "POST"} {w.remote_ip || ""}
+                    </span>
+                  </div>
+                  <div className="mt-0.5 truncate text-slate-700 dark:text-slate-300">
+                    {w.source} / {w.event_type}
+                  </div>
+                  <div className="mt-0.5 text-slate-400 dark:text-dim-text-muted">
+                    {new Date(w.received_at).toLocaleString()}
+                  </div>
                 </div>
               </motion.div>
             );
