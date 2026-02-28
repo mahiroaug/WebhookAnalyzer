@@ -80,26 +80,34 @@ async def trigger_analyze(
     webhook_id: UUID,
     db=Depends(get_db),
 ) -> AnalyzeTriggerResponse:
-    """指定 Webhook を Ollama で分析し、結果を保存する"""
+    """指定 Webhook を分析し、結果を保存する。LLM 障害時も 500 にせず失敗記録を返す。"""
     stmt = select(Webhook).where(Webhook.id == webhook_id)
     result = await db.execute(stmt)
     webhook = result.scalar_one_or_none()
     if not webhook:
         raise HTTPException(status_code=404, detail="Webhook not found")
 
-    template = get_field_template(webhook.source, webhook.event_type)
-    analysis_result = await analyze_payload_with_ollama(
-        webhook.payload, template_context=template
-    )
+    try:
+        template = get_field_template(webhook.source, webhook.event_type)
+        analysis_result = await analyze_payload_with_ollama(
+            webhook.payload, template_context=template
+        )
+    except Exception as e:
+        logger.error("分析処理で予期しない例外: %s", e, exc_info=True)
+        from app.services.llm.ollama_analyzer import AnalysisResult
+        analysis_result = AnalysisResult(
+            summary="",
+            field_descriptions={},
+            failed=True,
+            error_message=f"unexpected: {str(e)[:180]}",
+        )
 
-    # 既存の分析を削除してから新規作成（1対1で最新を保持）
     del_stmt = select(WebhookAnalysis).where(WebhookAnalysis.webhook_id == webhook_id)
     existing = (await db.execute(del_stmt)).scalars().all()
     for a in existing:
         await db.delete(a)
 
     if analysis_result.failed:
-        # フォールバック: 失敗記録を保存
         record = WebhookAnalysis(
             webhook_id=webhook_id,
             summary=f"[分析失敗] {analysis_result.error_message or 'unknown'}",

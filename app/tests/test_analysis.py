@@ -119,8 +119,43 @@ async def test_get_analysis_not_found_returns_404() -> None:
         transport=ASGITransport(app=app),
         base_url="http://test",
     ) as client:
-        # 存在しないUUIDで分析取得
         resp = await client.get(
             "/api/webhooks/00000000-0000-0000-0000-000000000001/analysis"
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_analyze_ollama_exception_returns_200_with_failure(
+    bitgo_transfer_payload: dict,
+) -> None:
+    """Ollama が例外を投げても 500 にならず、失敗記録が返る（US-114）"""
+    with patch(
+        "app.routers.analysis.analyze_payload_with_ollama",
+        new_callable=AsyncMock,
+        side_effect=ConnectionError("Connection refused"),
+    ):
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            post_resp = await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+            webhook_id = post_resp.json()["id"]
+            analyze_resp = await client.post(f"/api/webhooks/{webhook_id}/analyze")
+
+    assert analyze_resp.status_code == 200
+    data = analyze_resp.json()
+    assert "[分析失敗]" in (data.get("summary") or "")
+
+
+@pytest.mark.asyncio
+async def test_analyze_not_found_webhook_returns_404() -> None:
+    """存在しない Webhook ID で分析を実行すると 404（US-114）"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        resp = await client.post(
+            "/api/webhooks/00000000-0000-0000-0000-000000000099/analyze"
         )
     assert resp.status_code == 404

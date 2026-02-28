@@ -94,7 +94,25 @@ async def analyze_payload_with_ollama(
             error_message=str(e)[:200],
         )
 
-    content = (response.message or {}).get("content", "").strip()
+    try:
+        msg = response.message if hasattr(response, "message") else None
+        if msg is None:
+            logger.warning("Ollama レスポンスに message が存在しません: %s", type(response))
+            return AnalysisResult(
+                summary="",
+                field_descriptions={},
+                failed=True,
+                error_message="invalid_response_structure",
+            )
+        content = (msg if isinstance(msg, dict) else {"content": getattr(msg, "content", "")}).get("content", "").strip()
+    except Exception as e:
+        logger.warning("Ollama レスポンスの解析に失敗: %s", e, exc_info=True)
+        return AnalysisResult(
+            summary="",
+            field_descriptions={},
+            failed=True,
+            error_message=f"response_parse_error: {str(e)[:150]}",
+        )
     if not content:
         return AnalysisResult(
             summary="",
