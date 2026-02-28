@@ -50,3 +50,22 @@
 - US-016: GET /webhooks/report/markdown。分析済みを source/event_type 別に要約・フィールド説明・スキーマ・サンプルペイロードで出力。一覧に「レポート出力」リンク。
 - US-019: フィールド辞書テンプレート（Fireblocks/BitGo）を app/services/field_templates.py に定義。GET /webhooks/field-templates API、詳細画面での辞書表示、未知フィールドの「未知」バッジ、AI分析へのテンプレート補助情報反映。
 - US-020: スキーマドリフト検知。受信時に同 event_type の基準スキーマと比較し schema_drift を保存。一覧にドリフトバッジ・フィルタ、詳細に追加/削除/型変更の表示。
+
+---
+
+## Sprint 2（2026-02-28）Phase 6: デザイン刷新
+
+### 完了ストーリー
+
+| ID | タイトル | 受け入れ結果 | 備考 |
+|----|---------|-------------|------|
+| US-101 | グローバルレイアウトとナビゲーションの統一 | OK | Layout コンポーネント、共通ヘッダー、NavLink でアクティブ表示、SPA 遷移 |
+| US-102 | DIMカラーテーマの適用 | OK | PolygonScan 風 #12161C 背景、#E4E6EA テキスト、blue-400 アクセント、index.css 整理 |
+| US-108 | コピー/JSONPathコピーの修正とフィードバック | OK | アイコン化、成功時チェックマーク1秒、execCommand フォールバック |
+| US-103 | ダークモード手動トグル | OK | useDarkMode、localStorage 保存、OS 初回追従、ヘッダーに Sun/Moon トグル |
+| US-104 | タイポグラフィとスペーシングの統一 | OK | SF Pro + Hiragino + Noto Sans JP、line-height 1.5 |
+| US-105 | テーブル・カード・ボタンのコンポーネント洗練 | OK | 行ホバー bg-slate-800/40、ボーダー半透明 |
+| US-107 | 新着Webhookのリアルタイム挿入通知 | OK | framer-motion スライドイン、ハイライト3秒、効果音、ミュートボタン |
+| US-109 | JSONビューアのインタラクションをモダン化 | OK | ホバー時のみアイコン表示、Clipboard/Path/Check アイコン |
+| US-110 | 詳細画面の前後エントリ遷移 | OK | GET /webhooks/{id}/adjacent、前へ/次へボタン、矢印キーショートカット |
+| US-106 | JSONビューアのデザイン改善 | OK | キー #D4A574、文字列 #9FDFBF、数値薄青、展開/折りたたみアニメーション |

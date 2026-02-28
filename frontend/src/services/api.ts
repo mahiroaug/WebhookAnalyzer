@@ -82,6 +82,19 @@ export async function getWebhook(id: string): Promise<WebhookDetail> {
   return res.json();
 }
 
+export interface AdjacentResponse {
+  prev_id: string | null;
+  next_id: string | null;
+}
+
+export async function getAdjacentWebhooks(
+  id: string
+): Promise<AdjacentResponse> {
+  const res = await fetch(`${BASE}/webhooks/${id}/adjacent`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 export interface EventTypeGroup {
   event_type: string;
   count: number;

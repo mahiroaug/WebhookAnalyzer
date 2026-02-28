@@ -1,5 +1,6 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import { StatsCards } from "../components/StatsCards";
 import { useWebhookWebSocket } from "../hooks/useWebhookWebSocket";
 import {
@@ -52,6 +53,10 @@ export function WebhookListPage() {
   const [newSessionName, setNewSessionName] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchAnalyzing, setBatchAnalyzing] = useState(false);
+  const [newArrivalIds, setNewArrivalIds] = useState<Set<string>>(new Set());
+  const [soundMuted, setSoundMuted] = useState(
+    () => localStorage.getItem("webhook-sound-muted") === "1"
+  );
   const [batchResult, setBatchResult] = useState<{
     completed: number;
     failed: number;
@@ -144,8 +149,27 @@ export function WebhookListPage() {
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
-  const loadRef = useRef<() => void>(() => {});
-  async function load() {
+  const loadRef = useRef<(newId?: string) => void>(() => {});
+  const playNewArrivalSound = useCallback(() => {
+    if (soundMuted) return;
+    try {
+      const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.15);
+    } catch {
+      // 効果音失敗は無視
+    }
+  }, [soundMuted]);
+
+  async function load(newId?: string) {
     setLoading(true);
     setError(null);
     try {
@@ -174,6 +198,17 @@ export function WebhookListPage() {
       setItems(listRes.items);
       setTotal(listRes.total);
       setStats(statsRes);
+      if (newId && listRes.items.some((w) => w.id === newId)) {
+        setNewArrivalIds((prev) => new Set(prev).add(newId));
+        playNewArrivalSound();
+        setTimeout(() => {
+          setNewArrivalIds((p) => {
+            const next = new Set(p);
+            next.delete(newId);
+            return next;
+          });
+        }, 3000);
+      }
     } catch (e) {
       setItems([]);
       setTotal(0);
@@ -184,21 +219,41 @@ export function WebhookListPage() {
   }
   loadRef.current = load;
 
-  const { connected, reconnect } = useWebhookWebSocket(() => loadRef.current());
+  const { connected, reconnect } = useWebhookWebSocket((newId) => {
+    loadRef.current(newId);
+  });
 
   useEffect(() => {
     load();
   }, [filterSource, filterEventType, filterAnalyzed, filterHasDrift, filterSession, page]);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6">
+    <div>
       <header className="mb-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-2xl font-bold">Webhook Analyzer</h1>
+            <h1 className="text-2xl font-bold">Webhook 一覧</h1>
             <p className="text-slate-600 dark:text-slate-400">受信した Webhook の一覧</p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setSoundMuted((m) => {
+                  const next = !m;
+                  localStorage.setItem("webhook-sound-muted", next ? "1" : "0");
+                  return next;
+                });
+              }}
+              className={`p-2 rounded text-xs ${
+                soundMuted
+                  ? "bg-slate-200 dark:bg-slate-700 text-slate-500"
+                  : "bg-slate-100 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300"
+              }`}
+              title={soundMuted ? "効果音を有効にする" : "効果音をミュート"}
+            >
+              {soundMuted ? "🔕" : "🔔"}
+            </button>
             <span
               className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
                 connected
@@ -226,21 +281,21 @@ export function WebhookListPage() {
         <div className="mt-2 flex gap-4">
           <Link
             to="/by-event-type"
-            className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+            className="text-sm text-blue-400 hover:underline"
           >
             event_type 別に表示 →
           </Link>
           <a
             href="/api/webhooks/report/markdown"
             download="webhook-report.md"
-            className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+            className="text-sm text-blue-400 hover:underline"
           >
             レポート出力 (.md)
           </a>
           {selectedIds.size >= 2 && (
             <button
               onClick={goToCompare}
-              className="text-sm rounded bg-indigo-600 text-white px-3 py-1.5 hover:bg-indigo-700"
+              className="text-sm rounded bg-blue-500 text-white px-3 py-1.5 hover:bg-blue-600"
             >
               比較 ({selectedIds.size}件)
             </button>
@@ -258,7 +313,7 @@ export function WebhookListPage() {
           )}
           <button
             onClick={copyShareLink}
-            className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+            className="text-sm text-blue-400 hover:underline"
           >
             {linkCopied ? "コピーしました" : "共有リンクをコピー"}
           </button>
@@ -429,18 +484,23 @@ export function WebhookListPage() {
               </tr>
             </thead>
             <tbody>
-              {items.map((w) => (
-                <tr
+              {items.map((w) => {
+                const isNew = newArrivalIds.has(w.id);
+                return (
+                <motion.tr
                   key={w.id}
                   role="button"
                   tabIndex={0}
+                  initial={isNew ? { opacity: 0, x: -24 } : false}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.25 }}
                   onClick={() => navigate(`/webhooks/${w.id}`)}
                   onKeyDown={(e) =>
                     (e.key === "Enter" || e.key === " ") && navigate(`/webhooks/${w.id}`)
                   }
-                  className={`border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 cursor-pointer ${
-                    selectedIds.has(w.id) ? "bg-indigo-50 dark:bg-indigo-900/20" : ""
-                  }`}
+                  className={`border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-colors ${
+                    selectedIds.has(w.id) ? "bg-blue-900/20" : ""
+                  } ${isNew ? "bg-emerald-900/30 dark:bg-emerald-800/30" : ""}`}
                 >
                   <td className="p-3" onClick={(e) => toggleSelect(e, w.id)}>
                     <input
@@ -450,7 +510,7 @@ export function WebhookListPage() {
                       className="rounded border-slate-300"
                     />
                   </td>
-                  <td className="p-3 font-mono text-xs text-indigo-600 dark:text-indigo-400">
+                  <td className="p-3 font-mono text-xs text-blue-400">
                     {String(w.id).slice(0, 8)}...
                   </td>
                   <td className="p-3">{w.source}</td>
@@ -479,8 +539,9 @@ export function WebhookListPage() {
                   <td className="p-3 text-slate-600 dark:text-slate-400">
                     {new Date(w.received_at).toLocaleString()}
                   </td>
-                </tr>
-              ))}
+                </motion.tr>
+              );
+              })}
             </tbody>
           </table>
           {items.length === 0 && !loading && (
@@ -505,7 +566,7 @@ export function WebhookListPage() {
                     load();
                   }
                 }}
-                className="mt-4 rounded bg-indigo-600 text-white px-4 py-2 text-sm font-medium hover:bg-indigo-700"
+                className="mt-4 rounded bg-blue-500 text-white px-4 py-2 text-sm font-medium hover:bg-blue-600"
               >
                 {filterSource || filterEventType || filterAnalyzed !== "all" || filterHasDrift !== "all" || filterSession ? "フィルタを解除" : "再読み込み"}
               </button>

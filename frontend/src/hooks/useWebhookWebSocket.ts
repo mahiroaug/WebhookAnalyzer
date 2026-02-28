@@ -1,13 +1,16 @@
 /**
  * 新規 Webhook 受信をリアルタイムで受け取り、コールバックを呼ぶフック。
  * 接続断時は自動再接続を試みる。
+ * US-107: 新着 ID をコールバックに渡す（アニメーション・効果音用）
  */
 import { useEffect, useRef, useCallback, useState } from "react";
 
 const WS_PATH = "/api/webhooks/ws";
 const RECONNECT_DELAY_MS = 3000;
 
-export function useWebhookWebSocket(onWebhookReceived: () => void): {
+export function useWebhookWebSocket(
+  onWebhookReceived: (newId?: string) => void
+): {
   connected: boolean;
   reconnect: () => void;
 } {
@@ -32,7 +35,7 @@ export function useWebhookWebSocket(onWebhookReceived: () => void): {
       try {
         const data = JSON.parse(event.data);
         if (data?.type === "webhook_received") {
-          onReceivedRef.current();
+          onReceivedRef.current(data?.id);
         }
       } catch {
         // パースエラーは無視

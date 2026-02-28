@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.models.webhook import Webhook, WebhookAnalysis
 from app.schemas.webhook import (
+    AdjacentResponse,
     EventTypeGroup,
     EventTypeGroupResponse,
     FieldTemplateItem,
@@ -512,6 +513,45 @@ async def export_report_markdown(
         content="".join(lines),
         media_type="text/markdown",
         headers={"Content-Disposition": "attachment; filename=webhook-report.md"},
+    )
+
+
+@router.get("/{webhook_id}/adjacent", response_model=AdjacentResponse)
+async def get_adjacent_webhooks(
+    webhook_id: UUID,
+    db: AsyncSession = Depends(get_db),
+) -> AdjacentResponse:
+    """指定 Webhook の前後（時系列）の ID を取得。US-110"""
+    # 現在の webhook の received_at を取得
+    current_stmt = select(Webhook).where(Webhook.id == webhook_id)
+    curr = await db.execute(current_stmt)
+    current = curr.scalar_one_or_none()
+    if not current:
+        raise HTTPException(status_code=404, detail="Webhook not found")
+
+    # prev: より新しい（received_at が大きい）1件
+    prev_stmt = (
+        select(Webhook.id)
+        .where(Webhook.received_at > current.received_at)
+        .order_by(Webhook.received_at.asc())
+        .limit(1)
+    )
+    prev_result = await db.execute(prev_stmt)
+    prev_row = prev_result.scalar_one_or_none()
+
+    # next: より古い（received_at が小さい）1件
+    next_stmt = (
+        select(Webhook.id)
+        .where(Webhook.received_at < current.received_at)
+        .order_by(Webhook.received_at.desc())
+        .limit(1)
+    )
+    next_result = await db.execute(next_stmt)
+    next_row = next_result.scalar_one_or_none()
+
+    return AdjacentResponse(
+        prev_id=prev_row if prev_row else None,
+        next_id=next_row if next_row else None,
     )
 
 

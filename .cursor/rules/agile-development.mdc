@@ -1,68 +1,48 @@
 ---
-description: アジャイル開発プロセスとバックログ運用のルール
+description: アジャイル開発プロセスとブランチ運用の絶対ルール
 alwaysApply: true
 ---
 
-# アジャイル開発プロセス
+# アジャイル開発ルール
 
-## バックログとユーザーストーリー
+## 絶対ルール
 
-- ユーザーストーリーの原本: `docs/user-stories-webhook-dashboard.md`
-- スプリント記録: `docs/sprint-log.md`
-- 優先度: P0（必須） > P1（重要） > P2（将来）
-- ステータス: 各ストーリー見出しの末尾に `【未着手】` `【実装中】` `【受け入れ待ち】` `【完了】` `【持ち越し】` で管理する
+- **NEVER**: `main` に直接コミットしない。例外なし。
+- **NEVER**: ブランチを切らずにコード変更をコミットしない。
+- **MUST**: US 着手時は `develop` から `feature/{story-id}-{desc}` を作成してから作業を開始する。
 
-## 開発フロー
+## US 実装チェックリスト
 
-1. ユーザーストーリーからバックログアイテムを切り出す
-2. 実装前にストーリーの受け入れ基準（Given/When/Then）を確認する
-3. 実装後はブラウザで受け入れ基準に沿った動作確認を行う
-4. 確認結果をユーザーストーリー文書に反映する（ステータス更新）
+US に着手するたびに、以下を上から順に実行する。スキップ不可。
 
-## 実装の優先順位
+1. `git checkout develop && git pull` で最新化
+2. `git checkout -b feature/{story-id}-{desc}` でブランチ作成
+3. 受け入れ基準（Given/When/Then）を確認
+4. テストを先に書く → 失敗確認（Red） → 実装（Green） → リファクタ（testing.mdc 参照）
+5. Lint 確認・修正
+6. バックエンド変更時: `pytest app/tests/ -v` で全テスト通過を確認
+7. フロントエンド変更時: サンプルデータ投入 → ブラウザで受け入れ基準を検証（acceptance-testing スキル参照）
+8. feature ブランチにコミット
+9. `git checkout develop && git merge feature/{story-id}-{desc}` でマージ
+10. ストーリーのステータスを更新、`docs/sprint-log.md` に記録
 
-1. P0 を優先的に着手する
-2. 同一フェーズ内は番号の若い順に実装する
-3. バックエンドAPI追加が必要なストーリーは先にAPI→次にUIの順で実装する
+## コミット規約
 
-## Git ワークフロー (GitHub Flow ベース)
+- ブランチ名・コミットメッセージ・タグ名は**英語のみ**（日本語禁止）
+- 形式: `{story-id}: {description}` — 例: `US-021: add retry logic for failed analysis`
+- ストーリー外: `chore:` / `fix:` / `docs:` を使用
 
-### ブランチ戦略
+## ブランチ種別
 
-- `main` は常にデプロイ可能な状態を保つ — 直接コミットしない
-- `develop` を日常の統合ブランチとして使用する
-- 機能開発は `develop` から `feature/{ストーリーID}-{短い説明}` を切る
-- バグ修正は `develop` から `fix/{短い説明}` を切る
-- 緊急修正のみ `main` から `hotfix/{短い説明}` を切り、修正後 `main` と `develop` の両方にマージする
+| 種別 | 命名 | 分岐元 | マージ先 |
+|------|------|--------|---------|
+| 機能 | `feature/{story-id}-{desc}` | `develop` | `develop` |
+| 修正 | `fix/{desc}` | `develop` | `develop` |
+| 緊急 | `hotfix/{desc}` | `main` | `main` + `develop` |
 
-### ブランチ運用
+## バックログ管理
 
-1. ストーリー着手時: `develop` から feature ブランチを作成する
-2. 実装中: feature ブランチにコミットを積む
-3. 受け入れ確認 OK: feature ブランチを `develop` にマージする
-4. スプリント完了時やリリース時: `develop` を `main` にマージする
-
-### コミット規約
-
-- **ブランチ名・コミットメッセージ・タグ名はすべて英語で記述する（日本語禁止）**
-- メッセージ形式: `{story-id}: {description in English}`
-- ストーリーに紐づかない変更: `chore: {description}` / `fix: {description}` / `docs: {description}`
-- 1ストーリー＝1ブランチを基本とする
-
-## 受け入れ確認
-
-- 全基準を満たしたら該当ストーリーのステータスを「完了」に更新する
-- 未達の基準がある場合は理由を記録し、次スプリントに持ち越す
-- 結果は `docs/sprint-log.md` に記録する
-
-## 実装完了後の自律行動
-
-1. Lint エラーを確認・修正する
-2. バックエンドに変更がある場合は `pytest app/tests/` を実行する
-3. フロントエンドに変更がある場合はブラウザで受け入れ基準を検証する
-   - `python scripts/load_sample_webhooks.py` でテストデータを準備する
-   - browser_navigate でフロントエンドを開く
-   - acceptance-testing スキルのワークフローに従って検証する
-4. 検証結果をユーザーに報告し、ストーリーのステータスを更新する
-5. 全基準 OK なら feature ブランチにコミットし、`develop` にマージする
-6. 全基準 OK なら次の【未着手】ストーリーの feature ブランチを `develop` から切って着手する
+- 原本: `docs/user-stories-webhook-dashboard.md`
+- 記録: `docs/sprint-log.md`
+- 優先度: P0 > P1 > P2、同フェーズ内は番号順
+- ステータス: `【未着手】` `【実装中】` `【受け入れ待ち】` `【完了】` `【持ち越し】`

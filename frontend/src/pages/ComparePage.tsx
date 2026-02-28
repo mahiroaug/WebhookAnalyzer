@@ -58,7 +58,7 @@ export function ComparePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
+      <div>
         <div className="text-slate-500">読み込み中...</div>
       </div>
     );
@@ -66,13 +66,7 @@ export function ComparePage() {
 
   if (error || webhooks.length < 2) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
-        <Link
-          to="/"
-          className="text-indigo-600 dark:text-indigo-400 hover:underline mb-4 inline-block"
-        >
-          ← 一覧へ
-        </Link>
+      <div>
         <p className="text-red-600 dark:text-red-400">{error || "2件以上選択してください"}</p>
       </div>
     );
@@ -88,14 +82,8 @@ export function ComparePage() {
   const sortedPaths = [...allPaths].sort();
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6">
+    <div>
       <header className="mb-6">
-        <Link
-          to="/"
-          className="text-indigo-600 dark:text-indigo-400 hover:underline mb-2 inline-block"
-        >
-          ← 一覧へ
-        </Link>
         <h1 className="text-2xl font-bold">比較ビュー</h1>
         <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
           {webhooks.length} 件の Webhook を比較（差分フィールドを強調）
@@ -116,7 +104,7 @@ export function ComparePage() {
                 >
                   <Link
                     to={`/webhooks/${w.id}`}
-                    className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                    className="text-blue-400 hover:underline"
                   >
                     {w.source} / {w.event_type}
                   </Link>

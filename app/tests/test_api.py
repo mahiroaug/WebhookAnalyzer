@@ -66,6 +66,35 @@ async def test_get_webhook_detail_includes_payload(
 
 
 @pytest.mark.asyncio
+async def test_get_adjacent_webhooks(
+    bitgo_transfer_payload: dict,
+) -> None:
+    """前後 Webhook の ID が取得できる（US-110）"""
+    import asyncio
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        ids = []
+        for _ in range(3):
+            r = await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+            assert r.status_code == 201
+            ids.append(r.json()["id"])
+            await asyncio.sleep(0.01)  # received_at の順序を保証
+
+        # ids[0]=最古(先に作成) ids[2]=最新(後に作成)。中間は [1]
+        mid_id = ids[1]
+        resp = await client.get(f"/api/webhooks/{mid_id}/adjacent")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "prev_id" in data
+    assert "next_id" in data
+    assert data["prev_id"] == ids[2]  # より新しい（後に作成）
+    assert data["next_id"] == ids[0]  # より古い（先に作成）
+
+
+@pytest.mark.asyncio
 async def test_list_webhooks_pagination(
     bitgo_transfer_payload: dict,
     fireblocks_tx_payload: dict,

@@ -46,18 +46,18 @@ export function SchemaEstimatePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
+      <div>
         <div className="text-slate-500">読み込み中...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6">
+    <div>
       <header className="mb-6">
         <Link
           to="/by-event-type"
-          className="text-indigo-600 dark:text-indigo-400 hover:underline mb-2 inline-block"
+          className="text-blue-400 hover:underline mb-2 inline-block text-sm"
         >
           ← event_type 別一覧へ
         </Link>
@@ -91,7 +91,7 @@ export function SchemaEstimatePage() {
                   key={f.path}
                   className="border-b border-slate-100 dark:border-slate-700/50"
                 >
-                  <td className="p-3 font-mono text-indigo-600 dark:text-indigo-400">
+                  <td className="p-3 font-mono text-blue-400">
                     {f.path}
                   </td>
                   <td className="p-3">{f.type}</td>

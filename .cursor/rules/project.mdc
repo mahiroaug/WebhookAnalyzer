@@ -36,6 +36,6 @@ alwaysApply: true
 ## 言語・スタイル
 
 - コード中のコメント・docstring は**日本語**で記述する
-- Git コミットメッセージは日本語で記述する
+- Git コミットメッセージは**英語**で記述する（agile-development.mdc 参照）
 - ユーザーへの応答は日本語で行う
 - 変数名・関数名・クラス名は英語 (snake_case / PascalCase)

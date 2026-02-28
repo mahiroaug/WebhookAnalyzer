@@ -54,6 +54,13 @@ class WebhookDetail(BaseModel):
     schema_drift: dict | None = None
 
 
+class AdjacentResponse(BaseModel):
+    """前後 Webhook の ID（US-110）"""
+
+    prev_id: UUID | None = None
+    next_id: UUID | None = None
+
+
 class StatsResponse(BaseModel):
     """統計 API レスポンス"""
 

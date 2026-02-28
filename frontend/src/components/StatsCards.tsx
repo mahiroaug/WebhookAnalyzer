@@ -25,7 +25,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
           {sourceEntries.map(([name, count]) => (
             <span
               key={name}
-              className="inline-flex items-center rounded-full bg-indigo-100 dark:bg-indigo-900/40 px-3 py-1 text-sm font-medium text-indigo-800 dark:text-indigo-200"
+              className="inline-flex items-center rounded-full bg-blue-900/40 px-3 py-1 text-sm font-medium text-blue-200"
             >
               {name}: {count}
             </span>

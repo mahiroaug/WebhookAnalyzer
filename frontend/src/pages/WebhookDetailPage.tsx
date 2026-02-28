@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useEffect, useState, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   getWebhook,
   getAnalysis,
   getFieldTemplate,
+  getAdjacentWebhooks,
   triggerAnalyze,
   type WebhookDetail,
   type WebhookAnalysisResponse,
@@ -13,9 +14,11 @@ import { JsonTreeView } from "../components/JsonTreeView";
 
 export function WebhookDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [webhook, setWebhook] = useState<WebhookDetail | null>(null);
   const [analysis, setAnalysis] = useState<WebhookAnalysisResponse | null>(null);
   const [fieldTemplate, setFieldTemplate] = useState<FieldTemplateResponse | null>(null);
+  const [adjacent, setAdjacent] = useState<{ prev_id: string | null; next_id: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
@@ -27,13 +30,15 @@ export function WebhookDetailPage() {
     async function load() {
       setLoading(true);
       try {
-        const [detailRes, analysisRes] = await Promise.all([
+        const [detailRes, analysisRes, adjacentRes] = await Promise.all([
           getWebhook(webhookId),
           getAnalysis(webhookId),
+          getAdjacentWebhooks(webhookId),
         ]);
         if (!cancelled) {
           setWebhook(detailRes);
           setAnalysis(analysisRes ?? null);
+          setAdjacent(adjacentRes);
           const templateRes = await getFieldTemplate(
             detailRes.source,
             detailRes.event_type
@@ -42,6 +47,7 @@ export function WebhookDetailPage() {
         }
       } catch {
         if (!cancelled) setWebhook(null);
+        if (!cancelled) setAdjacent(null);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -49,6 +55,27 @@ export function WebhookDetailPage() {
     load();
     return () => { cancelled = true; };
   }, [id]);
+
+  const goPrev = useCallback(() => {
+    if (adjacent?.prev_id) navigate(`/webhooks/${adjacent.prev_id}`);
+  }, [adjacent?.prev_id, navigate]);
+  const goNext = useCallback(() => {
+    if (adjacent?.next_id) navigate(`/webhooks/${adjacent.next_id}`);
+  }, [adjacent?.next_id, navigate]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        goPrev();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        goNext();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [goPrev, goNext]);
 
   async function handleAnalyze() {
     if (!id) return;
@@ -69,22 +96,40 @@ export function WebhookDetailPage() {
 
   if (loading || !webhook) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
+      <div>
         <div className="text-slate-500">
           {loading ? "読み込み中..." : "Webhook が見つかりません"}
         </div>
-        <Link to="/" className="text-indigo-600 mt-4 inline-block">← 一覧へ</Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6">
+    <div>
       <header className="mb-6">
-        <Link to="/" className="text-indigo-600 dark:text-indigo-400 hover:underline mb-2 inline-block">
-          ← 一覧へ
-        </Link>
-        <h1 className="text-2xl font-bold">Webhook 詳細</h1>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={goPrev}
+              disabled={!adjacent?.prev_id}
+              className="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="前の Webhook（←）"
+            >
+              ← 前へ
+            </button>
+            <button
+              type="button"
+              onClick={goNext}
+              disabled={!adjacent?.next_id}
+              className="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="次の Webhook（→）"
+            >
+              次へ →
+            </button>
+          </div>
+          <h1 className="text-2xl font-bold">Webhook 詳細</h1>
+        </div>
         <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
           <dt className="text-slate-500 dark:text-slate-400">source</dt>
           <dd className="font-mono">{webhook.source}</dd>
@@ -101,7 +146,7 @@ export function WebhookDetailPage() {
         <button
           onClick={handleAnalyze}
           disabled={analyzing}
-          className="rounded bg-indigo-600 text-white px-4 py-2 text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded bg-blue-500 text-white px-4 py-2 text-sm font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {analyzing ? "分析中..." : "AI で分析"}
         </button>
@@ -185,7 +230,7 @@ export function WebhookDetailPage() {
           <dl className="space-y-2 text-sm">
             {fieldTemplate.fields.map((f) => (
               <div key={f.path} className="flex flex-col gap-0.5">
-                <dt className="font-mono font-medium text-indigo-600 dark:text-indigo-400">
+                <dt className="font-mono font-medium text-blue-400">
                   {f.path}
                 </dt>
                 <dd className="text-slate-600 dark:text-slate-400 pl-2">
@@ -200,7 +245,7 @@ export function WebhookDetailPage() {
                       href={f.reference_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="ml-2 text-indigo-600 dark:text-indigo-400 hover:underline text-xs"
+                      className="ml-2 text-blue-400 hover:underline text-xs"
                     >
                       参照
                     </a>
@@ -240,7 +285,7 @@ export function WebhookDetailPage() {
               <dl className="space-y-1 text-sm">
                 {Object.entries(analysis.field_descriptions).map(([key, desc]) => (
                   <div key={key} className="flex gap-2">
-                    <dt className="font-mono text-indigo-600 dark:text-indigo-400 font-medium min-w-[120px]">
+                    <dt className="font-mono text-blue-400 font-medium min-w-[120px]">
                       {key}
                     </dt>
                     <dd className="text-slate-600 dark:text-slate-400">{desc}</dd>

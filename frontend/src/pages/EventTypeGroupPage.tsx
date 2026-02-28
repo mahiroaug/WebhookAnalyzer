@@ -34,21 +34,15 @@ export function EventTypeGroupPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
+      <div>
         <div className="text-slate-500">読み込み中...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6">
+    <div>
       <header className="mb-6">
-        <Link
-          to="/"
-          className="text-indigo-600 dark:text-indigo-400 hover:underline mb-2 inline-block"
-        >
-          ← 一覧へ
-        </Link>
         <h1 className="text-2xl font-bold">event_type 別一覧</h1>
         <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
           受信済み Webhook を event_type ごとにグルーピング
@@ -94,7 +88,7 @@ export function EventTypeGroupPage() {
                   {g.count >= 3 && (
                     <Link
                       to={`/schema?event_type=${encodeURIComponent(g.event_type)}`}
-                      className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                      className="text-xs text-blue-400 hover:underline"
                     >
                       スキーマ推定
                     </Link>
@@ -115,7 +109,7 @@ export function EventTypeGroupPage() {
                   }
                   className="flex items-center gap-4 p-3 rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/30 cursor-pointer"
                 >
-                  <span className="font-mono text-xs text-indigo-600 dark:text-indigo-400">
+                  <span className="font-mono text-xs text-blue-400">
                     {String(g.sample.id).slice(0, 8)}...
                   </span>
                   <span>{g.sample.source}</span>

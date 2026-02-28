@@ -1,8 +1,65 @@
 /**
  * ネストされた JSON をツリー形式で表示するコンポーネント。
  * 展開/折りたたみ、キー・型・値の識別、コピー操作、重要フィールドのハイライトをサポート。
+ * US-106: コードエディタ風の配色（キー: #D4A574, 文字列: #9FDFBF, 数値: 薄青）
+ * US-108: コピー/JSONPathコピーの修正とフィードバック
  */
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+
+/** クリップボードにコピー。失敗時は document.execCommand でフォールバック */
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // フォールバックへ
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+/** クリップボードアイコン（24x24） */
+function ClipboardIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+    </svg>
+  );
+}
+
+/** チェックアイコン（24x24） */
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+/** パスアイコン（24x24） */
+function PathIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  );
+}
 
 /** 重要フィールドとしてハイライトするキー名（大文字小文字不問） */
 const IMPORTANT_KEYS = new Set([
@@ -59,13 +116,69 @@ function getValueType(val: unknown): string {
   return typeof val;
 }
 
-function copyToClipboard(text: string): void {
-  navigator.clipboard.writeText(text);
-}
-
 /** jsonPath "$.data.id" を "data.id" に正規化 */
 function normalizePath(jsonPath: string): string {
   return jsonPath.replace(/^\$\./, "");
+}
+
+/** プリミティブ値表示。ホバー時のみコピー・JSONPathアイコン表示（US-108, US-109） */
+function PrimitiveValue({
+  displayVal,
+  rawVal,
+  jsonPath,
+  valueType,
+}: {
+  displayVal: string;
+  rawVal: string;
+  jsonPath: string;
+  valueType: string;
+}) {
+  const [copied, setCopied] = useState<"value" | "path" | null>(null);
+  const handleCopy = useCallback(async (text: string, type: "value" | "path") => {
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      setCopied(type);
+      setTimeout(() => setCopied(null), 1000);
+    }
+  }, []);
+  const iconClass = "w-3.5 h-3.5";
+  const valueColorClass =
+    valueType === "string" ? "text-[#9FDFBF]" :
+    valueType === "number" ? "text-blue-300" :
+    valueType === "boolean" ? "text-amber-400" :
+    "text-slate-400";
+  return (
+    <span className="group inline-flex items-center gap-1">
+      <span className={valueColorClass}>{displayVal}</span>
+      <span className="text-slate-400 text-xs">({valueType})</span>
+      <span className={`inline-flex transition-opacity ${copied ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); handleCopy(rawVal, "value"); }}
+          className="ml-1 p-0.5 rounded hover:bg-slate-600/60 text-slate-400 hover:text-slate-200"
+          title="値をコピー"
+        >
+          {copied === "value" ? (
+            <CheckIcon className={`${iconClass} text-emerald-400`} />
+          ) : (
+            <ClipboardIcon className={iconClass} />
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); handleCopy(jsonPath, "path"); }}
+          className="p-0.5 rounded hover:bg-slate-600/60 text-slate-400 hover:text-slate-200"
+          title="JSONPath をコピー"
+        >
+          {copied === "path" ? (
+            <CheckIcon className={`${iconClass} text-emerald-400`} />
+          ) : (
+            <PathIcon className={iconClass} />
+          )}
+        </button>
+      </span>
+    </span>
+  );
 }
 
 export function JsonTreeView({
@@ -103,9 +216,7 @@ export function JsonTreeView({
 
   if (data === null || data === undefined) {
     return (
-      <span className="text-slate-500 dark:text-slate-400">
-        {data === null ? "null" : "undefined"}
-      </span>
+      <span className="text-slate-400">{data === null ? "null" : "undefined"}</span>
     );
   }
 
@@ -113,19 +224,14 @@ export function JsonTreeView({
     const val = String(data);
     const displayVal =
       typeof data === "string" ? `"${val.replace(/"/g, '\\"')}"` : val;
+    const rawVal = typeof data === "string" ? data : String(data);
     return (
-      <span className="inline-flex items-center gap-1">
-        <span className="text-amber-600 dark:text-amber-400">{displayVal}</span>
-        <span className="text-slate-400 text-xs">({getValueType(data)})</span>
-        <button
-          type="button"
-          onClick={() => copyToClipboard(displayVal)}
-          className="ml-1 px-1.5 py-0.5 text-xs rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600"
-          title="値をコピー"
-        >
-          コピー
-        </button>
-      </span>
+      <PrimitiveValue
+        displayVal={displayVal}
+        rawVal={rawVal}
+        jsonPath={jsonPath}
+        valueType={getValueType(data)}
+      />
     );
   }
 
@@ -137,18 +243,23 @@ export function JsonTreeView({
         <button
           type="button"
           onClick={() => toggle(path)}
-          className="flex items-center gap-1 text-left hover:bg-slate-100 dark:hover:bg-slate-800 -mx-1 px-1 rounded"
+          className="flex items-center gap-1 text-left hover:bg-slate-800/40 -mx-1 px-1 rounded"
         >
           <span className="text-slate-500">{isOpen ? "▼" : "▶"}</span>
-          <span className="font-mono text-indigo-600 dark:text-indigo-400">
-            [array]
-          </span>
+          <span className="font-mono text-[#D4A574]">[array]</span>
           <span className="text-slate-400 text-xs">
             ({data.length} items)
           </span>
         </button>
+        <AnimatePresence initial={false}>
         {isOpen && (
-          <div className="mt-1 space-y-1">
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="mt-1 space-y-1 overflow-hidden"
+          >
             {data.map((item, i) => (
               <div key={i} className="pl-4">
                 <span className="font-mono text-slate-500 text-xs">
@@ -160,8 +271,9 @@ export function JsonTreeView({
                 />
               </div>
             ))}
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
       </div>
     );
   }
@@ -183,16 +295,21 @@ export function JsonTreeView({
       <button
         type="button"
         onClick={() => toggle(path)}
-        className="flex items-center gap-1 text-left hover:bg-slate-100 dark:hover:bg-slate-800 -mx-1 px-1 rounded w-full"
+        className="flex items-center gap-1 text-left hover:bg-slate-800/40 -mx-1 px-1 rounded w-full"
       >
         <span className="text-slate-500">{isOpen ? "▼" : "▶"}</span>
-        <span className="font-mono text-indigo-600 dark:text-indigo-400">
-          {rootKey}
-        </span>
+        <span className="font-mono text-[#D4A574]">{rootKey}</span>
         <span className="text-slate-400 text-xs">({keys.length} keys)</span>
       </button>
+      <AnimatePresence initial={false}>
       {isOpen && (
-        <div className="mt-1 space-y-1">
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="mt-1 space-y-1 overflow-hidden"
+        >
           {keys.map((key) => {
             const val = obj[key];
             const childPath = path === "$" ? `$.${key}` : `${path}.${key}`;
@@ -210,10 +327,10 @@ export function JsonTreeView({
               );
             const isUnknownField = knownFieldPaths && !isKnownPath;
             const keyClassName = isUnknownField
-              ? "text-violet-500 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/30 px-1 rounded border border-dashed border-violet-300 dark:border-violet-700"
+              ? "text-violet-400 bg-violet-900/30 px-1 rounded border border-dashed border-violet-700"
               : important
-                ? "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-1 rounded"
-                : "text-emerald-600 dark:text-emerald-400";
+                ? "text-[#D4A574] bg-amber-900/20 px-1 rounded"
+                : "text-[#D4A574]";
             return (
               <div key={key} className="pl-4">
                 <span className={`font-mono font-medium ${keyClassName}`}>
@@ -231,17 +348,6 @@ export function JsonTreeView({
                   <>
                     <span className="text-slate-500 mx-1">:</span>
                     <JsonTreeView data={val} jsonPath={childPath} />
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        copyToClipboard(childPath);
-                      }}
-                      className="ml-1 px-1.5 py-0.5 text-xs rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600"
-                      title="JSONPath をコピー"
-                    >
-                      Path
-                    </button>
                   </>
                 ) : (
                   <JsonTreeView
@@ -255,8 +361,9 @@ export function JsonTreeView({
               </div>
             );
           })}
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }
