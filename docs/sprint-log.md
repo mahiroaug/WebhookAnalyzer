@@ -84,3 +84,5 @@
 | US-111 | webhook.site 風 2ペインレイアウト | OK | TwoPanePage、WebhookListPane、右ペインタブ切替、URLベースルーティング |
 | US-112 | Payload 表形式表示とフィールド辞書統合 | OK | PayloadTable コンポーネント、辞書・AI 説明の統合列、入れ子テーブル、未知バッジ |
 | US-115 | 詳細画面セクション順序の最適化 | OK | メタ→ドリフト→Payload→分析結果→分析ボタン、辞書セクション統合削除 |
+| US-117 | ペインリサイズとレスポンシブ対応 | OK | ドラッグリサイズハンドル、localStorage 幅保存、min/max 制約 |
+| US-118 | 詳細画面のアコーディオンセクション | OK | AccordionSection、開閉アニメーション、状態 localStorage 保存、HTTPメタ表示 |
