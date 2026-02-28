@@ -45,6 +45,21 @@ class WebhookListResponse(BaseModel):
     total: int
 
 
+class ReplayRequest(BaseModel):
+    """US-145: 再送先 URL"""
+
+    target_url: str
+
+
+class ReplayResponse(BaseModel):
+    """US-145: 再送結果"""
+
+    status_code: int
+    elapsed_ms: float
+    success: bool
+    error: str | None = None
+
+
 class WebhookDetail(BaseModel):
     """詳細（payload 含む）"""
 

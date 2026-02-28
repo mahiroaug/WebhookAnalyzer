@@ -18,6 +18,8 @@ from app.schemas.webhook import (
     EventTypeGroupResponse,
     FieldTemplateItem,
     FieldTemplateResponse,
+    ReplayRequest,
+    ReplayResponse,
     SchemaEstimateResponse,
     SchemaField,
     StatsResponse,
@@ -617,3 +619,64 @@ async def get_webhook(
         remote_ip=webhook.remote_ip,
         request_headers=webhook.request_headers,
     )
+
+
+@router.post("/{webhook_id}/replay", response_model=ReplayResponse)
+async def replay_webhook(
+    webhook_id: UUID,
+    body: ReplayRequest,
+    db: AsyncSession = Depends(get_db),
+) -> ReplayResponse:
+    """US-145: 指定 Webhook の payload を対象 URL へ再送する"""
+    import time
+
+    import httpx
+
+    stmt = select(Webhook).where(Webhook.id == webhook_id)
+    result = await db.execute(stmt)
+    webhook = result.scalar_one_or_none()
+    if not webhook:
+        raise HTTPException(status_code=404, detail="Webhook not found")
+
+    target = (body.target_url or "").strip()
+    if not target or not target.startswith(("http://", "https://")):
+        raise HTTPException(status_code=400, detail="Invalid target_url")
+
+    headers: dict[str, str] = {"Content-Type": "application/json"}
+    if webhook.request_headers:
+        for k, v in webhook.request_headers.items():
+            if k.lower() in ("content-type", "content-length"):
+                continue
+            if isinstance(v, str):
+                headers[k] = v
+
+    start = time.perf_counter()
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(
+                target,
+                json=webhook.payload,
+                headers=headers,
+            )
+        elapsed = (time.perf_counter() - start) * 1000
+        return ReplayResponse(
+            status_code=resp.status_code,
+            elapsed_ms=round(elapsed, 1),
+            success=200 <= resp.status_code < 300,
+        )
+    except httpx.ConnectError as e:
+        elapsed = (time.perf_counter() - start) * 1000
+        return ReplayResponse(
+            status_code=0,
+            elapsed_ms=round(elapsed, 1),
+            success=False,
+            error=f"Connection error: {str(e)[:200]}",
+        )
+    except Exception as e:
+        elapsed = (time.perf_counter() - start) * 1000
+        return ReplayResponse(
+            status_code=0,
+            elapsed_ms=round(elapsed, 1),
+            success=False,
+            error=str(e)[:200],
+        )

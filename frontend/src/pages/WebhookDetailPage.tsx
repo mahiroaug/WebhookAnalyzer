@@ -6,6 +6,7 @@ import {
   getFieldTemplate,
   getAdjacentWebhooks,
   triggerAnalyze,
+  replayWebhook,
   type WebhookDetail,
   type WebhookAnalysisResponse,
   type FieldTemplateResponse,
@@ -153,6 +154,12 @@ export function WebhookDetailPage() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
 
+  /** US-145: 再送 */
+  const [replayOpen, setReplayOpen] = useState(false);
+  const [replayUrl, setReplayUrl] = useState("");
+  const [replayResult, setReplayResult] = useState<{ status: number; elapsed: number; error?: string } | null>(null);
+  const [replaying, setReplaying] = useState(false);
+
   /** US-144: マスキング ON/OFF（localStorage で永続化、デフォルト ON） */
   const [maskEnabled, setMaskEnabled] = useState(() => {
     try {
@@ -164,6 +171,20 @@ export function WebhookDetailPage() {
       localStorage.setItem("webhook-mask-enabled", maskEnabled ? "1" : "0");
     } catch { /* ignore */ }
   }, [maskEnabled]);
+
+  async function handleReplay() {
+    if (!id || !replayUrl.trim()) return;
+    setReplaying(true);
+    setReplayResult(null);
+    try {
+      const res = await replayWebhook(id, replayUrl.trim());
+      setReplayResult({ status: res.status_code, elapsed: res.elapsed_ms, error: res.error ?? undefined });
+    } catch (e) {
+      setReplayResult({ status: 0, elapsed: 0, error: e instanceof Error ? e.message : "不明なエラー" });
+    } finally {
+      setReplaying(false);
+    }
+  }
 
   async function handleAnalyze() {
     if (!id) return;
@@ -211,19 +232,50 @@ export function WebhookDetailPage() {
         </div>
       )}
       <header className="mb-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2 flex-wrap">
             <button type="button" onClick={goPrev} disabled={!adjacent?.prev_id}
               className="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40"
               title="前の Webhook（←）">← 前へ</button>
             <button type="button" onClick={goNext} disabled={!adjacent?.next_id}
               className="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40"
               title="次の Webhook（→）">次へ →</button>
+            <button
+              type="button"
+              onClick={() => { setReplayOpen((o) => !o); setReplayResult(null); }}
+              className="rounded border border-slate-400 dark:border-slate-500 bg-transparent px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50"
+            >
+              再送
+            </button>
           </div>
           <span className="text-sm font-semibold text-slate-500 dark:text-dim-text-muted">
             {webhook.sequence_index != null ? `#${webhook.sequence_index}` : ""}
           </span>
         </div>
+        {replayOpen && (
+          <div className="mt-2 flex flex-wrap items-center gap-2 p-2 rounded border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50">
+            <input
+              type="url"
+              value={replayUrl}
+              onChange={(e) => setReplayUrl(e.target.value)}
+              placeholder="https://example.com/webhook"
+              className="flex-1 min-w-[200px] rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-sm font-mono"
+            />
+            <button
+              type="button"
+              onClick={handleReplay}
+              disabled={replaying || !replayUrl.trim()}
+              className="rounded border border-slate-400 px-2 py-1 text-xs font-medium disabled:opacity-50"
+            >
+              {replaying ? "送信中..." : "送信"}
+            </button>
+            {replayResult && (
+              <span className={`text-xs ${replayResult.error ? "text-red-400" : "text-green-400"}`}>
+                {replayResult.error ?? `HTTP ${replayResult.status} (${replayResult.elapsed}ms)`}
+              </span>
+            )}
+          </div>
+        )}
       </header>
 
       <AccordionSection id="meta" title="リクエスト情報" defaultOpen={false}>

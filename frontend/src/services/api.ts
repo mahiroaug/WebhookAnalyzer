@@ -226,6 +226,27 @@ export async function triggerAnalyze(
   return res.json();
 }
 
+/** US-145: Webhook を指定 URL へ再送 */
+export interface ReplayResponse {
+  status_code: number;
+  elapsed_ms: number;
+  success: boolean;
+  error?: string | null;
+}
+
+export async function replayWebhook(
+  webhookId: string,
+  targetUrl: string
+): Promise<ReplayResponse> {
+  const res = await fetch(`${BASE}/webhooks/${webhookId}/replay`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ target_url: targetUrl }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 export async function getAnalysis(webhookId: string): Promise<WebhookAnalysisResponse | null> {
   const res = await fetch(`${BASE}/webhooks/${webhookId}/analysis`);
   if (res.status === 404) return null;

@@ -1,4 +1,6 @@
 """Webhook API の統合テスト"""
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -322,3 +324,58 @@ async def test_list_webhooks_includes_http_metadata(
     assert len(items) >= 1
     assert "http_method" in items[0]
     assert "remote_ip" in items[0]
+
+
+@pytest.mark.asyncio
+async def test_replay_invalid_url_returns_400(
+    bitgo_transfer_payload: dict,
+) -> None:
+    """US-145: 無効な target_url で 400"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+        list_resp = await client.get("/api/webhooks")
+        webhook_id = list_resp.json()["items"][0]["id"]
+        resp = await client.post(
+            f"/api/webhooks/{webhook_id}/replay",
+            json={"target_url": "not-a-valid-url"},
+        )
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_replay_webhook_success(
+    bitgo_transfer_payload: dict,
+) -> None:
+    """US-145: 再送 API がモックで成功を返す"""
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+
+    async def mock_post(*args, **kwargs):
+        return mock_resp
+
+    with patch("httpx.AsyncClient") as mock_client_cls:
+        mock_client = MagicMock()
+        mock_client.post = AsyncMock(side_effect=mock_post)
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client_cls.return_value = mock_client
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+            list_resp = await client.get("/api/webhooks")
+            webhook_id = list_resp.json()["items"][0]["id"]
+            resp = await client.post(
+                f"/api/webhooks/{webhook_id}/replay",
+                json={"target_url": "https://example.com/webhook"},
+            )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+    assert data["status_code"] == 200
+    assert "elapsed_ms" in data
