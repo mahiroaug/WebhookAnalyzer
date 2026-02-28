@@ -1,15 +1,12 @@
 # Transaction Created Event (Webhook v2)
 
- (from Takesaki-san)
-
- v2の解説は↓らへん
+v2の解説は↓らへん
 
 [Webhook v2 Migration Guide](https://developers.fireblocks.com/reference/webhook-v2-migration-guide#notifications-object-differentiation)
 
 - いわゆるTransactionIDはTxHashに入る。最初は空でBROADCASTINGにて値が入る
 - resourceId=data.idが起票ごとの固有値として使える
 - workspaceIdはワークスペースごとにユニークの値
-
 
 ```json
 2025-04-06T12:06:40.618Z	6df5a5ea-3526-4fd1-9906-26c702a61f18	INFO	Validated webhook event: {
@@ -200,7 +197,6 @@
 
 ```
 
-
 ```json
 2025-04-06T12:06:45.026Z	64b0cf77-cd6c-46ae-9f1c-fe9a037878fb	INFO	Validated webhook event: {
     "id": "52d5a3f2-6bcb-417d-abb8-7e90b9012b50",
@@ -271,7 +267,6 @@
 }
 
 ```
-
 
 ```json
 2025-04-06T12:06:46.564Z	e4933c69-92cb-4ac1-aa5f-cf18617b7ffe	INFO	Validated webhook event: {
@@ -658,10 +653,6 @@
 
 ```
 
-
-
-
-
 ### mahiroNFT (OneTimeAddress) PENDING_SIGNATURE
 
 ```json
@@ -767,7 +758,6 @@
 
 ```
 
-
 ## FAILED (after 24 hours)
 
 ```json
@@ -871,7 +861,6 @@
 }
 
 ```
-
 
 # Transfer from Vault Account to External(Whitelisted)
 
@@ -999,18 +988,9 @@
 
 ```
 
-
-
-
-
-
-
-
-
-
 # Transfer from Vault Account to External(OneTimeAddress)
 
-```json
+````json
 2025-04-18T09:08:35.713Z	71075605-b70f-471f-8026-2fd87053906d	INFO	Validated webhook event: {
     "id": "8c1308d4-0056-457f-8b0b-23b6540cbd31",
     "resourceId": "b2e74f7d-ee2f-495e-a86b-1185c7554eb9",
@@ -1199,108 +1179,109 @@
         "assetType": "ERC20"
     }
 }
-```
+````
 
 キャンセルされた場合
+
 ```json
 {
-    "id": "2d1b30b3-c7a7-488e-ac72-a67a95a37226",
-    "resourceId": "8f72db15-d96e-43fa-9e55-ebcd64169c57",
-    "workspaceId": "6f9be691-da62-5fdb-bdbd-7a3ae32ea878",
-    "eventType": "transaction.status.updated",
-    "data": {
-        "note": "NFT approve: 0x084466a05dfeb359E57f985F1B0a1EbabBE77e9A for token 6 (Vault ID: 303)",
-        "amountUSD": 0,
-        "authorizationInfo": {
-            "allowOperatorAsAuthorizer": false,
-            "groups": [
-                {
-                    "th": 1,
-                    "users": {
-                        "46791871-dc7e-5ece-b3b4-a232d1d6290c": "NA",
-                        "1088f473-434c-42b0-a2ee-b05e10a28fd4": "NA",
-                        "7867dd77-ba66-4061-878c-157f1de74e4b": "NA"
-                    }
-                }
-            ],
-            "logic": "OR"
-        },
-        "destinationAddress": "",
-        "contractCallDecodedData": {
-            "functionCalls": [
-                {
-                    "name": "approve",
-                    "params": [
-                        {
-                            "name": "to",
-                            "type": "address",
-                            "value": "0x084466a05dfeb359E57f985F1B0a1EbabBE77e9A"
-                        },
-                        {
-                            "name": "tokenId",
-                            "type": "uint256",
-                            "value": "6"
-                        }
-                    ],
-                    "payloadSuffix": ""
-                }
-            ],
-            "contractName": "mahiroNFT_V2"
-        },
-        "signedBy": [],
-        "networkFee": 0,
-        "destinationTag": "",
-        "fee": 0,
-        "destination": {
-            "name": "N/A",
-            "subType": "",
-            "id": "2ea1774b-3ae6-44c5-b93f-f59b519577d2",
-            "type": "INTERNAL_WALLET"
-        },
-        "feeCurrency": "AMOY_POLYGON_TEST",
-        "extraParameters": {
-            "gasLimit": "3000000",
-            "contractCallData": "0x095ea7b3000000000000000000000000084466a05dfeb359e57f985f1b0a1ebabbe77e9a0000000000000000000000000000000000000000000000000000000000000006",
-            "gasPrice": "20000000000"
-        },
-        "source": {
-            "name": "MTool2_dave",
-            "subType": "",
-            "id": "306",
-            "type": "VAULT_ACCOUNT"
-        },
-        "externalTxId": null,
-        "networkRecords": [],
-        "createdAt": 1744951772750,
-        "lastUpdated": 1744952188394,
-        "feeInfo": {
-            "networkFee": "0"
-        },
-        "assetId": "AMOY_POLYGON_TEST",
-        "id": "8f72db15-d96e-43fa-9e55-ebcd64169c57",
-        "txHash": "",
-        "blockInfo": {},
-        "amount": 0,
-        "sourceAddress": "",
-        "netAmount": 0,
-        "addressType": "",
-        "signedMessages": [],
-        "amountInfo": {
-            "amount": "0",
-            "requestedAmount": "0",
-            "amountUSD": "0.00",
-            "netAmount": "0"
-        },
-        "subStatus": "CANCELLED_BY_USER",
-        "assetType": "BASE_ASSET",
-        "rejectedBy": "",
-        "createdBy": "1526e51f-8498-4dbb-b46f-a383936084e2",
-        "exchangeTxId": "",
-        "destinationAddressDescription": "",
-        "requestedAmount": 0,
-        "operation": "CONTRACT_CALL",
-        "status": "CANCELLED"
+  "id": "2d1b30b3-c7a7-488e-ac72-a67a95a37226",
+  "resourceId": "8f72db15-d96e-43fa-9e55-ebcd64169c57",
+  "workspaceId": "6f9be691-da62-5fdb-bdbd-7a3ae32ea878",
+  "eventType": "transaction.status.updated",
+  "data": {
+    "note": "NFT approve: 0x084466a05dfeb359E57f985F1B0a1EbabBE77e9A for token 6 (Vault ID: 303)",
+    "amountUSD": 0,
+    "authorizationInfo": {
+      "allowOperatorAsAuthorizer": false,
+      "groups": [
+        {
+          "th": 1,
+          "users": {
+            "46791871-dc7e-5ece-b3b4-a232d1d6290c": "NA",
+            "1088f473-434c-42b0-a2ee-b05e10a28fd4": "NA",
+            "7867dd77-ba66-4061-878c-157f1de74e4b": "NA"
+          }
+        }
+      ],
+      "logic": "OR"
     },
-    "createdAt": 1744952188506
+    "destinationAddress": "",
+    "contractCallDecodedData": {
+      "functionCalls": [
+        {
+          "name": "approve",
+          "params": [
+            {
+              "name": "to",
+              "type": "address",
+              "value": "0x084466a05dfeb359E57f985F1B0a1EbabBE77e9A"
+            },
+            {
+              "name": "tokenId",
+              "type": "uint256",
+              "value": "6"
+            }
+          ],
+          "payloadSuffix": ""
+        }
+      ],
+      "contractName": "mahiroNFT_V2"
+    },
+    "signedBy": [],
+    "networkFee": 0,
+    "destinationTag": "",
+    "fee": 0,
+    "destination": {
+      "name": "N/A",
+      "subType": "",
+      "id": "2ea1774b-3ae6-44c5-b93f-f59b519577d2",
+      "type": "INTERNAL_WALLET"
+    },
+    "feeCurrency": "AMOY_POLYGON_TEST",
+    "extraParameters": {
+      "gasLimit": "3000000",
+      "contractCallData": "0x095ea7b3000000000000000000000000084466a05dfeb359e57f985f1b0a1ebabbe77e9a0000000000000000000000000000000000000000000000000000000000000006",
+      "gasPrice": "20000000000"
+    },
+    "source": {
+      "name": "MTool2_dave",
+      "subType": "",
+      "id": "306",
+      "type": "VAULT_ACCOUNT"
+    },
+    "externalTxId": null,
+    "networkRecords": [],
+    "createdAt": 1744951772750,
+    "lastUpdated": 1744952188394,
+    "feeInfo": {
+      "networkFee": "0"
+    },
+    "assetId": "AMOY_POLYGON_TEST",
+    "id": "8f72db15-d96e-43fa-9e55-ebcd64169c57",
+    "txHash": "",
+    "blockInfo": {},
+    "amount": 0,
+    "sourceAddress": "",
+    "netAmount": 0,
+    "addressType": "",
+    "signedMessages": [],
+    "amountInfo": {
+      "amount": "0",
+      "requestedAmount": "0",
+      "amountUSD": "0.00",
+      "netAmount": "0"
+    },
+    "subStatus": "CANCELLED_BY_USER",
+    "assetType": "BASE_ASSET",
+    "rejectedBy": "",
+    "createdBy": "1526e51f-8498-4dbb-b46f-a383936084e2",
+    "exchangeTxId": "",
+    "destinationAddressDescription": "",
+    "requestedAmount": 0,
+    "operation": "CONTRACT_CALL",
+    "status": "CANCELLED"
+  },
+  "createdAt": 1744952188506
 }
 ```
