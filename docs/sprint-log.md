@@ -86,3 +86,4 @@
 | US-127 | AI 分析の 3 層出力化とルールベースサニタイズ       | OK           | 3 段階 LLM（explanation→field_descriptions→summary）、サニタイズ、reference_url フェッチ、3 層 UI |
 | US-128 | ユーザーフィードバック付き再分析                   | OK           | 再分析ボタン横に折りたたみ式フィードバック入力、Step 1 プロンプトに反映 |
 | US-129 | API リファレンス自動 Web 検索                      | OK           | reference_url なし時に DuckDuckGo 検索、Step 1 コンテキストに含める、失敗時は続行 |
+| US-132 | ページ遷移のフラッシュレス化                       | OK           | 前コンテンツ維持、ヘッダー薄プログレスバー、初回スケルトン、読み込み中テキスト廃止 |
