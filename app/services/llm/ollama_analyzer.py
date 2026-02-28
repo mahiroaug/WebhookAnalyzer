@@ -24,7 +24,7 @@ _EXPECTED_KEYS = {"summary", "field_descriptions"}
 _PROMPT_BASE = """以下の Webhook JSON の各フィールドを日本語で簡潔に説明し、
 全体の要約を書いてください。
 出力は必ず次のJSON形式のみで返してください（他に説明文は含めない）:
-{"summary": "全体の要約（1〜2文）", "field_descriptions": {"フィールド名": "説明", ...}}
+{{"summary": "全体の要約（1〜2文）", "field_descriptions": {{"フィールド名": "説明", ...}}}}
 
 {template_section}
 
@@ -134,12 +134,21 @@ async def analyze_payload_with_ollama(
     try:
         parsed = json.loads(content)
     except json.JSONDecodeError as e:
-        logger.warning("LLM 出力の JSON 解析失敗: %s", e)
+        logger.warning("LLM 出力の JSON 解析失敗: %s raw_output=%s", e, content[:500])
         return AnalysisResult(
             summary="",
             field_descriptions={},
             failed=True,
-            error_message="invalid_json",
+            error_message="LLM 出力が JSON ではありません",
+        )
+
+    if not isinstance(parsed, dict):
+        logger.warning("LLM 応答が dict ではない: type=%s raw_output=%s", type(parsed).__name__, content[:500])
+        return AnalysisResult(
+            summary="",
+            field_descriptions={},
+            failed=True,
+            error_message="不正な応答形式",
         )
 
     summary = parsed.get("summary", "")
