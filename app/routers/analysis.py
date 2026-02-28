@@ -1,5 +1,7 @@
 """Webhook AI 分析 API"""
 import logging
+import uuid
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -15,6 +17,7 @@ from app.schemas.analysis import (
 )
 from app.services.field_templates import (
     get_field_template,
+    load_analysis_from_yaml,
     write_analysis_to_yaml,
 )
 from app.services.llm.ollama_analyzer import analyze_payload_with_ollama
@@ -166,19 +169,41 @@ async def get_analysis(
     webhook_id: UUID,
     db=Depends(get_db),
 ) -> WebhookAnalysisResponse:
-    """保存済み分析結果を取得する"""
+    """
+    保存済み分析結果を取得する。
+    US-126: DB にない場合は定義ファイルから読み込み（DB 優先）。
+    """
     stmt = select(WebhookAnalysis).where(
         WebhookAnalysis.webhook_id == webhook_id
     ).order_by(WebhookAnalysis.analyzed_at.desc()).limit(1)
     result = await db.execute(stmt)
     record = result.scalar_one_or_none()
-    if not record:
-        raise HTTPException(status_code=404, detail="Analysis not found")
+    if record:
+        return WebhookAnalysisResponse(
+            id=record.id,
+            webhook_id=record.webhook_id,
+            summary=record.summary,
+            field_descriptions=record.field_descriptions or {},
+            analyzed_at=record.analyzed_at,
+            from_definition_file=False,
+        )
 
-    return WebhookAnalysisResponse(
-        id=record.id,
-        webhook_id=record.webhook_id,
-        summary=record.summary,
-        field_descriptions=record.field_descriptions or {},
-        analyzed_at=record.analyzed_at,
-    )
+    # US-126: DB にない場合、定義ファイルから読み込み
+    webhook_stmt = select(Webhook).where(Webhook.id == webhook_id)
+    webhook_result = await db.execute(webhook_stmt)
+    webhook = webhook_result.scalar_one_or_none()
+    if not webhook:
+        raise HTTPException(status_code=404, detail="Webhook not found")
+    cached = load_analysis_from_yaml(webhook.source, webhook.event_type)
+    if cached:
+        summary, field_descriptions = cached
+        return WebhookAnalysisResponse(
+            id=uuid.uuid4(),
+            webhook_id=webhook_id,
+            summary=summary,
+            field_descriptions=field_descriptions,
+            analyzed_at=datetime.now(timezone.utc),
+            from_definition_file=True,
+        )
+
+    raise HTTPException(status_code=404, detail="Analysis not found")

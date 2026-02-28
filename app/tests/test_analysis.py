@@ -193,6 +193,41 @@ async def test_analyze_success_writes_yaml(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_analysis_fallback_to_definition_file(tmp_path: Path) -> None:
+    """DB に分析がなく定義ファイルがあれば定義ファイルから返す（US-126）"""
+    from app.services import field_templates
+
+    (tmp_path / "bitgo").mkdir(parents=True, exist_ok=True)
+    yaml_content = """
+summary: 定義ファイルの要約
+fields:
+  - path: hash
+    description: トランザクションハッシュ
+  - path: type
+    description: イベント種別
+"""
+    (tmp_path / "bitgo" / "transfer.yaml").write_text(yaml_content.strip())
+
+    with patch.object(field_templates, "_DEFINITIONS_DIR", tmp_path):
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            post_resp = await client.post(
+                "/api/webhooks/receive",
+                json={"hash": "0xabc", "type": "transfer", "coin": "tpolygon", "state": "confirmed"},
+            )
+            webhook_id = post_resp.json()["id"]
+            get_resp = await client.get(f"/api/webhooks/{webhook_id}/analysis")
+
+    assert get_resp.status_code == 200
+    data = get_resp.json()
+    assert data["summary"] == "定義ファイルの要約"
+    assert data["field_descriptions"]["hash"] == "トランザクションハッシュ"
+    assert data["from_definition_file"] is True
+
+
+@pytest.mark.asyncio
 async def test_analyze_not_found_webhook_returns_404() -> None:
     """存在しない Webhook ID で分析を実行すると 404（US-114）"""
     async with AsyncClient(

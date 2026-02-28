@@ -242,7 +242,13 @@ export function WebhookDetailPage() {
           id="analysis"
           title="AI 分析結果"
           defaultOpen={false}
-          badge={analysisFailed ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-900/30 text-red-300">失敗</span> : undefined}
+          badge={
+            analysisFailed
+              ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-900/30 text-red-300">失敗</span>
+              : analysis.from_definition_file
+                ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-300">定義ファイルから読み込み</span>
+                : undefined
+          }
         >
           {analysis.summary && (
             <p className={`mb-3 text-sm ${analysisFailed ? "text-red-400" : "text-slate-300"}`}>{analysis.summary}</p>

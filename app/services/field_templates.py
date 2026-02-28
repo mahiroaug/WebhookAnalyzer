@@ -312,6 +312,25 @@ def _load_yaml_full(source: str, event_type: str) -> dict | None:
         return None
 
 
+def load_analysis_from_yaml(source: str, event_type: str) -> tuple[str, dict[str, str]] | None:
+    """
+    US-126: definitions から summary と field_descriptions を読み込み。
+    存在し summary か fields があれば (summary, field_descriptions) を返す。なければ None。
+    """
+    data = _load_yaml_full(source, event_type)
+    if not data:
+        return None
+    summary = str(data["summary"]) if data.get("summary") else ""
+    fields = data.get("fields") or []
+    descriptions: dict[str, str] = {}
+    for item in fields:
+        if isinstance(item, dict) and item.get("path") and item.get("description"):
+            descriptions[str(item["path"])] = str(item["description"])
+    if not summary and not descriptions:
+        return None
+    return (summary, descriptions)
+
+
 def write_analysis_to_yaml(
     source: str,
     event_type: str,

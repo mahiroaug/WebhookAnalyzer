@@ -50,6 +50,7 @@ export interface WebhookAnalysisResponse {
   summary: string | null;
   field_descriptions: Record<string, string>;
   analyzed_at: string;
+  from_definition_file?: boolean;
 }
 
 export interface WebhookListResponse {

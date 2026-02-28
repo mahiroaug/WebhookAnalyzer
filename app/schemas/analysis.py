@@ -13,6 +13,7 @@ class WebhookAnalysisResponse(BaseModel):
     summary: str | None
     field_descriptions: dict[str, str] | None
     analyzed_at: datetime
+    from_definition_file: bool = False  # US-126: 定義ファイル由来なら True
 
 
 class AnalyzeTriggerResponse(BaseModel):
