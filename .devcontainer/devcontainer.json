@@ -98,7 +98,8 @@
         "ms-azuretools.vscode-docker", // Docker ファイルのシンタックスハイライト & 管理
 
         // --- developer tools ---
-        "mhutchie.git-graph"
+        "mhutchie.git-graph",
+        "dotenv.dotenv-vscode"
       ],
       "settings": {
         // Python インタープリターのパス (コンテナ内)
