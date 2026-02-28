@@ -6,7 +6,7 @@
  * US-122: グローバルヘッダーに全文検索入力欄
  */
 import { useState, useEffect } from "react";
-import { Outlet, NavLink, useSearchParams } from "react-router-dom";
+import { Link, Outlet, NavLink, useSearchParams } from "react-router-dom";
 import { useDarkMode } from "../hooks/useDarkMode";
 
 function SunIcon({ className }: { className?: string }) {
@@ -52,9 +52,12 @@ export function Layout() {
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white dark:border-dim-border dark:bg-dim-card">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 gap-4">
-            <span className="text-lg font-semibold text-slate-900 dark:text-dim-text shrink-0">
+            <Link
+              to="/"
+              className="text-lg font-semibold text-slate-900 dark:text-dim-text shrink-0 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+            >
               Webhook Analyzer
-            </span>
+            </Link>
             <div className="flex-1 max-w-xs mx-4">
               <input
                 type="text"
