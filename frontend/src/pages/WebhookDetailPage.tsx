@@ -10,7 +10,7 @@ import {
   type WebhookAnalysisResponse,
   type FieldTemplateResponse,
 } from "../services/api";
-import { JsonTreeView } from "../components/JsonTreeView";
+import { PayloadTable } from "../components/PayloadTable";
 
 export function WebhookDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -305,20 +305,22 @@ export function WebhookDetailPage() {
         </div>
       )}
 
-      <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-800">
-        <h2 className="text-lg font-semibold mb-3">Payload (JSON)</h2>
-        <div className="text-sm font-mono overflow-x-auto p-4 bg-slate-100 dark:bg-slate-900 rounded min-h-[120px]">
-          <JsonTreeView
-            data={webhook.payload}
-            rootKey="payload"
-            showMissingImportant
-            knownFieldPaths={
-              fieldTemplate?.fields?.length
-                ? new Set(fieldTemplate.fields.map((f) => f.path))
-                : undefined
-            }
-          />
-        </div>
+      <div>
+        <h2 className="text-lg font-semibold mb-3">Payload</h2>
+        <PayloadTable
+          data={webhook.payload}
+          templateDescriptions={
+            fieldTemplate?.fields?.length
+              ? new Map(fieldTemplate.fields.map((f) => [f.path, f.description]))
+              : undefined
+          }
+          analysisDescriptions={analysis?.field_descriptions}
+          knownFieldPaths={
+            fieldTemplate?.fields?.length
+              ? new Set(fieldTemplate.fields.map((f) => f.path))
+              : undefined
+          }
+        />
       </div>
     </div>
   );
