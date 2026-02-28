@@ -29,6 +29,10 @@
   "dockerComposeFile": ["docker-compose.yml", "docker-compose.override.yml"],
   "service": "app",
   "workspaceFolder": "/workspace",
+  "mounts": [
+    // ホストの Git 設定を読み取り専用の別名で取り込む（コンテナ側の global は書き込み可能にする）
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.gitconfig,target=/home/vscode/.gitconfig-host,type=bind,consistency=cached"
+  ],
 
   // ---------------------------------------------------------------------------
   // Dev Container Features
@@ -52,16 +56,19 @@
   // ---------------------------------------------------------------------------
   // コンテナ内のポートをホスト側に転送し、ブラウザからアクセス可能にする。
   "forwardPorts": [
-    8000,   // FastAPI バックエンド (Webhook 受信エンドポイント)
-    5173,   // Vite 開発サーバー (React フロントエンド)
-    5432,   // PostgreSQL (外部ツールからの直接接続用)
-    11434   // Ollama API (ローカル LLM)
+    8000, // FastAPI バックエンド (Webhook 受信エンドポイント)
+    5173, // Vite 開発サーバー (React フロントエンド)
+    5432, // PostgreSQL (外部ツールからの直接接続用)
+    11434 // Ollama API (ローカル LLM)
   ],
   "portsAttributes": {
     // バックエンド: 起動時にデスクトップ通知を表示
     "8000": { "label": "FastAPI Backend", "onAutoForward": "notify" },
     // フロントエンド: 起動時にブラウザを自動で開く
-    "5173": { "label": "React Frontend (Vite)", "onAutoForward": "openBrowser" },
+    "5173": {
+      "label": "React Frontend (Vite)",
+      "onAutoForward": "openBrowser"
+    },
     // DB / LLM: バックグラウンドで静かに転送
     "5432": { "label": "PostgreSQL", "onAutoForward": "silent" },
     "11434": { "label": "Ollama LLM", "onAutoForward": "silent" }
@@ -74,21 +81,24 @@
     "vscode": {
       "extensions": [
         // --- Python ---
-        "ms-python.python",           // Python 言語サポート (IntelliSense, デバッグ)
-        "ms-python.vscode-pylance",   // 型チェック・高速補完
-        "charliermarsh.ruff",         // Ruff: 超高速 Python リンター & フォーマッター
+        "ms-python.python", // Python 言語サポート (IntelliSense, デバッグ)
+        "ms-python.vscode-pylance", // 型チェック・高速補完
+        "charliermarsh.ruff", // Ruff: 超高速 Python リンター & フォーマッター
 
         // --- データベース ---
-        "mtxr.sqltools",              // SQLTools: DB クエリ実行 GUI
-        "mtxr.sqltools-driver-pg",    // SQLTools 用 PostgreSQL ドライバー
+        "mtxr.sqltools", // SQLTools: DB クエリ実行 GUI
+        "mtxr.sqltools-driver-pg", // SQLTools 用 PostgreSQL ドライバー
 
         // --- フロントエンド ---
-        "dbaeumer.vscode-eslint",     // ESLint: JavaScript/TypeScript リンター
-        "esbenp.prettier-vscode",     // Prettier: コードフォーマッター
-        "bradlc.vscode-tailwindcss",  // Tailwind CSS IntelliSense
+        "dbaeumer.vscode-eslint", // ESLint: JavaScript/TypeScript リンター
+        "esbenp.prettier-vscode", // Prettier: コードフォーマッター
+        "bradlc.vscode-tailwindcss", // Tailwind CSS IntelliSense
 
         // --- インフラ ---
-        "ms-azuretools.vscode-docker" // Docker ファイルのシンタックスハイライト & 管理
+        "ms-azuretools.vscode-docker", // Docker ファイルのシンタックスハイライト & 管理
+
+        // --- developer tools ---
+        "mhutchie.git-graph"
       ],
       "settings": {
         // Python インタープリターのパス (コンテナ内)
@@ -120,10 +130,12 @@
   // コンテナ内のシェル・プロセスに渡される環境変数。
   // ${localEnv:...} はホスト側の環境変数を参照する構文。
   "remoteEnv": {
+    // Git の global 設定を書き込み可能ファイルへ分離
+    "GIT_CONFIG_GLOBAL": "/home/vscode/.config/git/config",
     // --- ローカル LLM (デフォルト) ---
-    "OLLAMA_HOST": "http://ollama:11434",  // Ollama サービスのエンドポイント
-    "LLM_PROVIDER": "ollama",              // デフォルトの LLM プロバイダー
-    "OLLAMA_MODEL": "gemma3:4b",           // デフォルトのモデル (軽量・分類向き)
+    "OLLAMA_HOST": "http://ollama:11434", // Ollama サービスのエンドポイント
+    "LLM_PROVIDER": "ollama", // デフォルトの LLM プロバイダー
+    "OLLAMA_MODEL": "gemma3:4b", // デフォルトのモデル (軽量・分類向き)
 
     // --- クラウド LLM (オプション) ---
     // ホスト OS 側で export OPENAI_API_KEY=sk-... のように設定しておくと

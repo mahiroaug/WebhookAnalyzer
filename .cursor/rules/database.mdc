@@ -1,0 +1,53 @@
+---
+description: PostgreSQL / SQLAlchemy / Alembic のデータベース規約
+globs: app/**/*.py
+alwaysApply: false
+---
+
+# データベース規約
+
+## 接続情報
+
+- ホスト: `db` (Docker Compose サービス名)
+- ポート: 5432
+- ユーザー: `webhook` / パスワード: `webhook`
+- DB 名: `webhook_analyzer`
+- ドライバー: `asyncpg` (非同期)
+
+## SQLAlchemy パターン
+
+```python
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+class Base(DeclarativeBase):
+    pass
+
+class Webhook(Base):
+    __tablename__ = "webhooks"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    category: Mapped[str | None]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+```
+
+- `DeclarativeBase` + `Mapped` 型アノテーション (SQLAlchemy 2.0 スタイル) を使う
+- 旧スタイルの `Column()`, `relationship()` は使わない
+- Webhook ペイロードは `JSONB` 型で保管し、PostgreSQL の JSON 演算子で検索可能にする
+
+## マイグレーション
+
+- Alembic で管理 (`alembic/` ディレクトリ)
+- 非同期エンジン対応の `env.py` を使用する
+- マイグレーションメッセージは日本語で記述する
+
+## セッション管理
+
+```python
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with async_session() as session:
+        yield session
+```
+
+FastAPI の `Depends()` で注入する。

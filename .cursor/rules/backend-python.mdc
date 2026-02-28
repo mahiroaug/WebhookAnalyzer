@@ -1,0 +1,62 @@
+---
+description: Python / FastAPI バックエンドのコーディング規約
+globs: app/**/*.py
+alwaysApply: false
+---
+
+# Python / FastAPI バックエンド規約
+
+## ディレクトリ構成
+
+```
+app/
+├── main.py              # FastAPI アプリケーション エントリーポイント
+├── config.py            # pydantic-settings による設定管理
+├── models/              # SQLAlchemy ORM モデル
+├── schemas/             # Pydantic スキーマ (リクエスト/レスポンス)
+├── routers/             # APIRouter によるエンドポイント定義
+├── services/            # ビジネスロジック (LLM 分類等)
+├── db/                  # DB セッション管理、マイグレーション
+└── tests/               # pytest テスト
+```
+
+## コーディングスタイル
+
+- フォーマッター/リンター: **Ruff** (保存時自動フォーマット設定済み)
+- 型ヒント: すべての関数に型アノテーションを付ける
+- 非同期: I/O バウンド処理は `async/await` を使う (asyncpg, httpx)
+- Pydantic v2 の `model_validator`, `field_validator` を使う (v1 の `validator` は使わない)
+
+## FastAPI パターン
+
+```python
+# ルーター定義
+router = APIRouter(prefix="/webhooks", tags=["webhooks"])
+
+# 依存性注入で DB セッションを取得
+@router.post("/", status_code=201)
+async def receive_webhook(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+) -> WebhookResponse:
+    ...
+```
+
+## 設定管理
+
+```python
+from pydantic_settings import BaseSettings
+
+class Settings(BaseSettings):
+    database_url: str
+    ollama_host: str = "http://ollama:11434"
+    llm_provider: str = "ollama"
+
+    model_config = SettingsConfigDict(env_file=".env")
+```
+
+## エラーハンドリング
+
+- `HTTPException` でクライアントエラーを返す
+- 予期しない例外は集約ハンドラでログ出力 + 500 レスポンス
+- LLM 呼び出し失敗時はフォールバック分類 ("uncategorized") を返す

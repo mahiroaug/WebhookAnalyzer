@@ -1,0 +1,41 @@
+---
+description: Webhook Analyzer プロジェクト全体のコンテキストとルール
+alwaysApply: true
+---
+
+# Webhook Analyzer — プロジェクトルール
+
+## プロジェクト概要
+
+外部サービスからの Webhook を受信し、ローカル LLM (Ollama) で自動分類して PostgreSQL に保管する分析ツール。
+
+## アーキテクチャ
+
+- **バックエンド**: FastAPI (Python 3.12) — `app/` ディレクトリ
+- **フロントエンド**: React + TypeScript + Vite + Tailwind CSS — `frontend/` ディレクトリ
+- **DB**: PostgreSQL 16 — jsonb 型で Webhook ペイロードを保管
+- **LLM**: Ollama (デフォルト gemma3:4b) — OpenAI / Anthropic にも切替可能
+- **通信**: WebSocket でリアルタイム通知
+
+## サービス間通信 (コンテナ内)
+
+| サービス     | ホスト名  | ポート |
+| ------------ | --------- | ------ |
+| FastAPI      | localhost | 8000   |
+| React (Vite) | localhost | 5173   |
+| PostgreSQL   | db        | 5432   |
+| Ollama       | ollama    | 11434  |
+
+## 環境変数
+
+- `DATABASE_URL`: `postgresql://webhook:webhook@db:5432/webhook_analyzer`
+- `OLLAMA_HOST`: `http://ollama:11434`
+- `LLM_PROVIDER`: `ollama` / `openai` / `anthropic`
+- `OLLAMA_MODEL`: デフォルト `gemma3:4b`
+
+## 言語・スタイル
+
+- コード中のコメント・docstring は**日本語**で記述する
+- Git コミットメッセージは日本語で記述する
+- ユーザーへの応答は日本語で行う
+- 変数名・関数名・クラス名は英語 (snake_case / PascalCase)

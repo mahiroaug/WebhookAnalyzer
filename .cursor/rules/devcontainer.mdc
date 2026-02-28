@@ -1,0 +1,27 @@
+---
+description: DevContainer / Docker 関連ファイルの規約
+globs: .devcontainer/**
+alwaysApply: false
+---
+
+# DevContainer / Docker 規約
+
+## 構成ファイル
+
+| ファイル                      | 役割                                                 |
+| ----------------------------- | ---------------------------------------------------- |
+| `devcontainer.json`           | Dev Container 設定 (ポート, 拡張機能, 環境変数)      |
+| `docker-compose.yml`          | サービス定義 (app, db, ollama)                       |
+| `docker-compose.gpu.yml`      | NVIDIA GPU オーバーライド                            |
+| `docker-compose.override.yml` | 自動生成 (setup-platform.sh) — 編集しない            |
+| `Dockerfile`                  | 開発コンテナイメージ (Python 3.12 ベース)            |
+| `setup-platform.sh`           | プラットフォーム自動判定 (macOS / WSL2 / Linux, GPU) |
+| `post-create.sh`              | 初回セットアップ (pip install, Ollama モデル pull)   |
+
+## 注意事項
+
+- `docker-compose.override.yml` は `setup-platform.sh` が自動生成するため手動編集しない
+- 新しい Python パッケージは `requirements.txt` に追加する
+- 新しい Node.js パッケージは `frontend/package.json` に追加する
+- ポートを追加する場合は `devcontainer.json` の `forwardPorts` にも追加する
+- シェルスクリプトは `#!/bin/bash` + `set -euo pipefail` で始める

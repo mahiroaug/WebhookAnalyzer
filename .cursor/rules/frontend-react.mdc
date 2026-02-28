@@ -1,0 +1,55 @@
+---
+description: React / TypeScript フロントエンドのコーディング規約
+globs: frontend/**/*
+alwaysApply: false
+---
+
+# React / TypeScript フロントエンド規約
+
+## 技術スタック
+
+- React 18+ (関数コンポーネント + Hooks)
+- TypeScript (strict mode)
+- Vite (ビルド / 開発サーバー)
+- Tailwind CSS (スタイリング)
+- ESLint + Prettier (保存時自動フォーマット設定済み)
+
+## ディレクトリ構成
+
+```
+frontend/
+├── src/
+│   ├── components/      # 再利用可能な UI コンポーネント
+│   ├── pages/           # ページレベルのコンポーネント
+│   ├── hooks/           # カスタムフック
+│   ├── services/        # API クライアント、WebSocket 接続
+│   ├── types/           # 型定義
+│   └── App.tsx
+├── index.html
+├── tailwind.config.ts
+└── vite.config.ts
+```
+
+## コンポーネント規約
+
+```tsx
+// 関数コンポーネント + Props 型を明示
+interface WebhookCardProps {
+  webhook: Webhook;
+  onSelect: (id: string) => void;
+}
+
+export function WebhookCard({ webhook, onSelect }: WebhookCardProps) {
+  return (/* ... */);
+}
+```
+
+- `export default` は使わない — 名前付きエクスポートを使う
+- 状態管理が複雑になったらカスタムフックに切り出す
+- API 呼び出しは `services/` に集約する
+
+## API 通信
+
+- REST: `fetch` または軽量ライブラリ
+- WebSocket: リアルタイム Webhook 通知の受信に使用
+- バックエンドのベース URL: `http://localhost:8000`

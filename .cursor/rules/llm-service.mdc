@@ -1,0 +1,57 @@
+---
+description: LLM サービス連携 (Ollama / OpenAI / Anthropic) の規約
+globs: app/services/**/*.py
+alwaysApply: false
+---
+
+# LLM サービス連携規約
+
+## プロバイダー構成
+
+| プロバイダー        | ホスト                | デフォルトモデル           |
+| ------------------- | --------------------- | -------------------------- |
+| Ollama (デフォルト) | `http://ollama:11434` | `gemma3:4b`                |
+| OpenAI              | API                   | `gpt-4o-mini`              |
+| Anthropic           | API                   | `claude-sonnet-4-20250514` |
+
+環境変数 `LLM_PROVIDER` で切り替える。
+
+## 設計パターン
+
+```python
+from abc import ABC, abstractmethod
+
+class LLMClassifier(ABC):
+    """Webhook 分類の抽象基底クラス"""
+
+    @abstractmethod
+    async def classify(self, payload: dict) -> ClassificationResult:
+        ...
+
+class OllamaClassifier(LLMClassifier):
+    ...
+
+class OpenAIClassifier(LLMClassifier):
+    ...
+```
+
+- Strategy パターンで LLM プロバイダーを切り替え可能にする
+- `LLM_PROVIDER` 環境変数に応じてファクトリで生成する
+
+## Ollama 呼び出し
+
+```python
+import ollama
+
+client = ollama.AsyncClient(host=settings.ollama_host)
+response = await client.chat(
+    model=settings.ollama_model,
+    messages=[{"role": "user", "content": prompt}],
+)
+```
+
+## エラーハンドリング
+
+- Ollama 接続失敗時: リトライ (最大 3 回、exponential backoff)
+- LLM レスポンスが不正な JSON の場合: フォールバック分類を返す
+- タイムアウト: 30 秒でタイムアウトし、"uncategorized" として保管する
