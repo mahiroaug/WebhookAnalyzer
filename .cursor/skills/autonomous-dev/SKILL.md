@@ -16,9 +16,9 @@ US の選定からブランチ作成、TDD、受け入れ検証、develop マー
 
 ## Phase 0: 対象 US の決定
 
-1. `docs/user-stories-webhook-dashboard.md` を読み、`【未着手】` の US を P0 > P1 > P2、番号順で特定する
+1. `docs/user-stories-backlog.md` を読み、`【未着手】` の US を P0 > P1 > P2、番号順で特定する
 2. 対象 US の受け入れ基準（Given/When/Then）を読み取り、TodoWrite でタスクリストを作成する
-3. ユーザーストーリー文書のステータスを `【実装中】` に更新する
+3. `docs/user-stories-backlog.md` のステータスを `【実装中】` に更新する
 
 ユーザーが US を明示指定した場合は、その US を対象とする。
 
@@ -81,10 +81,11 @@ git merge feature/{story-id}-{desc}
 
 ## Phase 5: 記録と次の US への遷移
 
-1. `docs/user-stories-webhook-dashboard.md` のステータスを `【完了】` に更新
-2. `docs/sprint-log.md` に完了記録を追記
-3. 検証結果をユーザーに報告する
-4. ユーザーが継続を指示した場合、Phase 0 に戻り次の `【未着手】` US を選定する
+1. 完了したストーリーを `docs/user-stories-backlog.md` から削除し、`docs/user-stories-completed.md` へ移動
+2. `docs/user-stories-webhook-dashboard.md` の完了サマリテーブルに行を追記
+3. `docs/sprint-log.md` に完了記録を追記
+4. 検証結果をユーザーに報告する
+5. ユーザーが継続を指示した場合、Phase 0 に戻り次の `【未着手】` US を選定する
 
 ## 中断・NG 時の対応
 

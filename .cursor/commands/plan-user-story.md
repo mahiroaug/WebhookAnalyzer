@@ -12,12 +12,12 @@
 
 ### 1. 現状分析（能動的に実施）
 
-`docs/user-stories-webhook-dashboard.md` を読み込み、以下を分析する:
+`docs/user-stories-backlog.md` と `docs/user-stories-webhook-dashboard.md` を読み込み、以下を分析する:
 
-- 現在の最大ストーリー ID（Phase 1-5 系: `US-0XX`、Phase 6 系: `US-1XX`）
-- 各フェーズの構成と既存ストーリーの一覧・ステータス
+- 現在の最大ストーリー ID（Phase 1-5 系: `US-0XX`、Phase 6 系: `US-1XX`）— 完了サマリテーブルとバックログの両方を確認
+- バックログ内の未着手・実装中ストーリーの一覧・ステータス
 - 「ギャップ」セクションに記載された未解決課題
-- 「追加で検討すべきユーザーストーリー（提案）」セクションの内容
+- 「ストーリー候補（提案）」セクション（`backlog.md`）の内容
 - ペルソナの典型的なワークフローで、まだカバーされていないステップ
 
 ### 2. ギャップ分析と能動的な提案
@@ -32,7 +32,7 @@
 **プロダクト視点の分析:**
 - 既存フェーズ間の接続で抜けている導線はないか
 - 「ギャップ」セクションに書かれているが、まだストーリー化されていない課題はないか
-- 「追加で検討すべきユーザーストーリー（提案）」から正式にストーリー化すべきものはないか
+- 「ストーリー候補（提案）」（`backlog.md`）から正式にストーリー化すべきものはないか
 - 競合ツール（webhook.site 等）にあってこのプロダクトにない機能はないか
 
 ### 3. ユーザーとの対話
@@ -78,10 +78,11 @@ CreatePlan ツールでストーリー案を提示する。プランには以下
 
 ### 6. 承認後の反映
 
-ユーザーが承認したら Agent モードに切り替え、`docs/user-stories-webhook-dashboard.md` の該当フェーズセクションにストーリーを追記する。
+ユーザーが承認したら Agent モードに切り替え、`docs/user-stories-backlog.md` の「未着手ストーリー」セクションにストーリーを追記する。
 
 ## 参照すべきコンテキスト
 
 - `.cursor/rules/agile-development.mdc` — 優先度・ステータス・開発フローの規約
 - `.cursor/skills/backlog-management/SKILL.md` — タスク分解テンプレート
-- `docs/user-stories-webhook-dashboard.md` — ストーリー原本（フォーマットの正）
+- `docs/user-stories-backlog.md` — アクティブなバックログ原本（ストーリー追記先）
+- `docs/user-stories-webhook-dashboard.md` — プロジェクトコンテキスト・完了サマリ
