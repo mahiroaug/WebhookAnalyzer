@@ -63,6 +63,7 @@ Webhook Analyzer を `webhook.site` のような「受信確認 + 高速調査 +
 - Phase 5（調査・レポート）: 「網羅調査→レポート出力」までの一気通貫体験を実現する
 - Phase 6（デザイン刷新）: PolygonScan DIM + Apple HIG ベースの洗練されたUIへ全面刷新する
 - Phase 7（開発ツール UX 刷新）: webhook.site 風 2ペインレイアウト・Payload 表形式・HTTPメタデータ保存で開発ツールとしての実用性を根本から向上させる
+- Phase 8（UI バグ修正と検索強化）: Phase 7 で発見されたバグの修正、source アイコン、全文検索、AI 分析堅牢化で品質を底上げする
 
 ## 完了済みストーリー一覧
 
