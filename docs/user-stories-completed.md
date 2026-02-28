@@ -424,3 +424,15 @@ Web3エンジニアとして、同一 event_type のpayload構造変化（追加
   - Given LLM が {"summary": "..."} のみ（field_descriptions なし）を返す、When 分析実行、Then summary のみ表示され field_descriptions は空で正常処理される
   - Given LLM 応答の parsed が dict でない（リスト・文字列等）、When 分析実行、Then 「[分析失敗] 不正な応答形式」と表示される
   - Given 分析失敗、When ログを確認、Then LLM の生出力（先頭 500 文字）がログに記録されている
+
+### US-122 Payload 全文検索と検索結果一覧モード（P0）【完了】
+
+開発者として、トランザクションハッシュやアドレス等の値で Webhook を横断検索したい。  
+なぜなら特定のトランザクションに関連する通知を素早く見つけたいから。
+
+- 受け入れ基準
+  - Given グローバルヘッダー、When 確認、Then 全文検索用の入力欄が表示されている
+  - Given 検索窓にテキストを入力、When Enter / 検索実行、Then payload 内の値を含む Webhook が一覧ペインに表示される
+  - Given 検索結果モード中、When 結果行をクリック、Then 右ペインに該当 Webhook の詳細が表示される
+  - Given 検索窓をクリア、When 実行、Then 通常の一覧表示モードに戻る
+  - Given 検索結果が 0 件、When 表示、Then 「該当する Webhook がありません」と表示される
