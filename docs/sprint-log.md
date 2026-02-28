@@ -95,3 +95,5 @@
 | US-140 | DB メンテナンス CLI                                | OK           | maintain vacuum (asyncpg), maintain reindex                                      |
 | US-144 | マスキング表示                                     | OK           | デフォルトパターン（private_key等）、ON/OFF トグル、ネスト対応                    |
 | US-145 | 受信リクエスト再送（Replay）                        | OK           | POST /webhooks/{id}/replay、URL 入力、ステータス・所要時間表示                    |
+| US-134 | AI 分析の実行ログリアルタイムストリーミング        | OK           | POST /analyze/stream SSE、ログビューア自動展開、sessionStorage、総所要時間       |
+| US-135 | AI 分析の 4 ステッププログレスバー                  | OK           | エビデンス→解説→フィールド→保存、緑/グレー表示、ストリーム同期                  |

@@ -1,4 +1,5 @@
 """AI 分析 API のテスト（モック使用で決定性を担保）"""
+import json
 import pytest
 from pathlib import Path
 
@@ -276,3 +277,59 @@ async def test_analyze_not_found_webhook_returns_404() -> None:
             "/api/webhooks/00000000-0000-0000-0000-000000000099/analyze"
         )
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_analyze_stream_returns_sse_events(
+    bitgo_transfer_payload: dict,
+    tmp_path: Path,
+) -> None:
+    """US-134: POST /analyze/stream が SSE で進捗イベントを返す"""
+    from app.services import field_templates
+
+    async def mock_stream(*args, **kwargs):
+        yield {"step": "evidence", "message": "Evidence 収集中..."}
+        yield {"step": "explanation", "message": "Step 1 完了"}
+        yield {"step": "fields", "message": "Step 2 完了"}
+        yield {"step": "summary", "message": "Step 3 完了"}
+        yield {
+            "step": "done",
+            "result": {
+                "summary": "ストリーム要約",
+                "field_descriptions": {"hash": "ハッシュ"},
+                "explanation": "解説",
+                "failed": False,
+            },
+        }
+
+    with patch.object(field_templates, "_DEFINITIONS_DIR", tmp_path):
+        with patch(
+            "app.routers.analysis.analyze_payload_with_ollama_stream",
+            side_effect=mock_stream,
+        ):
+            async with AsyncClient(
+                transport=ASGITransport(app=app),
+                base_url="http://test",
+            ) as client:
+                post_resp = await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+                webhook_id = post_resp.json()["id"]
+                stream_resp = await client.post(
+                    f"/api/webhooks/{webhook_id}/analyze/stream",
+                    json={},
+                )
+
+    assert stream_resp.status_code == 200
+    assert "text/event-stream" in stream_resp.headers.get("content-type", "")
+
+    text = stream_resp.text
+    lines = [line for line in text.split("\n") if line.startswith("data: ")]
+    events = [json.loads(line[6:]) for line in lines]
+    steps = [e.get("step") for e in events]
+
+    assert "evidence" in steps
+    assert "explanation" in steps
+    assert "fields" in steps
+    assert "saved" in steps
+    saved_ev = next(e for e in events if e.get("step") == "saved")
+    assert "analysis" in saved_ev
+    assert saved_ev["analysis"]["summary"] == "ストリーム要約"

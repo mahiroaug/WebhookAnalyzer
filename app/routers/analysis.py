@@ -1,13 +1,16 @@
 """Webhook AI 分析 API"""
+import json
 import logging
+import time
 import uuid
 from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
-from app.db.session import get_db
+from app.db.session import async_session, get_db
 from app.models.webhook import Webhook, WebhookAnalysis
 from app.schemas.analysis import (
     AnalyzeTriggerRequest,
@@ -21,7 +24,11 @@ from app.services.field_templates import (
     load_analysis_from_yaml,
     write_analysis_to_yaml,
 )
-from app.services.llm.ollama_analyzer import analyze_payload_with_ollama
+from app.services.llm.ollama_analyzer import (
+    AnalysisResult,
+    analyze_payload_with_ollama,
+    analyze_payload_with_ollama_stream,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -177,6 +184,95 @@ async def trigger_analyze(
         field_descriptions=record.field_descriptions or {},
         explanation=record.explanation,
         analyzed_at=record.analyzed_at,
+    )
+
+
+@router.post("/{webhook_id}/analyze/stream")
+async def trigger_analyze_stream(
+    webhook_id: UUID,
+    body: AnalyzeTriggerRequest | None = Body(None),
+) -> StreamingResponse:
+    """
+    US-134: 分析を SSE でストリーミング。進捗ログをリアルタイム配信し、最後に結果を返す。
+    """
+    async with async_session() as db:
+        stmt = select(Webhook).where(Webhook.id == webhook_id)
+        result = await db.execute(stmt)
+        webhook = result.scalar_one_or_none()
+        if not webhook:
+            raise HTTPException(status_code=404, detail="Webhook not found")
+
+    user_feedback = (body.user_feedback or "").strip() if body else ""
+    webhook_id_val = webhook_id
+    webhook_source = webhook.source
+    webhook_event_type = webhook.event_type
+    webhook_payload = webhook.payload
+
+    async def gen():
+        total_start = time.perf_counter()
+        last_result = None
+        try:
+            template = get_field_template(webhook_source, webhook_event_type)
+            async for event in analyze_payload_with_ollama_stream(
+                webhook_payload,
+                template_context=template,
+                user_feedback=user_feedback or None,
+                source=webhook_source,
+                event_type=webhook_event_type,
+            ):
+                if event.get("step") == "done":
+                    last_result = event.get("result")
+                event["total_elapsed_ms"] = round((time.perf_counter() - total_start) * 1000, 1)
+                yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+            if last_result:
+                yield f"data: {json.dumps({'step': 'write_yaml', 'message': 'YAML 書き出し', 'total_elapsed_ms': round((time.perf_counter() - total_start) * 1000, 1)}, ensure_ascii=False)}\n\n"
+        except Exception as e:
+            logger.error("分析ストリームで例外: %s", e, exc_info=True)
+            yield f"data: {json.dumps({'step': 'error', 'message': str(e)[:200], 'total_elapsed_ms': round((time.perf_counter() - total_start) * 1000, 1)}, ensure_ascii=False)}\n\n"
+            return
+
+        if not last_result:
+            yield f"data: {json.dumps({'step': 'error', 'message': 'No result'}, ensure_ascii=False)}\n\n"
+            return
+
+        res = last_result
+        async with async_session() as db:
+            if res.get("failed"):
+                record = WebhookAnalysis(
+                    webhook_id=webhook_id_val,
+                    summary=f"[分析失敗] {res.get('error_message', 'unknown')}",
+                    field_descriptions={},
+                    explanation=None,
+                )
+            else:
+                record = WebhookAnalysis(
+                    webhook_id=webhook_id_val,
+                    summary=res.get("summary", ""),
+                    field_descriptions=res.get("field_descriptions") or {},
+                    explanation=res.get("explanation"),
+                )
+                try:
+                    write_analysis_to_yaml(
+                        webhook_source,
+                        webhook_event_type,
+                        res.get("summary", ""),
+                        res.get("field_descriptions") or {},
+                    )
+                except Exception as e:
+                    logger.warning("YAML 書き出し失敗: %s", e)
+            del_stmt = select(WebhookAnalysis).where(WebhookAnalysis.webhook_id == webhook_id_val)
+            existing = (await db.execute(del_stmt)).scalars().all()
+            for a in existing:
+                await db.delete(a)
+            db.add(record)
+            await db.commit()
+            await db.refresh(record)
+        yield f"data: {json.dumps({'step': 'saved', 'analysis': {'id': str(record.id), 'summary': record.summary, 'field_descriptions': record.field_descriptions or {}, 'explanation': record.explanation, 'analyzed_at': record.analyzed_at.isoformat()}, 'total_elapsed_ms': round((time.perf_counter() - total_start) * 1000, 1)}, ensure_ascii=False, default=str)}\n\n"
+
+    return StreamingResponse(
+        gen(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
 
 

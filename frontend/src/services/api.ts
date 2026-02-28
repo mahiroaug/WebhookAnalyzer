@@ -226,6 +226,56 @@ export async function triggerAnalyze(
   return res.json();
 }
 
+/** US-134: 分析ストリーミング。onEvent で各イベントを受け取り、完了時に analysis を返す */
+export interface AnalyzeStreamEvent {
+  step: string;
+  message?: string;
+  elapsed_ms?: number;
+  total_elapsed_ms?: number;
+  prompt_preview?: string;
+  response_preview?: string;
+  result?: Record<string, unknown>;
+  analysis?: WebhookAnalysisResponse;
+}
+
+export async function triggerAnalyzeStream(
+  webhookId: string,
+  userFeedback: string | null | undefined,
+  onEvent: (ev: AnalyzeStreamEvent) => void
+): Promise<WebhookAnalysisResponse | null> {
+  const body: { user_feedback?: string } = {};
+  if (userFeedback && userFeedback.trim()) {
+    body.user_feedback = userFeedback.trim();
+  }
+  const res = await fetch(`${BASE}/webhooks/${webhookId}/analyze/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error("No body");
+  const decoder = new TextDecoder();
+  let lastAnalysis: WebhookAnalysisResponse | null = null;
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    const text = decoder.decode(value, { stream: true });
+    for (const line of text.split("\n")) {
+      if (line.startsWith("data: ")) {
+        try {
+          const ev = JSON.parse(line.slice(6)) as AnalyzeStreamEvent;
+          onEvent(ev);
+          if (ev.step === "saved" && ev.analysis) {
+            lastAnalysis = ev.analysis as WebhookAnalysisResponse;
+          }
+        } catch { /* skip parse error */ }
+      }
+    }
+  }
+  return lastAnalysis;
+}
+
 /** US-145: Webhook を指定 URL へ再送 */
 export interface ReplayResponse {
   status_code: number;

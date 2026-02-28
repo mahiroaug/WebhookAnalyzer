@@ -5,7 +5,7 @@ import {
   getAnalysis,
   getFieldTemplate,
   getAdjacentWebhooks,
-  triggerAnalyze,
+  triggerAnalyzeStream,
   replayWebhook,
   type WebhookDetail,
   type WebhookAnalysisResponse,
@@ -16,6 +16,34 @@ import { AccordionSection } from "../components/AccordionSection";
 
 /** US-120: Webhook 遷移時も開閉状態を維持するリクエストヘッダー details */
 const REQUEST_HEADERS_STORAGE_KEY = "webhook-detail-request-headers-open";
+
+/** US-134: 分析ログビューア（展開可能・自動展開・総所要時間表示） */
+function AnalysisLogViewer({ logs, totalElapsedMs }: { logs: string[]; totalElapsedMs?: number | null }) {
+  const [open, setOpen] = useState(false);
+  // 初回ログ到達時に自動展開
+  useEffect(() => {
+    if (logs.length > 0 && !open) setOpen(true);
+  }, [logs.length]); // eslint-disable-line react-hooks/exhaustive-deps -- open を deps に含めると展開後に閉じられなくなる
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="text-xs text-slate-400 hover:text-slate-300 flex items-center gap-1"
+      >
+        {open ? "▼" : "▶"} 分析ログ ({logs.length})
+        {totalElapsedMs != null && (
+          <span className="text-slate-500 dark:text-dim-text-muted">・{Math.round(totalElapsedMs / 1000)}s</span>
+        )}
+      </button>
+      {open && (
+        <pre className="mt-1 p-2 rounded border border-slate-600 dark:border-slate-600 bg-slate-900/50 text-xs font-mono text-slate-400 max-h-40 overflow-y-auto">
+          {logs.join("\n")}
+        </pre>
+      )}
+    </div>
+  );
+}
 
 function RequestHeadersDetails({ headers, count }: { headers: Record<string, string>; count: number }) {
   const [open, setOpen] = useState(() => {
@@ -94,6 +122,15 @@ export function WebhookDetailPage() {
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  /** US-134/135: ストリーミング分析ログとプログレス */
+  const [analysisLogs, setAnalysisLogs] = useState<string[]>([]);
+  const [analysisProgress, setAnalysisProgress] = useState<{
+    evidence: boolean;
+    explanation: boolean;
+    fields: boolean;
+    saved: boolean;
+  }>({ evidence: false, explanation: false, fields: false, saved: false });
+  const [streamElapsedMs, setStreamElapsedMs] = useState<number | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -190,9 +227,33 @@ export function WebhookDetailPage() {
     if (!id) return;
     setAnalyzing(true);
     setAnalyzeError(null);
+    setAnalysisLogs([]);
+    setAnalysisProgress({ evidence: false, explanation: false, fields: false, saved: false });
+    setStreamElapsedMs(null);
+    const logs: string[] = [];
     try {
-      const res = await triggerAnalyze(id, feedbackText || undefined);
-      setAnalysis(res);
+      const res = await triggerAnalyzeStream(
+        id,
+        feedbackText || undefined,
+        (ev) => {
+          const step = ev.step as "evidence" | "explanation" | "fields" | "saved";
+          if (ev.message) {
+            logs.push(ev.message);
+            setAnalysisLogs((prev) => [...prev, ev.message!]);
+          }
+          if (ev.total_elapsed_ms != null) setStreamElapsedMs(ev.total_elapsed_ms);
+          setAnalysisProgress((p) => {
+            if (step && step in p) return { ...p, [step]: true };
+            return p;
+          });
+          if (ev.step === "saved" && ev.analysis) setAnalysis(ev.analysis as WebhookAnalysisResponse);
+        }
+      );
+      if (res) setAnalysis(res);
+      // US-134: 完了時にログを sessionStorage に保存
+      try {
+        sessionStorage.setItem("webhook-analysis-logs", JSON.stringify(logs));
+      } catch { /* ignore */ }
     } catch (e) {
       setAnalyzeError(e instanceof Error ? e.message : "不明なエラー");
     } finally {
@@ -415,7 +476,7 @@ export function WebhookDetailPage() {
         </div>
       )}
 
-      {/* US-120: ゴーストスタイル、再分析は 1 箇所のみ。US-128: フィードバック入力欄。US-133: 分析中スピナー */}
+      {/* US-120: ゴーストスタイル、再分析は 1 箇所のみ。US-128: フィードバック入力欄。US-133: 分析中スピナー。US-134/135: プログレスバー・ログ */}
       <div className="mb-4">
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -428,6 +489,11 @@ export function WebhookDetailPage() {
             )}
             {analyzing ? "分析中..." : analyzeError ? "再試行" : analysis ? "再分析を実行" : "AI で分析"}
           </button>
+          {streamElapsedMs != null && analyzing && (
+            <span className="text-xs text-slate-500 dark:text-dim-text-muted">
+              {Math.round(streamElapsedMs / 1000)}s
+            </span>
+          )}
           <button
             type="button"
             onClick={() => setFeedbackOpen((o) => !o)}
@@ -436,6 +502,30 @@ export function WebhookDetailPage() {
             {feedbackOpen ? "▼ フィードバックを閉じる" : "▶ 改善指示を添える"}
           </button>
         </div>
+        {/* US-135: 4ステップのプログレスバー */}
+        {analyzing && (
+          <div className="mt-2 flex items-center gap-1">
+            {[
+              { key: "evidence", label: "エビデンス" },
+              { key: "explanation", label: "解説" },
+              { key: "fields", label: "フィールド" },
+              { key: "saved", label: "保存" },
+            ].map(({ key, label }, i) => (
+              <span key={key} className="flex items-center gap-1">
+                <span
+                  className={`inline-flex h-2 w-2 rounded-full ${
+                    analysisProgress[key as keyof typeof analysisProgress]
+                      ? "bg-green-500"
+                      : "bg-slate-500 dark:bg-slate-600"
+                  }`}
+                  title={label}
+                />
+                <span className="text-[10px] text-slate-500 dark:text-dim-text-muted">{label}</span>
+                {i < 3 && <span className="text-slate-600 dark:text-slate-500">→</span>}
+              </span>
+            ))}
+          </div>
+        )}
         {feedbackOpen && (
           <div className="mt-2">
             <textarea
@@ -446,6 +536,10 @@ export function WebhookDetailPage() {
               className="w-full rounded border border-slate-500 bg-slate-800/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-slate-400 focus:outline-none"
             />
           </div>
+        )}
+        {/* US-134: 分析ログビューア（展開可能・自動展開・総所要時間表示） */}
+        {analysisLogs.length > 0 && (
+          <AnalysisLogViewer logs={analysisLogs} totalElapsedMs={streamElapsedMs} />
         )}
       </div>
     </div>
