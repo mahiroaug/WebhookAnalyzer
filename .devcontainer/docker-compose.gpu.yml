@@ -1,0 +1,23 @@
+# =============================================================================
+# Webhook Analyzer - NVIDIA GPU オーバーライド
+# =============================================================================
+# Linux + NVIDIA GPU 環境で Ollama に GPU を割り当てるための追加設定。
+# 前提: nvidia-container-toolkit がインストール済みであること。
+#
+# 使い方:
+#   devcontainer.json の dockerComposeFile に追加する:
+#     "dockerComposeFile": ["docker-compose.yml", "docker-compose.gpu.yml"]
+#
+#   または手動で:
+#     docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+# =============================================================================
+
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

@@ -1,0 +1,5 @@
+# WSL2 / Linux でシェルスクリプトが CRLF にならないよう強制
+*.sh text eol=lf
+Dockerfile text eol=lf
+docker-compose*.yml text eol=lf
+*.json text eol=lf

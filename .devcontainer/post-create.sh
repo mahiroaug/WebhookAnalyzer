@@ -42,39 +42,48 @@ fi
 echo ""
 echo "=== Pulling default Ollama model ==="
 
-# Ollama サービスの起動を待機 (最大60秒)
-# docker-compose の depends_on + healthcheck で大抵は起動済みだが、
-# 念のため追加で待機する。
+# Ollama サービスの起動を待機 (最大120秒)
+# macOS (Docker Desktop) では Ollama の起動に時間がかかる場合がある
 echo "Waiting for Ollama to be ready..."
-for i in $(seq 1 30); do
+OLLAMA_READY=false
+for i in $(seq 1 60); do
   if curl -sf http://ollama:11434/api/tags > /dev/null 2>&1; then
     echo "Ollama is ready."
+    OLLAMA_READY=true
     break
   fi
-  # 2秒間隔でリトライ (30回 × 2秒 = 最大60秒)
   sleep 2
 done
 
-# 環境変数 OLLAMA_MODEL が未設定なら gemma3:4b をデフォルトで使用
-# gemma3:4b は約3GBで、Webhook の JSON 分類には十分な性能。
-# より高精度が必要なら gemma3:12b や qwen3:8b なども選択可能。
-OLLAMA_MODEL="${OLLAMA_MODEL:-gemma3:4b}"
-echo "Pulling model: ${OLLAMA_MODEL} ..."
+if [ "$OLLAMA_READY" = false ]; then
+  echo "WARNING: Ollama did not become ready within 120s."
+  echo "  You can pull the model manually later:"
+  echo "  curl http://ollama:11434/api/pull -d '{\"name\": \"gemma3:4b\"}'"
+fi
 
-# Ollama の /api/pull は NDJSON (改行区切り JSON) でダウンロード進捗を返す。
-# 各行の "status" フィールドだけを抽出して表示する。
-curl -sf http://ollama:11434/api/pull -d "{\"name\": \"${OLLAMA_MODEL}\"}" | while read -r line; do
-  status=$(echo "$line" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status',''))" 2>/dev/null || true)
-  [ -n "$status" ] && echo "  $status"
-done
-echo "Model ${OLLAMA_MODEL} is ready."
+OLLAMA_MODEL="${OLLAMA_MODEL:-gemma3:4b}"
+
+if [ "$OLLAMA_READY" = true ]; then
+  echo "Pulling model: ${OLLAMA_MODEL} ..."
+  curl -sf http://ollama:11434/api/pull -d "{\"name\": \"${OLLAMA_MODEL}\"}" | while read -r line; do
+    status=$(echo "$line" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status',''))" 2>/dev/null || true)
+    [ -n "$status" ] && echo "  $status"
+  done
+  echo "Model ${OLLAMA_MODEL} is ready."
+fi
 
 # ---------------------------------------------------------------------------
 # セットアップ完了メッセージ
 # ---------------------------------------------------------------------------
+GPU_STATUS="CPU mode"
+if docker info 2>/dev/null | grep -qi "nvidia"; then
+  GPU_STATUS="NVIDIA GPU detected"
+fi
+
 echo ""
 echo "=== Setup complete ==="
 echo ""
+echo "  GPU:      ${GPU_STATUS}"
 echo "  LLM:      Ollama (${OLLAMA_MODEL}) @ http://ollama:11434"
 echo "  Backend:  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
 echo "  Frontend: cd frontend && npm run dev"

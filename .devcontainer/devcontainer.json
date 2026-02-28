@@ -15,11 +15,18 @@
   "name": "Webhook Analyzer",
 
   // ---------------------------------------------------------------------------
+  // プラットフォーム自動判定
+  // ---------------------------------------------------------------------------
+  // コンテナ起動前にホスト側で実行。OS と NVIDIA GPU を判定し、
+  // docker-compose.override.yml を自動生成する。
+  "initializeCommand": "bash .devcontainer/setup-platform.sh",
+
+  // ---------------------------------------------------------------------------
   // コンテナ定義
   // ---------------------------------------------------------------------------
-  // docker-compose.yml で app / db / ollama の3サービスを起動。
-  // "service" で指定した "app" コンテナの中で開発を行う。
-  "dockerComposeFile": "docker-compose.yml",
+  // docker-compose.yml (ベース) + 自動生成された override を読み込む。
+  // override には GPU 設定の有無がプラットフォームに応じて含まれる。
+  "dockerComposeFile": ["docker-compose.yml", "docker-compose.override.yml"],
   "service": "app",
   "workspaceFolder": "/workspace",
 

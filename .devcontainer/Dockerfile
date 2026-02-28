@@ -16,15 +16,15 @@
 #   - Git
 # =============================================================================
 
-FROM mcr.microsoft.com/devcontainers/python:1-3.12-bullseye
+FROM mcr.microsoft.com/devcontainers/python:1-3.12-bookworm
 
 # ---------------------------------------------------------------------------
 # システムパッケージのインストール
 # ---------------------------------------------------------------------------
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    # psql コマンドで DB に直接接続・デバッグするために必要
+# ベースイメージに含まれる Yarn リポジトリの GPG キーが期限切れのため除外
+RUN rm -f /etc/apt/sources.list.d/yarn.list && \
+    apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
-    # Ollama のヘルスチェックや API 呼び出しに使用
     curl \
     && rm -rf /var/lib/apt/lists/*
 
