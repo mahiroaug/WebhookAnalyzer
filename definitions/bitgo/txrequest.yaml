@@ -1,0 +1,19 @@
+fields:
+- path: webhookType
+  description: Webhook の種類（txRequest）
+  reference_url: https://developers.bitgo.com/
+- path: enterpriseId
+  description: エンタープライズ ID
+  reference_url: https://developers.bitgo.com/
+- path: walletId
+  description: ウォレット ID
+  reference_url: https://developers.bitgo.com/
+- path: txRequestId
+  description: トランザクションリクエストの一意な ID
+  reference_url: https://developers.bitgo.com/
+- path: oldState
+  description: 遷移前の状態
+  reference_url: https://developers.bitgo.com/
+- path: newState
+  description: '遷移後の状態（例: initialized, pendingDelivery, delivered）'
+  reference_url: https://developers.bitgo.com/

@@ -1,0 +1,32 @@
+fields:
+- path: resourceId
+  description: トランザクション単位の一意な ID
+  notes: 同一トランザクションの複数 status イベントで共通
+  reference_url: https://developers.fireblocks.com/reference/webhook-v2-migration-guide
+- path: eventType
+  description: イベント種類（transaction.status.updated）
+  reference_url: https://developers.fireblocks.com/reference/webhooks-structures-eventtypes
+- path: data.id
+  description: トランザクションの一意な ID
+  reference_url: https://developers.fireblocks.com/reference/webhooks-structures-eventtypes-transaction
+- path: data.status
+  description: トランザクションの主ステータス
+  notes: SUBMITTED→QUEUED→PENDING_SIGNATURE→BROADCASTING→CONFIRMING→COMPLETED
+  reference_url: https://developers.fireblocks.com/reference/transaction-objects#status
+- path: data.subStatus
+  description: サブステータス
+  notes: PENDING_BLOCKCHAIN_CONFIRMATIONS, CANCELLED_BY_USER, INTERNAL_ERROR 等
+  reference_url: https://developers.fireblocks.com/reference/transaction-objects#substatus
+- path: data.txHash
+  description: ブロックチェーン上のトランザクションハッシュ
+  notes: BROADCASTING で値が入る
+  reference_url: https://developers.fireblocks.com/reference/transaction-objects
+- path: data.amount
+  description: 送信量
+  reference_url: https://developers.fireblocks.com/reference/transaction-objects
+- path: data.assetId
+  description: アセット識別子
+  reference_url: https://developers.fireblocks.com/reference/transaction-objects
+- path: data.operation
+  description: 操作種別
+  reference_url: https://developers.fireblocks.com/reference/transaction-objects#operation

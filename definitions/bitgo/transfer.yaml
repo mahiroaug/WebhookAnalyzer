@@ -1,0 +1,10 @@
+fields:
+- path: type
+  description: Webhook の種類（transfer）
+  reference_url: https://developers.bitgo.com/
+- path: coin
+  description: アセット種別
+  reference_url: https://developers.bitgo.com/
+- path: wallet
+  description: ウォレット情報
+  reference_url: https://developers.bitgo.com/

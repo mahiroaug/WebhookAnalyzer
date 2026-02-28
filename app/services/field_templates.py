@@ -1,8 +1,12 @@
 """サービス別フィールド辞書テンプレート。
 Fireblocks / BitGo など既知サービスの event_type ごとに主要フィールドの意味・注意点・参照先を定義する。
+US-124: definitions/{source}/{event_type}.yaml を優先読み込み、なければ FIELD_TEMPLATES にフォールバック。
 """
 
 from dataclasses import dataclass
+from pathlib import Path
+
+import yaml
 
 
 @dataclass
@@ -284,12 +288,50 @@ FIELD_TEMPLATES: dict[str, dict[str, list[FieldDefinition]]] = {
     },
 }
 
+# US-124: definitions/ のベースパス（プロジェクトルートからの相対）
+_DEFINITIONS_DIR = Path(__file__).resolve().parent.parent.parent / "definitions"
+
+
+def _load_from_yaml(source: str, event_type: str) -> list[FieldDefinition] | None:
+    """definitions/{source}/{event_type}.yaml から読み込む。存在しなければ None。"""
+    safe_source = source.lower().strip().replace("/", "_").replace("\\", "_")
+    safe_event = event_type.lower().strip().replace(" ", ".").replace("/", "_").replace("\\", "_")
+    yaml_path = _DEFINITIONS_DIR / safe_source / f"{safe_event}.yaml"
+    if not yaml_path.exists():
+        return None
+    try:
+        with open(yaml_path, encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+        if not data or not isinstance(data.get("fields"), list):
+            return None
+        result: list[FieldDefinition] = []
+        for item in data["fields"]:
+            if isinstance(item, dict) and item.get("path") and item.get("description"):
+                result.append(
+                    FieldDefinition(
+                        path=str(item["path"]),
+                        description=str(item["description"]),
+                        notes=str(item["notes"]) if item.get("notes") else None,
+                        reference_url=str(item["reference_url"]) if item.get("reference_url") else None,
+                    )
+                )
+        return result if result else None
+    except Exception:
+        return None
+
 
 def get_field_template(source: str, event_type: str) -> list[FieldDefinition] | None:
     """
     指定した source と event_type に対応するフィールド辞書テンプレートを返す。
+    US-124: definitions/{source}/{event_type}.yaml を優先、なければ FIELD_TEMPLATES にフォールバック。
     未対応の場合は None を返す。
     """
+    # 1) YAML 定義を優先
+    yaml_result = _load_from_yaml(source, event_type)
+    if yaml_result is not None:
+        return yaml_result
+
+    # 2) ハードコードにフォールバック
     source_lower = source.lower().strip()
     event_lower = event_type.lower().strip()
     by_source = FIELD_TEMPLATES.get(source_lower)

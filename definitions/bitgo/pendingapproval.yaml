@@ -1,0 +1,19 @@
+fields:
+- path: type
+  description: Webhook の種類（pendingapproval）
+  reference_url: https://developers.bitgo.com/
+- path: pendingApprovalType
+  description: '承認待ちの種類（例: transactionRequest）'
+  reference_url: https://developers.bitgo.com/
+- path: pendingApprovalId
+  description: 承認待ちエンティティの ID
+  reference_url: https://developers.bitgo.com/
+- path: walletId
+  description: ウォレット ID
+  reference_url: https://developers.bitgo.com/
+- path: walletLabel
+  description: ウォレット表示名
+  reference_url: https://developers.bitgo.com/
+- path: state
+  description: 現在の状態（pending, approved 等）
+  reference_url: https://developers.bitgo.com/

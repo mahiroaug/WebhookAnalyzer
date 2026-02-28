@@ -1,0 +1,7 @@
+fields:
+- path: eventType
+  description: イベント種類（vault_account.asset.balance_updated）
+  reference_url: https://developers.fireblocks.com/reference/webhooks-structures-eventtypes-wallet
+- path: data
+  description: 残高更新の詳細（total 等）
+  reference_url: https://developers.fireblocks.com/reference/webhooks-structures-eventtypes-wallet

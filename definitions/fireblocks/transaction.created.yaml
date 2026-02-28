@@ -1,0 +1,65 @@
+fields:
+- path: id
+  description: この Webhook イベントの一意な ID
+  notes: 起票（トランザクション）単位の ID は data.id / resourceId を使用
+  reference_url: https://developers.fireblocks.com/reference/webhooks-structures-eventtypes-transaction
+- path: resourceId
+  description: トランザクション単位の一意な ID（起票ごとの固有値）
+  notes: data.id と同一。複数回の status 更新で共通
+  reference_url: https://developers.fireblocks.com/reference/webhook-v2-migration-guide
+- path: workspaceId
+  description: ワークスペースごとにユニークな ID
+  reference_url: https://developers.fireblocks.com/reference/webhooks-structures-eventtypes
+- path: eventType
+  description: イベント種類（transaction.created 等）
+  reference_url: https://developers.fireblocks.com/reference/webhooks-structures-eventtypes
+- path: data.id
+  description: トランザクションの一意な ID
+  notes: resourceId と同一。全ライフサイクルで不変
+  reference_url: https://developers.fireblocks.com/reference/webhooks-structures-eventtypes-transaction
+- path: data.status
+  description: トランザクションの主ステータス
+  notes: SUBMITTED→QUEUED→PENDING_SIGNATURE→...→CONFIRMING→COMPLETED / FAILED / CANCELLED
+  reference_url: https://developers.fireblocks.com/reference/transaction-objects#status
+- path: data.subStatus
+  description: サブステータス（詳細状態）
+  notes: '例: PENDING_BLOCKCHAIN_CONFIRMATIONS, CANCELLED_BY_USER'
+  reference_url: https://developers.fireblocks.com/reference/transaction-objects#substatus
+- path: data.txHash
+  description: ブロックチェーン上のトランザクションハッシュ
+  notes: BROADCASTING 以降で値が入る。最初は空
+  reference_url: https://developers.fireblocks.com/reference/transaction-objects
+- path: data.amount
+  description: 送信量（アセット単位）
+  reference_url: https://developers.fireblocks.com/reference/transaction-objects
+- path: data.assetId
+  description: 'アセット識別子（例: MATIC_POLYGON, AMOY_POLYGON_TEST）'
+  reference_url: https://developers.fireblocks.com/reference/transaction-objects
+- path: data.operation
+  description: 操作種別（TRANSFER, CONTRACT_CALL, MINT, BURN 等）
+  reference_url: https://developers.fireblocks.com/reference/transaction-objects#operation
+- path: data.source
+  description: 送信元（Vault / Internal Wallet 等）
+  notes: id, type, name を含むオブジェクト
+  reference_url: https://developers.fireblocks.com/reference/transaction-objects
+- path: data.destination
+  description: 送信先（Vault / External Wallet / One-Time Address 等）
+  notes: id が null の場合は One-Time Address
+  reference_url: https://developers.fireblocks.com/reference/transaction-objects
+- path: data.destinationAddress
+  description: 送信先アドレス（ブロックチェーンアドレス）
+  notes: External / One-Time の場合に設定
+  reference_url: https://developers.fireblocks.com/reference/transaction-objects
+- path: data.networkFee
+  description: ネットワーク手数料
+  notes: BROADCASTING 以降で確定。初期値は -1
+  reference_url: https://developers.fireblocks.com/reference/transaction-objects
+- path: data.createdAt
+  description: トランザクション作成時刻（ミリ秒 Unix）
+  reference_url: https://developers.fireblocks.com/reference/transaction-objects
+- path: data.lastUpdated
+  description: 最終更新時刻（ミリ秒 Unix）
+  reference_url: https://developers.fireblocks.com/reference/transaction-objects
+- path: data.note
+  description: ユーザーが付与したメモ
+  reference_url: https://developers.fireblocks.com/reference/transaction-objects
