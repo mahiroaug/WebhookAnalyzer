@@ -86,6 +86,11 @@ External Service -> ngrok(optional) -> FastAPI(:8000)
                                          `- Web UI(Vite :5173)
 ```
 
+## ドキュメント
+
+- [Webhook UI ユーザーストーリー](./docs/user-stories-webhook-dashboard.md)
+- [ネットワーク構成図](./docs/NETWORK_ARCHITECTURE.md)
+
 ## 起動と運用
 
 ### 自動起動されるプロセス
