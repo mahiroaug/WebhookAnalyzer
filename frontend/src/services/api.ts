@@ -10,6 +10,9 @@ export interface WebhookListItem {
   received_at: string;
   analyzed: boolean;
   has_drift?: boolean;
+  sequence_index?: number | null;
+  http_method?: string | null;
+  remote_ip?: string | null;
 }
 
 export interface WebhookDetail {
@@ -30,6 +33,10 @@ export interface WebhookDetail {
     }>;
     risk_level?: string;
   } | null;
+  sequence_index?: number | null;
+  http_method?: string | null;
+  remote_ip?: string | null;
+  request_headers?: Record<string, string> | null;
 }
 
 export interface StatsResponse {

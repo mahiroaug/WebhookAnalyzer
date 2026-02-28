@@ -25,16 +25,13 @@ function MoonIcon({ className }: { className?: string }) {
 }
 
 const navItems = [
-  { to: "/", label: "一覧" },
-  { to: "/by-event-type", label: "event_type別" },
-  { to: "/schema", label: "スキーマ推定" },
-  { to: "/compare", label: "比較" },
+  { to: "/", label: "ダッシュボード" },
 ];
 
 export function Layout() {
   const { isDark, toggle } = useDarkMode();
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-dim-bg dark:text-dim-text">
+    <div className="h-screen flex flex-col bg-slate-50 text-slate-900 dark:bg-dim-bg dark:text-dim-text overflow-hidden">
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white dark:border-dim-border dark:bg-dim-card">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
@@ -75,7 +72,7 @@ export function Layout() {
           </div>
         </div>
       </header>
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-1 overflow-hidden">
         <Outlet />
       </main>
     </div>
