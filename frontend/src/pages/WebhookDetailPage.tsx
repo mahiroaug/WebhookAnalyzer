@@ -11,6 +11,7 @@ import {
   type FieldTemplateResponse,
 } from "../services/api";
 import { PayloadTable } from "../components/PayloadTable";
+import { AccordionSection } from "../components/AccordionSection";
 
 export function WebhookDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -106,31 +107,24 @@ export function WebhookDetailPage() {
 
   return (
     <div>
-      <header className="mb-6">
+      <header className="mb-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={goPrev}
-              disabled={!adjacent?.prev_id}
-              className="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="前の Webhook（←）"
-            >
-              ← 前へ
-            </button>
-            <button
-              type="button"
-              onClick={goNext}
-              disabled={!adjacent?.next_id}
-              className="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="次の Webhook（→）"
-            >
-              次へ →
-            </button>
+            <button type="button" onClick={goPrev} disabled={!adjacent?.prev_id}
+              className="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40"
+              title="前の Webhook（←）">← 前へ</button>
+            <button type="button" onClick={goNext} disabled={!adjacent?.next_id}
+              className="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40"
+              title="次の Webhook（→）">次へ →</button>
           </div>
-          <h1 className="text-2xl font-bold">Webhook 詳細</h1>
+          <span className="text-sm font-semibold text-slate-500 dark:text-dim-text-muted">
+            {webhook.sequence_index != null ? `#${webhook.sequence_index}` : ""}
+          </span>
         </div>
-        <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+      </header>
+
+      <AccordionSection id="meta" title="リクエスト情報" defaultOpen={false}>
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
           <dt className="text-slate-500 dark:text-slate-400">source</dt>
           <dd className="font-mono">{webhook.source}</dd>
           <dt className="text-slate-500 dark:text-slate-400">event_type</dt>
@@ -139,60 +133,59 @@ export function WebhookDetailPage() {
           <dd className="font-mono">{webhook.group_key}</dd>
           <dt className="text-slate-500 dark:text-slate-400">received_at</dt>
           <dd className="font-mono">{new Date(webhook.received_at).toLocaleString()}</dd>
+          {webhook.http_method && <>
+            <dt className="text-slate-500 dark:text-slate-400">HTTP メソッド</dt>
+            <dd className="font-mono">{webhook.http_method}</dd>
+          </>}
+          {webhook.remote_ip && <>
+            <dt className="text-slate-500 dark:text-slate-400">送信元 IP</dt>
+            <dd className="font-mono">{webhook.remote_ip}</dd>
+          </>}
         </dl>
-      </header>
+        {webhook.request_headers && Object.keys(webhook.request_headers).length > 0 && (
+          <details className="mt-3">
+            <summary className="text-xs text-slate-400 cursor-pointer">リクエストヘッダー ({Object.keys(webhook.request_headers).length})</summary>
+            <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs font-mono">
+              {Object.entries(webhook.request_headers).map(([k, v]) => (
+                <><dt key={`k-${k}`} className="text-slate-400">{k}</dt><dd key={`v-${k}`} className="truncate text-slate-300">{v}</dd></>
+              ))}
+            </dl>
+          </details>
+        )}
+      </AccordionSection>
 
       {webhook.schema_drift?.has_drift && (
-        <div className="mb-6 rounded-lg border border-amber-200 dark:border-amber-800 p-4 bg-amber-50 dark:bg-amber-900/20">
-          <h2 className="text-lg font-semibold mb-2 text-amber-800 dark:text-amber-200">
-            スキーマドリフト検知
-            {webhook.schema_drift?.risk_level === "high" && (
-              <span className="ml-2 text-sm font-normal px-2 py-0.5 rounded bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">
-                高リスク
-              </span>
-            )}
-          </h2>
-          <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
-            直近の基準スキーマとの差分
-          </p>
+        <AccordionSection
+          id="drift"
+          title="スキーマドリフト"
+          defaultOpen={false}
+          badge={webhook.schema_drift.risk_level === "high"
+            ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-900/30 text-red-300">高リスク</span>
+            : <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/30 text-amber-300">検知</span>
+          }
+        >
           <div className="space-y-2 text-sm">
-            {webhook.schema_drift?.added && webhook.schema_drift.added.length > 0 && (
+            {webhook.schema_drift.added && webhook.schema_drift.added.length > 0 && (
+              <div><span className="font-medium text-green-400">追加:</span> <span className="font-mono">{webhook.schema_drift.added.join(", ")}</span></div>
+            )}
+            {webhook.schema_drift.removed && webhook.schema_drift.removed.length > 0 && (
+              <div><span className="font-medium text-red-400">削除:</span> <span className="font-mono">{webhook.schema_drift.removed.join(", ")}</span></div>
+            )}
+            {webhook.schema_drift.type_changed && webhook.schema_drift.type_changed.length > 0 && (
               <div>
-                <span className="font-medium text-green-700 dark:text-green-400">
-                  追加:
-                </span>{" "}
-                <span className="font-mono">{webhook.schema_drift.added.join(", ")}</span>
+                <span className="font-medium text-amber-400">型変更:</span>
+                <ul className="mt-1 list-disc list-inside space-y-0.5">
+                  {webhook.schema_drift.type_changed.map((tc, i) => (
+                    <li key={i} className="font-mono text-xs">{tc.path}: {tc.expected_type} → {tc.actual_type}</li>
+                  ))}
+                </ul>
               </div>
             )}
-            {webhook.schema_drift?.removed && webhook.schema_drift.removed.length > 0 && (
-              <div>
-                <span className="font-medium text-red-700 dark:text-red-400">
-                  削除:
-                </span>{" "}
-                <span className="font-mono">{webhook.schema_drift.removed.join(", ")}</span>
-              </div>
-            )}
-            {webhook.schema_drift?.type_changed &&
-              webhook.schema_drift.type_changed.length > 0 && (
-                <div>
-                  <span className="font-medium text-amber-700 dark:text-amber-400">
-                    型変更:
-                  </span>
-                  <ul className="mt-1 list-disc list-inside space-y-0.5">
-                    {webhook.schema_drift.type_changed.map((tc, i) => (
-                      <li key={i} className="font-mono text-xs">
-                        {tc.path}: {tc.expected_type} → {tc.actual_type}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
           </div>
-        </div>
+        </AccordionSection>
       )}
 
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-3">Payload</h2>
+      <AccordionSection id="payload" title="Payload" defaultOpen={true}>
         <PayloadTable
           data={webhook.payload}
           templateDescriptions={
@@ -207,54 +200,39 @@ export function WebhookDetailPage() {
               : undefined
           }
         />
-      </div>
+      </AccordionSection>
 
       {analysis && (
-        <div
-          className={`mb-6 rounded-lg border p-4 ${
-            analysisFailed
-              ? "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20"
-              : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
-          }`}
+        <AccordionSection
+          id="analysis"
+          title="AI 分析結果"
+          defaultOpen={false}
+          badge={analysisFailed ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-900/30 text-red-300">失敗</span> : undefined}
         >
-          <h2 className="text-lg font-semibold mb-2">AI 分析結果</h2>
           {analysis.summary && (
-            <p className={`mb-3 ${analysisFailed ? "text-red-600 dark:text-red-400" : "text-slate-700 dark:text-slate-300"}`}>
-              {analysis.summary}
-            </p>
+            <p className={`mb-3 text-sm ${analysisFailed ? "text-red-400" : "text-slate-300"}`}>{analysis.summary}</p>
           )}
           {analysisFailed && (
-            <button
-              onClick={handleAnalyze}
-              disabled={analyzing}
-              className="mt-3 rounded bg-red-600 text-white px-4 py-2 text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button onClick={handleAnalyze} disabled={analyzing}
+              className="rounded bg-red-600 text-white px-3 py-1.5 text-xs font-medium hover:bg-red-700 disabled:opacity-50">
               {analyzing ? "再分析中..." : "再分析を実行"}
             </button>
           )}
-        </div>
+        </AccordionSection>
       )}
 
       {analyzeError && (
-        <div className="mb-6 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4">
-          <p className="text-red-700 dark:text-red-300 font-medium">分析の実行に失敗しました</p>
-          <p className="text-sm text-red-600 dark:text-red-400 mt-1">{analyzeError}</p>
-          <button
-            onClick={handleAnalyze}
-            disabled={analyzing}
-            className="mt-3 rounded bg-red-600 text-white px-4 py-2 text-sm font-medium hover:bg-red-700 disabled:opacity-50"
-          >
-            再試行
-          </button>
+        <div className="mb-4 rounded-lg border border-red-800 bg-red-900/20 p-3">
+          <p className="text-red-300 text-sm font-medium">分析の実行に失敗しました</p>
+          <p className="text-xs text-red-400 mt-1">{analyzeError}</p>
+          <button onClick={handleAnalyze} disabled={analyzing}
+            className="mt-2 rounded bg-red-600 text-white px-3 py-1.5 text-xs font-medium hover:bg-red-700 disabled:opacity-50">再試行</button>
         </div>
       )}
 
-      <div className="mb-6">
-        <button
-          onClick={handleAnalyze}
-          disabled={analyzing}
-          className="rounded bg-blue-500 text-white px-4 py-2 text-sm font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
+      <div className="mb-4">
+        <button onClick={handleAnalyze} disabled={analyzing}
+          className="rounded bg-blue-500 text-white px-4 py-2 text-sm font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed">
           {analyzing ? "分析中..." : analysis ? "再分析を実行" : "AI で分析"}
         </button>
       </div>

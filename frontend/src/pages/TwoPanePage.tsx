@@ -1,8 +1,8 @@
 /**
  * US-111: webhook.site 風 2ペインレイアウト
- * 左ペイン（一覧リスト）+ 右ペイン（詳細/比較/スキーマ/event_type別）
+ * US-117: ペインリサイズ対応
  */
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { WebhookListPane } from "../components/WebhookListPane";
 import { WebhookDetailPage } from "./WebhookDetailPage";
@@ -12,14 +12,54 @@ import { ComparePage } from "./ComparePage";
 
 type RightPane = "detail" | "event-type" | "schema" | "compare";
 
+const STORAGE_KEY = "webhook-pane-width";
+const DEFAULT_WIDTH = 320;
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 600;
+
 export function TwoPanePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [rightPane, setRightPane] = useState<RightPane>("detail");
   const [filterSource, setFilterSource] = useState("");
   const [filterEventType, setFilterEventType] = useState("");
+  const [paneWidth, setPaneWidth] = useState(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, parseInt(stored, 10))) : DEFAULT_WIDTH;
+  });
+  const draggingRef = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const selectedId = id || null;
+
+  const handleMouseDown = useCallback(() => {
+    draggingRef.current = true;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!draggingRef.current || !containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, e.clientX - rect.left));
+      setPaneWidth(newWidth);
+    };
+    const handleMouseUp = () => {
+      if (draggingRef.current) {
+        draggingRef.current = false;
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        localStorage.setItem(STORAGE_KEY, String(paneWidth));
+      }
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [paneWidth]);
 
   const handleSelect = useCallback(
     (webhookId: string) => {
@@ -37,9 +77,12 @@ export function TwoPanePage() {
   ];
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)]">
+    <div ref={containerRef} className="flex h-[calc(100vh-3.5rem)]">
       {/* 左ペイン */}
-      <div className="w-80 min-w-64 max-w-96 border-r border-slate-200 dark:border-dim-border flex flex-col bg-white dark:bg-dim-card">
+      <div
+        style={{ width: paneWidth }}
+        className="flex-shrink-0 border-r border-slate-200 dark:border-dim-border flex flex-col bg-white dark:bg-dim-card"
+      >
         <WebhookListPane
           selectedId={selectedId}
           onSelect={handleSelect}
@@ -49,6 +92,12 @@ export function TwoPanePage() {
           onFilterEventTypeChange={setFilterEventType}
         />
       </div>
+
+      {/* リサイズハンドル */}
+      <div
+        onMouseDown={handleMouseDown}
+        className="w-1 cursor-col-resize bg-transparent hover:bg-blue-400/40 active:bg-blue-400/60 flex-shrink-0 transition-colors"
+      />
 
       {/* 右ペイン */}
       <div className="flex-1 flex flex-col overflow-hidden">
