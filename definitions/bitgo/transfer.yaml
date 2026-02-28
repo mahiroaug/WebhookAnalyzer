@@ -1,4 +1,4 @@
-summary: 要約テキスト
+summary: このWebhook JSONは、tPolygonコインのトランザクションが確認されたことを示しており、トランザクションハッシュ、ウォレットID、および転送IDが含まれています。
 fields:
 - path: type
   description: Webhook の種類（transfer）
@@ -14,4 +14,10 @@ fields:
   ai_generated: true
 - path: a
   description: 説明A
+  ai_generated: true
+- path: state
+  description: 'confirmed: トランザクションの状態。ここではトランザクションが完了（確認）したことを示します。'
+  ai_generated: true
+- path: transfer
+  description: '6989f7bafbbe2bc87d1cab0cbb528b15: 転送されたtPolygonコインのトランザクションID。'
   ai_generated: true

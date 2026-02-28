@@ -175,7 +175,7 @@ export function WebhookListPane({
                     : "hover:bg-slate-50 dark:hover:bg-slate-800/40"
                 } ${isNew ? "bg-emerald-50 dark:bg-emerald-900/20" : ""}`}
               >
-                <SourceIcon source={w.source} className="w-4 h-4 mt-0.5 shrink-0 text-slate-500 dark:text-dim-text-muted" />
+                <SourceIcon source={w.source} size="w-5 h-5 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-mono font-medium text-blue-500 dark:text-blue-400">
