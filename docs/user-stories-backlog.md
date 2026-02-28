@@ -95,58 +95,7 @@
 
 ### Phase 12: DB 運用・メンテナンスツール
 
-> 全サブコマンドを単一 CLI エントリポイント `scripts/dbadmin.py` に集約する。既存の SQLAlchemy モデルと非同期セッションを再利用し、標準ライブラリ `argparse` で実装する（追加依存なし）。Write 系操作には確認プロンプト + `--yes` スキップオプションを設ける。
-
-#### US-136 DB 統計・ヘルスチェック CLI（P0）【未着手】
-
-運用担当エンジニアとして、DB の状態をターミナルから一目で確認したい。
-なぜなら問題の早期発見とキャパシティ計画のために、レコード数・ディスク使用量・未分析件数を定期的に把握したいから。
-
-- 受け入れ基準
-  - Given DevContainer 内で `python scripts/dbadmin.py stats` を実行、When 正常接続時、Then テーブルごとのレコード数・ディスク使用量・source 別件数・event_type 別件数・最古/最新レコード日時・未分析 Webhook 件数が表形式で表示される
-  - Given DB に接続できない、When コマンドを実行、Then 接続エラーが明示され終了コード 1 で終了する
-
-#### US-137 Webhook レコード検索・詳細表示 CLI（P0）【未着手】
-
-運用担当エンジニアとして、ターミナルから Webhook レコードを検索・閲覧したい。
-なぜなら GUI にアクセスできない状況でも素早くレコードの内容を確認したいから。
-
-- 受け入れ基準
-  - Given Webhook データがある、When `python scripts/dbadmin.py list --source fireblocks --limit 10` を実行、Then 該当レコードが ID・インデックス・source・event_type・受信日時を含む表形式で表示される
-  - Given Webhook ID を指定、When `python scripts/dbadmin.py show <id>` を実行、Then メタ情報・Payload（JSON 整形）・分析結果が表示される
-  - Given フィルタ条件に一致するレコードがない、When list を実行、Then 「該当レコードなし」と表示される
-  - Given `--format json` オプション、When 実行、Then 出力が JSON 形式になる（パイプ処理向け）
-
-#### US-138 データ削除・パージ CLI（P1）【未着手】
-
-運用担当エンジニアとして、条件を指定して Webhook データを安全に削除したい。
-なぜならテスト後の不要データや古いレコードを整理しストレージを健全に保ちたいから。
-
-- 受け入れ基準
-  - Given `python scripts/dbadmin.py delete --source test --before 2026-01-01` を実行、When 確認プロンプトに y を入力、Then 条件一致レコードが CASCADE 削除される
-  - Given delete コマンド、When 実行、Then 削除対象件数を事前表示し確認プロンプト（y/N）を出す（`--yes` で確認スキップ可能）
-  - Given `python scripts/dbadmin.py purge --older-than 30d` を実行、When 確認して実行、Then 30 日超のレコードが一括削除され削除件数が報告される
-  - Given `python scripts/dbadmin.py reset --all` を実行、When 二重確認に y を入力、Then 全テーブルが TRUNCATE され件数が報告される
-
-#### US-139 AI 分析結果リセット CLI（P1）【未着手】
-
-運用担当エンジニアとして、AI 分析結果のみをリセットして再分析の準備をしたい。
-なぜなら LLM モデル変更やプロンプト改善後に全レコードを再分析したいケースがあるから。
-
-- 受け入れ基準
-  - Given `python scripts/dbadmin.py analysis reset --source fireblocks` を実行、When 確認して実行、Then 該当 source の分析結果（webhook_analyses）のみが削除され Webhook レコード自体は保持される
-  - Given `python scripts/dbadmin.py analysis reset --all` を実行、When 確認して実行、Then 全分析結果が削除される
-  - Given `python scripts/dbadmin.py analysis status` を実行、When 表示、Then 分析済み/未分析の件数が source 別に表示される
-
-#### US-140 DB メンテナンス CLI（P2）【未着手】
-
-運用担当エンジニアとして、DB の最適化とインデックスの整合性を維持したい。
-なぜなら大量削除後のデッドタプル回収やシーケンス欠番の修正が必要な場合があるから。
-
-- 受け入れ基準
-  - Given `python scripts/dbadmin.py maintain vacuum` を実行、When 実行、Then 全テーブルに VACUUM ANALYZE が実行され回収されたデッドタプル数が報告される
-  - Given `python scripts/dbadmin.py maintain reindex` を実行、When 実行、Then sequence_index が received_at 順に 1 から連番で再採番される
-  - Given reindex 完了後、When 一覧を確認、Then 欠番なく連続した番号が振られている
+> 全サブコマンドを単一 CLI エントリポイント `scripts/dbadmin.py` に集約。US-136〜US-140 で実装済み。
 
 ### Phase 13: 高度機能・開発者体験
 

@@ -88,3 +88,8 @@
 | US-129 | API リファレンス自動 Web 検索                      | OK           | reference_url なし時に DuckDuckGo 検索、Step 1 コンテキストに含める、失敗時は続行 |
 | US-132 | ページ遷移のフラッシュレス化                       | OK           | 前コンテンツ維持、ヘッダー薄プログレスバー、初回スケルトン、読み込み中テキスト廃止 |
 | US-133 | AI 分析ボタンのスピナーアニメーション               | OK           | border スピナー、disabled 維持、分析完了でスピナー非表示                         |
+| US-136 | DB 統計・ヘルスチェック CLI                        | OK           | stats: テーブル件数・ディスク・source/event_type 別・最古/最新・未分析件数         |
+| US-137 | Webhook レコード検索・詳細表示 CLI                  | OK           | list, show, --format json、該当レコードなし                                      |
+| US-138 | データ削除・パージ CLI                             | OK           | delete, purge --older-than 30d, reset --all、確認プロンプト + --yes               |
+| US-139 | AI 分析結果リセット CLI                            | OK           | analysis reset --source/--all, analysis status                                   |
+| US-140 | DB メンテナンス CLI                                | OK           | maintain vacuum (asyncpg), maintain reindex                                      |
