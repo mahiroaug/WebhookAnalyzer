@@ -22,6 +22,7 @@ interface WebhookListPaneProps {
   filterEventType: string;
   onFilterSourceChange: (v: string) => void;
   onFilterEventTypeChange: (v: string) => void;
+  searchQuery?: string;
 }
 
 export function WebhookListPane({
@@ -31,6 +32,7 @@ export function WebhookListPane({
   filterEventType,
   onFilterSourceChange,
   onFilterEventTypeChange,
+  searchQuery = "",
 }: WebhookListPaneProps) {
   const [items, setItems] = useState<WebhookListItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -48,6 +50,7 @@ export function WebhookListPane({
       const res = await listWebhooks({
         source: filterSource || undefined,
         event_type: filterEventType || undefined,
+        q: searchQuery.trim() || undefined,
         limit: PAGE_SIZE,
         offset: (page - 1) * PAGE_SIZE,
       });
@@ -72,7 +75,7 @@ export function WebhookListPane({
     loadRef.current(newId);
   });
 
-  useEffect(() => { load(); }, [filterSource, filterEventType, page]);
+  useEffect(() => { load(); }, [filterSource, filterEventType, searchQuery, page]);
 
   useEffect(() => {
     getStats()
@@ -152,7 +155,9 @@ export function WebhookListPane({
         {loading && items.length === 0 ? (
           <div className="p-4 text-center text-xs text-slate-400">読み込み中...</div>
         ) : items.length === 0 ? (
-          <div className="p-4 text-center text-xs text-slate-400">Webhook がありません</div>
+          <div className="p-4 text-center text-xs text-slate-400">
+            {searchQuery.trim() ? "該当する Webhook がありません" : "Webhook がありません"}
+          </div>
         ) : (
           items.map((w) => {
             const isNew = newArrivalIds.has(w.id);

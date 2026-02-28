@@ -117,6 +117,32 @@ async def test_list_webhooks_pagination(
 
 
 @pytest.mark.asyncio
+async def test_list_webhooks_payload_search(
+    bitgo_transfer_payload: dict,
+) -> None:
+    """q パラメータで payload 全文検索ができる（US-122）"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        post_resp = await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+        assert post_resp.status_code == 201
+        hash_val = bitgo_transfer_payload.get("hash", "")
+
+        resp = await client.get("/api/webhooks", params={"q": hash_val})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total"] >= 1
+        assert len(data["items"]) >= 1
+        assert data["items"][0]["id"] == post_resp.json()["id"]
+
+        resp2 = await client.get("/api/webhooks", params={"q": "nonexistent_value_xyz"})
+        assert resp2.status_code == 200
+        assert resp2.json()["total"] == 0
+        assert resp2.json()["items"] == []
+
+
+@pytest.mark.asyncio
 async def test_stats_reflects_received_webhooks(
     bitgo_transfer_payload: dict,
     fireblocks_tx_payload: dict,

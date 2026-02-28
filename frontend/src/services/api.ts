@@ -64,6 +64,7 @@ export async function listWebhooks(
     analyzed?: boolean;
     has_drift?: boolean;
     session_id?: string;
+    q?: string;
     limit?: number;
     offset?: number;
   }
@@ -74,6 +75,7 @@ export async function listWebhooks(
   if (params?.analyzed !== undefined) cleanParams.analyzed = String(params.analyzed);
   if (params?.has_drift !== undefined) cleanParams.has_drift = String(params.has_drift);
   if (params?.session_id) cleanParams.session_id = params.session_id;
+  if (params?.q) cleanParams.q = params.q;
   if (params?.limit != null) cleanParams.limit = String(params.limit);
   if (params?.offset != null) cleanParams.offset = String(params.offset);
   const search = new URLSearchParams(cleanParams).toString();

@@ -3,8 +3,10 @@
  * US-101: グローバルレイアウトとナビゲーションの統一
  * US-102: DIM カラーテーマ適用
  * US-103: ダークモード手動トグル
+ * US-122: グローバルヘッダーに全文検索入力欄
  */
-import { Outlet, NavLink } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Outlet, NavLink, useSearchParams } from "react-router-dom";
 import { useDarkMode } from "../hooks/useDarkMode";
 
 function SunIcon({ className }: { className?: string }) {
@@ -30,15 +32,42 @@ const navItems = [
 
 export function Layout() {
   const { isDark, toggle } = useDarkMode();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const qFromUrl = searchParams.get("q") ?? "";
+  const [searchInput, setSearchInput] = useState(qFromUrl);
+  useEffect(() => setSearchInput(qFromUrl), [qFromUrl]);
+
+  const handleSearch = (q: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (q.trim()) {
+      next.set("q", q.trim());
+    } else {
+      next.delete("q");
+    }
+    setSearchParams(next);
+  };
+
   return (
     <div className="h-screen flex flex-col bg-slate-50 text-slate-900 dark:bg-dim-bg dark:text-dim-text overflow-hidden">
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white dark:border-dim-border dark:bg-dim-card">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
-            <span className="text-lg font-semibold text-slate-900 dark:text-dim-text">
+          <div className="flex items-center justify-between h-14 gap-4">
+            <span className="text-lg font-semibold text-slate-900 dark:text-dim-text shrink-0">
               Webhook Analyzer
             </span>
-            <div className="flex items-center gap-4">
+            <div className="flex-1 max-w-xs mx-4">
+              <input
+                type="text"
+                placeholder="payload 全文検索..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSearch(searchInput);
+                }}
+                className="w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/50 px-3 py-1.5 text-sm"
+              />
+            </div>
+            <div className="flex items-center gap-4 shrink-0">
             <button
               type="button"
               onClick={toggle}

@@ -3,7 +3,7 @@
  * US-117: ペインリサイズ対応
  */
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { WebhookListPane } from "../components/WebhookListPane";
 import { WebhookDetailPage } from "./WebhookDetailPage";
 import { EventTypeGroupPage } from "./EventTypeGroupPage";
@@ -20,6 +20,8 @@ const MAX_WIDTH = 600;
 export function TwoPanePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("q") ?? "";
   const [rightPane, setRightPane] = useState<RightPane>("detail");
   const [filterSource, setFilterSource] = useState("");
   const [filterEventType, setFilterEventType] = useState("");
@@ -64,9 +66,10 @@ export function TwoPanePage() {
   const handleSelect = useCallback(
     (webhookId: string) => {
       setRightPane("detail");
-      navigate(`/webhooks/${webhookId}`, { replace: false });
+      const search = searchParams.toString();
+      navigate({ pathname: `/webhooks/${webhookId}`, search: search ? `?${search}` : "" }, { replace: false });
     },
-    [navigate]
+    [navigate, searchParams]
   );
 
   const paneButtons: { key: RightPane; label: string }[] = [
@@ -90,6 +93,7 @@ export function TwoPanePage() {
           filterEventType={filterEventType}
           onFilterSourceChange={setFilterSource}
           onFilterEventTypeChange={setFilterEventType}
+          searchQuery={searchQuery}
         />
       </div>
 

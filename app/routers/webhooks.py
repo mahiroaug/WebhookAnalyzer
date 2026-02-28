@@ -7,7 +7,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import PlainTextResponse
-from sqlalchemy import func, or_, select
+from sqlalchemy import Text, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -159,6 +159,15 @@ async def receive_webhook(
     )
 
 
+def _escape_like_pattern(s: str, escape: str = "\\") -> str:
+    """LIKE/ILIKE 用のワイルドカードエスケープ（% _ \\）"""
+    return (
+        s.replace(escape, escape + escape)
+        .replace("%", escape + "%")
+        .replace("_", escape + "_")
+    )
+
+
 @router.get("", response_model=WebhookListResponse)
 async def list_webhooks(
     source: str | None = None,
@@ -166,14 +175,21 @@ async def list_webhooks(
     analyzed: bool | None = None,
     has_drift: bool | None = None,
     session_id: UUID | None = None,
+    q: str | None = None,
     limit: int = 20,
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
 ) -> WebhookListResponse:
-    """Webhook 一覧を取得（最新順・ページング対応）"""
+    """Webhook 一覧を取得（最新順・ページング対応）。q で payload 全文検索。"""
     from app.models.webhook import webhook_sessions
 
+    q_stripped = (q or "").strip()
     base_stmt = select(Webhook).order_by(Webhook.received_at.desc())
+    if q_stripped:
+        pattern = f"%{_escape_like_pattern(q_stripped)}%"
+        payload_text = cast(Webhook.payload, Text)
+        base_stmt = base_stmt.where(payload_text.ilike(pattern, escape="\\"))
+
     if source:
         base_stmt = base_stmt.where(Webhook.source == source)
     if event_type:
@@ -210,6 +226,10 @@ async def list_webhooks(
 
     # 総件数を取得
     count_stmt = select(func.count(Webhook.id))
+    if q_stripped:
+        pattern = f"%{_escape_like_pattern(q_stripped)}%"
+        payload_text = cast(Webhook.payload, Text)
+        count_stmt = count_stmt.where(payload_text.ilike(pattern, escape="\\"))
     if source:
         count_stmt = count_stmt.where(Webhook.source == source)
     if event_type:
