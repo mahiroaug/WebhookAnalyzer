@@ -200,8 +200,8 @@ def _extract_json(content: str) -> dict | None:
         return None
 
 
-async def _call_ollama(prompt: str) -> str | None:
-    """Ollama に 1 回チャットして応答テキストを返す。失敗時は None。"""
+async def _call_ollama(prompt: str, model: str | None = None) -> str | None:
+    """Ollama に 1 回チャットして応答テキストを返す。失敗時は None。US-143: model オーバーライド対応。"""
     try:
         import ollama
     except ImportError:
@@ -210,7 +210,7 @@ async def _call_ollama(prompt: str) -> str | None:
     try:
         client = ollama.AsyncClient(host=settings.ollama_host)
         response = await client.chat(
-            model=settings.ollama_model,
+            model=model or settings.ollama_model,
             messages=[{"role": "user", "content": prompt}],
             options={"temperature": 0.1},
         )
@@ -230,6 +230,7 @@ async def analyze_payload_with_ollama(
     user_feedback: str | None = None,
     source: str = "",
     event_type: str = "",
+    model: str | None = None,
 ) -> AnalysisResult:
     """
     Ollama で Webhook ペイロードを分析する。
@@ -293,7 +294,7 @@ async def analyze_payload_with_ollama(
         evidence_section=evidence_section or "（参照ドキュメントなし）",
         payload_json=payload_str,
     )
-    content1 = await _call_ollama(prompt1)
+    content1 = await _call_ollama(prompt1, model)
     if not content1:
         return AnalysisResult(
             summary="",
@@ -325,7 +326,7 @@ async def analyze_payload_with_ollama(
 
     # Step 2: field_descriptions
     prompt2 = _PROMPT_STEP2.format(explanation=explanation)
-    content2 = await _call_ollama(prompt2)
+    content2 = await _call_ollama(prompt2, model)
     if not content2:
         return AnalysisResult(
             summary="",
@@ -352,7 +353,7 @@ async def analyze_payload_with_ollama(
     prompt3 = _PROMPT_STEP3.format(
         field_descriptions_json=json.dumps(field_descriptions, ensure_ascii=False, indent=2),
     )
-    content3 = await _call_ollama(prompt3)
+    content3 = await _call_ollama(prompt3, model)
     if not content3:
         return AnalysisResult(
             summary="",
@@ -393,6 +394,7 @@ async def analyze_payload_with_ollama_stream(
     user_feedback: str | None = None,
     source: str = "",
     event_type: str = "",
+    model: str | None = None,
 ) -> AsyncGenerator[dict, None]:
     """
     analyze_payload_with_ollama のストリーミング版。
@@ -452,7 +454,7 @@ async def analyze_payload_with_ollama_stream(
         payload_json=payload_str,
     )
     yield {"step": "explanation", "message": "Step 1: Explanation 開始", "prompt_preview": prompt1[:200] + "..."}
-    content1 = await _call_ollama(prompt1)
+    content1 = await _call_ollama(prompt1, model)
     elapsed1 = (time.perf_counter() - t1) * 1000
     if not content1:
         yield {"step": "explanation", "message": "Step 1 失敗: 空レスポンス", "elapsed_ms": round(elapsed1, 1)}
@@ -470,7 +472,7 @@ async def analyze_payload_with_ollama_stream(
     t2 = time.perf_counter()
     prompt2 = _PROMPT_STEP2.format(explanation=explanation)
     yield {"step": "fields", "message": "Step 2: Field Descriptions 開始"}
-    content2 = await _call_ollama(prompt2)
+    content2 = await _call_ollama(prompt2, model)
     elapsed2 = (time.perf_counter() - t2) * 1000
     if not content2:
         yield {"step": "fields", "message": "Step 2 失敗", "elapsed_ms": round(elapsed2, 1)}
@@ -492,7 +494,7 @@ async def analyze_payload_with_ollama_stream(
         field_descriptions_json=json.dumps(field_descriptions, ensure_ascii=False, indent=2),
     )
     yield {"step": "summary", "message": "Step 3: Summary 開始"}
-    content3 = await _call_ollama(prompt3)
+    content3 = await _call_ollama(prompt3, model)
     elapsed3 = (time.perf_counter() - t3) * 1000
     if not content3:
         yield {"step": "summary", "message": "Step 3 失敗", "elapsed_ms": round(elapsed3, 1)}

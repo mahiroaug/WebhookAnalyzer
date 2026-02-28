@@ -18,9 +18,11 @@ class WebhookAnalysisResponse(BaseModel):
 
 
 class AnalyzeTriggerRequest(BaseModel):
-    """POST /analyze のリクエスト（US-128: オプションでフィードバック）"""
+    """POST /analyze のリクエスト（US-128: フィードバック、US-143: provider/model）"""
 
     user_feedback: str | None = None
+    provider: str | None = None  # ollama / openai / anthropic（現在 ollama のみ対応）
+    model: str | None = None  # モデル名（Ollama の場合は gemma3:4b 等）
 
 
 class AnalyzeTriggerResponse(BaseModel):

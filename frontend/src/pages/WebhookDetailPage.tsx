@@ -213,6 +213,12 @@ export function WebhookDetailPage() {
 
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
+  /** US-143: LLM provider/model オーバーライド・比較モード */
+  const [llmOptionsOpen, setLlmOptionsOpen] = useState(false);
+  const [llmProvider, setLlmProvider] = useState("ollama");
+  const [llmModel, setLlmModel] = useState("");
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareResults, setCompareResults] = useState<Array<{ provider: string; model: string; result: WebhookAnalysisResponse }>>([]);
 
   /** US-145: 再送 */
   const [replayOpen, setReplayOpen] = useState(false);
@@ -291,9 +297,16 @@ export function WebhookDetailPage() {
             return p;
           });
           if (ev.step === "saved" && ev.analysis) setAnalysis(ev.analysis as WebhookAnalysisResponse);
-        }
+        },
+        { provider: llmProvider, model: llmModel || undefined }
       );
       if (res) {
+        if (compareMode) {
+          setCompareResults((prev) => [
+            ...prev,
+            { provider: llmProvider, model: llmModel || "(default)", result: res },
+          ]);
+        }
         setAnalysis(res);
         // US-142: 定義ファイルが存在し差分があれば diff モーダルを表示
         if (webhook && !res.summary?.startsWith("[分析失敗]")) {
@@ -581,6 +594,49 @@ export function WebhookDetailPage() {
         </AccordionSection>
       )}
 
+      {/* US-143: 比較モード結果を並べて表示 */}
+      {compareResults.length > 0 && (
+        <AccordionSection id="compare" title="LLM 比較結果" defaultOpen={true}>
+          <div className="flex gap-2 mb-2">
+            <button
+              type="button"
+              onClick={() => setCompareResults([])}
+              className="text-xs px-2 py-1 rounded border border-slate-500 text-slate-400 hover:bg-slate-700"
+            >
+              クリア
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {compareResults.map((cr, i) => (
+              <div
+                key={i}
+                className="rounded border border-slate-600 bg-slate-800/50 p-3 text-sm"
+              >
+                <div className="text-xs font-medium text-slate-400 mb-2">
+                  {cr.provider} / {cr.model}
+                </div>
+                {cr.result.summary && (
+                  <p className="text-slate-300 text-xs mb-2 line-clamp-3">{cr.result.summary}</p>
+                )}
+                {cr.result.field_descriptions && Object.keys(cr.result.field_descriptions).length > 0 && (
+                  <dl className="space-y-1 text-xs">
+                    {Object.entries(cr.result.field_descriptions).slice(0, 3).map(([k, v]) => (
+                      <div key={k} className="flex gap-1">
+                        <dt className="font-mono text-[#D4A574] shrink-0">{k}:</dt>
+                        <dd className="text-slate-400 truncate">{v}</dd>
+                      </div>
+                    ))}
+                    {Object.keys(cr.result.field_descriptions).length > 3 && (
+                      <span className="text-slate-500">…他 {Object.keys(cr.result.field_descriptions).length - 3} 件</span>
+                    )}
+                  </dl>
+                )}
+              </div>
+            ))}
+          </div>
+        </AccordionSection>
+      )}
+
       {analyzeError && (
         <div className="mb-4 rounded-lg border border-red-800 bg-red-900/20 p-3">
           <p className="text-red-300 text-sm font-medium">分析の実行に失敗しました</p>
@@ -613,7 +669,47 @@ export function WebhookDetailPage() {
           >
             {feedbackOpen ? "▼ フィードバックを閉じる" : "▶ 改善指示を添える"}
           </button>
+          <button
+            type="button"
+            onClick={() => setLlmOptionsOpen((o) => !o)}
+            className="text-xs text-slate-400 hover:text-slate-300"
+          >
+            {llmOptionsOpen ? "▼ LLM 設定を閉じる" : "▶ LLM 設定"}
+          </button>
         </div>
+        {llmOptionsOpen && (
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
+            <label className="flex items-center gap-1.5">
+              <span className="text-slate-500">provider:</span>
+              <select
+                value={llmProvider}
+                onChange={(e) => setLlmProvider(e.target.value)}
+                className="rounded border border-slate-500 bg-slate-800 px-1.5 py-0.5"
+              >
+                <option value="ollama">Ollama</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-1.5">
+              <span className="text-slate-500">model:</span>
+              <input
+                type="text"
+                value={llmModel}
+                onChange={(e) => setLlmModel(e.target.value)}
+                placeholder="デフォルト (gemma3:4b)"
+                className="w-40 rounded border border-slate-500 bg-slate-800 px-1.5 py-0.5 font-mono placeholder:text-slate-600"
+              />
+            </label>
+            <label className="flex items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={compareMode}
+                onChange={(e) => setCompareMode(e.target.checked)}
+                className="rounded border-slate-500"
+              />
+              <span className="text-slate-500">比較モード</span>
+            </label>
+          </div>
+        )}
         {/* US-135: 4ステップのプログレスバー */}
         {analyzing && (
           <div className="mt-2 flex items-center gap-1">

@@ -267,6 +267,23 @@ async def test_analyze_with_user_feedback_passes_to_analyzer(
 
 
 @pytest.mark.asyncio
+async def test_analyze_unsupported_provider_returns_400(bitgo_transfer_payload: dict) -> None:
+    """US-143: 未対応の provider を指定すると 400"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        post_resp = await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+        webhook_id = post_resp.json()["id"]
+        resp = await client.post(
+            f"/api/webhooks/{webhook_id}/analyze",
+            json={"provider": "openai", "model": "gpt-4"},
+        )
+    assert resp.status_code == 400
+    assert "not supported" in resp.json().get("detail", "").lower()
+
+
+@pytest.mark.asyncio
 async def test_analyze_not_found_webhook_returns_404() -> None:
     """存在しない Webhook ID で分析を実行すると 404（US-114）"""
     async with AsyncClient(

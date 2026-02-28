@@ -670,3 +670,12 @@ QA として、過去の Webhook payload を任意のエンドポイントへ再
   - Given 既存定義があり AI 再分析を実行、When 分析完了、Then 既存 vs 新結果の diff（追加・削除・変更）が表示される … **OK**: DefinitionDiffModal、computeDiff
   - Given diff 表示中、When 「マージ」「スキップ」「部分的に適用」を選択、Then 選択に応じて定義が更新される、または更新されない … **OK**: すべてマージ / 選択だけマージ / スキップ
   - Given diff に conflict がない場合、When マージを実行、Then 定義が更新され success 等のフィードバックが表示される … **OK**: マージ後 refetch で即時反映
+
+### US-143 LLM 比較モード（P1）【完了】
+
+開発者として、provider（Ollama / OpenAI / Anthropic）や model を切り替えて同一 Webhook の AI 分析結果を比較したい。
+
+- 受け入れ基準
+  - Given 詳細画面で Webhook を表示中、When 設定から provider / model を選択して「再分析」を実行、Then 選択した provider / model で分析が実行され結果が表示される … **OK**: LLM 設定（Ollama + model オーバーライド）
+  - Given 同一 Webhook に対して複数 provider / model で分析、When 比較モードを有効にする、Then 2 つ以上の結果を並べて表示し差異を把握できる … **OK**: 比較モードで複数結果をグリッド表示
+  - Given 未設定の provider（例: API キー未設定の OpenAI）、When その provider を選択、Then 設定が必要な旨のエラーメッセージが表示される … **OK**: 400 で "not supported"（Ollama のみ対応）

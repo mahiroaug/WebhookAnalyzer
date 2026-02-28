@@ -238,15 +238,24 @@ export interface AnalyzeStreamEvent {
   analysis?: WebhookAnalysisResponse;
 }
 
+/** US-143: 分析時の provider/model オーバーライド */
+export interface AnalyzeOptions {
+  provider?: string;
+  model?: string;
+}
+
 export async function triggerAnalyzeStream(
   webhookId: string,
   userFeedback: string | null | undefined,
-  onEvent: (ev: AnalyzeStreamEvent) => void
+  onEvent: (ev: AnalyzeStreamEvent) => void,
+  options?: AnalyzeOptions
 ): Promise<WebhookAnalysisResponse | null> {
-  const body: { user_feedback?: string } = {};
+  const body: { user_feedback?: string; provider?: string; model?: string } = {};
   if (userFeedback && userFeedback.trim()) {
     body.user_feedback = userFeedback.trim();
   }
+  if (options?.provider) body.provider = options.provider;
+  if (options?.model) body.model = options.model;
   const res = await fetch(`${BASE}/webhooks/${webhookId}/analyze/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

@@ -117,6 +117,14 @@ async def trigger_analyze(
         raise HTTPException(status_code=404, detail="Webhook not found")
 
     user_feedback = (body.user_feedback or "").strip() if body else ""
+    provider = (body.provider or "ollama").lower().strip() if body else "ollama"
+    model = (body.model or "").strip() or None if body else None
+
+    if provider not in ("ollama",):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Provider '{provider}' is not supported. Currently only 'ollama' is available.",
+        )
 
     try:
         template = get_field_template(webhook.source, webhook.event_type)
@@ -126,6 +134,7 @@ async def trigger_analyze(
             user_feedback=user_feedback if user_feedback else None,
             source=webhook.source,
             event_type=webhook.event_type,
+            model=model,
         )
     except Exception as e:
         logger.error("分析処理で予期しない例外: %s", e, exc_info=True)
@@ -203,6 +212,15 @@ async def trigger_analyze_stream(
             raise HTTPException(status_code=404, detail="Webhook not found")
 
     user_feedback = (body.user_feedback or "").strip() if body else ""
+    provider = (body.provider or "ollama").lower().strip() if body else "ollama"
+    model = (body.model or "").strip() or None if body else None
+
+    if provider not in ("ollama",):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Provider '{provider}' is not supported. Currently only 'ollama' is available.",
+        )
+
     webhook_id_val = webhook_id
     webhook_source = webhook.source
     webhook_event_type = webhook.event_type
@@ -219,6 +237,7 @@ async def trigger_analyze_stream(
                 user_feedback=user_feedback or None,
                 source=webhook_source,
                 event_type=webhook_event_type,
+                model=model,
             ):
                 if event.get("step") == "done":
                     last_result = event.get("result")
