@@ -1,3 +1,4 @@
+summary: 要約テキスト
 fields:
 - path: type
   description: Webhook の種類（transfer）
@@ -8,3 +9,9 @@ fields:
 - path: wallet
   description: ウォレット情報
   reference_url: https://developers.bitgo.com/
+- path: hash
+  description: トランザクションハッシュ
+  ai_generated: true
+- path: a
+  description: 説明A
+  ai_generated: true

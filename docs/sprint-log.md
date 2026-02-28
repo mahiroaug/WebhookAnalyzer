@@ -100,3 +100,4 @@
 | US-121 | AI 分析の JSON パース堅牢化 | OK | プレーンテキスト→「LLM 出力が JSON ではありません」、parsed非dict→「不正な応答形式」、raw 500chars ログ、summary のみ許容 |
 | US-122 | Payload 全文検索と検索結果一覧モード | OK | ヘッダー検索欄、API q パラメータ（ILIKE）、0件時「該当する Webhook がありません」 |
 | US-123 | グローバルヘッダーのホームリンク | OK | ロゴを Link to="/" に、クリックで初期状態へ |
+| US-124 | フィールド辞書の YAML 定義ファイル化 | OK | definitions/ 優先読み込み、migrate_field_templates_to_yaml.py、PyYAML |

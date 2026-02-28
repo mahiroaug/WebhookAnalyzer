@@ -13,7 +13,10 @@ from app.schemas.analysis import (
     BatchAnalyzeResponse,
     WebhookAnalysisResponse,
 )
-from app.services.field_templates import get_field_template
+from app.services.field_templates import (
+    get_field_template,
+    write_analysis_to_yaml,
+)
 from app.services.llm.ollama_analyzer import analyze_payload_with_ollama
 
 logger = logging.getLogger(__name__)
@@ -63,6 +66,15 @@ async def batch_analyze(
                     summary=analysis_result.summary,
                     field_descriptions=analysis_result.field_descriptions,
                 )
+                try:
+                    write_analysis_to_yaml(
+                        webhook.source,
+                        webhook.event_type,
+                        analysis_result.summary,
+                        analysis_result.field_descriptions,
+                    )
+                except Exception as e:
+                    logger.warning("YAML 書き出し失敗（分析結果は DB に保存済み）: %s", e)
             db.add(record)
             completed += 1
         except Exception:
@@ -119,6 +131,16 @@ async def trigger_analyze(
             summary=analysis_result.summary,
             field_descriptions=analysis_result.field_descriptions,
         )
+        try:
+            write_analysis_to_yaml(
+                webhook.source,
+                webhook.event_type,
+                analysis_result.summary,
+                analysis_result.field_descriptions,
+            )
+        except Exception as e:
+            logger.warning("YAML 書き出し失敗（分析結果は DB に保存済み）: %s", e)
+
     db.add(record)
     await db.flush()
     await db.refresh(record)

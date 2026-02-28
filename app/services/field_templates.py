@@ -292,11 +292,74 @@ FIELD_TEMPLATES: dict[str, dict[str, list[FieldDefinition]]] = {
 _DEFINITIONS_DIR = Path(__file__).resolve().parent.parent.parent / "definitions"
 
 
-def _load_from_yaml(source: str, event_type: str) -> list[FieldDefinition] | None:
-    """definitions/{source}/{event_type}.yaml から読み込む。存在しなければ None。"""
+def _yaml_path(source: str, event_type: str) -> Path:
+    """definitions/{source}/{event_type}.yaml の Path を返す"""
     safe_source = source.lower().strip().replace("/", "_").replace("\\", "_")
     safe_event = event_type.lower().strip().replace(" ", ".").replace("/", "_").replace("\\", "_")
-    yaml_path = _DEFINITIONS_DIR / safe_source / f"{safe_event}.yaml"
+    return _DEFINITIONS_DIR / safe_source / f"{safe_event}.yaml"
+
+
+def _load_yaml_full(source: str, event_type: str) -> dict | None:
+    """YAML を summary 含め全件読み込み。存在しなければ None。"""
+    yaml_path = _yaml_path(source, event_type)
+    if not yaml_path.exists():
+        return None
+    try:
+        with open(yaml_path, encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+        return data if isinstance(data, dict) else None
+    except Exception:
+        return None
+
+
+def write_analysis_to_yaml(
+    source: str,
+    event_type: str,
+    summary: str,
+    field_descriptions: dict[str, str],
+) -> None:
+    """
+    US-125: AI 分析成功時に definitions/{source}/{event_type}.yaml へ書き出し。
+    既存 YAML がある場合はマージ（既存フィールドは維持、AI 由来の新規フィールドのみ追記）。
+    """
+    yaml_path = _yaml_path(source, event_type)
+    existing = _load_yaml_full(source, event_type)
+
+    if existing is None:
+        # 新規作成
+        existing_paths: set[str] = set()
+        fields_data: list[dict] = []
+    else:
+        existing_paths = set()
+        fields_list = existing.get("fields") or []
+        for item in fields_list:
+            if isinstance(item, dict) and item.get("path"):
+                existing_paths.add(str(item["path"]))
+
+        # 既存データを保持（ai_generated 等のメタデータも維持）
+        fields_data = [dict(item) for item in fields_list if isinstance(item, dict)]
+
+    # summary を設定（上書き）
+    data: dict = {"summary": summary, "fields": fields_data}
+
+    # AI 由来の新規フィールドのみ追記
+    for path, desc in field_descriptions.items():
+        if path and path not in existing_paths:
+            fields_data.append({
+                "path": path,
+                "description": desc,
+                "ai_generated": True,
+            })
+            existing_paths.add(path)
+
+    yaml_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(yaml_path, "w", encoding="utf-8") as f:
+        yaml.dump(data, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+
+
+def _load_from_yaml(source: str, event_type: str) -> list[FieldDefinition] | None:
+    """definitions/{source}/{event_type}.yaml から読み込む。存在しなければ None。"""
+    yaml_path = _yaml_path(source, event_type)
     if not yaml_path.exists():
         return None
     try:

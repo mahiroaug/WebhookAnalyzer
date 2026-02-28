@@ -1,5 +1,7 @@
 """AI 分析 API のテスト（モック使用で決定性を担保）"""
 import pytest
+from pathlib import Path
+
 from httpx import ASGITransport, AsyncClient
 from unittest.mock import AsyncMock, patch
 
@@ -146,6 +148,48 @@ async def test_analyze_ollama_exception_returns_200_with_failure(
     assert analyze_resp.status_code == 200
     data = analyze_resp.json()
     assert "[分析失敗]" in (data.get("summary") or "")
+
+
+@pytest.mark.asyncio
+async def test_analyze_success_writes_yaml(tmp_path: Path) -> None:
+    """分析成功時に definitions/ に YAML が書き出される（US-125）"""
+    from app.services import field_templates
+
+    mock_result = type("R", (), {
+        "summary": "テスト要約",
+        "field_descriptions": {"newField": "新規AIフィールドの説明"},
+        "failed": False,
+        "error_message": None,
+    })()
+
+    with patch.object(field_templates, "_DEFINITIONS_DIR", tmp_path):
+        with patch(
+            "app.routers.analysis.analyze_payload_with_ollama",
+            new_callable=AsyncMock,
+            return_value=mock_result,
+        ):
+            async with AsyncClient(
+                transport=ASGITransport(app=app),
+                base_url="http://test",
+            ) as client:
+                post_resp = await client.post(
+                    "/api/webhooks/receive",
+                    json={"hash": "0xabc", "type": "transfer", "coin": "tpolygon", "state": "confirmed"},
+                )
+                webhook_id = post_resp.json()["id"]
+                analyze_resp = await client.post(f"/api/webhooks/{webhook_id}/analyze")
+
+    assert analyze_resp.status_code == 200
+    yaml_path = tmp_path / "bitgo" / "transfer.yaml"
+    assert yaml_path.exists()
+    import yaml
+    with open(yaml_path, encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    assert data.get("summary") == "テスト要約"
+    paths = [f["path"] for f in data.get("fields", [])]
+    assert "newField" in paths
+    ai_fields = [f for f in data.get("fields", []) if f.get("ai_generated")]
+    assert any(f["path"] == "newField" for f in ai_fields)
 
 
 @pytest.mark.asyncio
