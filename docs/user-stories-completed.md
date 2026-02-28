@@ -401,3 +401,15 @@ Web3エンジニアとして、同一 event_type のpayload構造変化（追加
   - Given 一覧のエントリ、When 表示、Then インデックス左に source 別アイコン（fireblocks / bitgo / alchemy 等）が表示される
   - Given 一覧のエントリ、When 確認、Then 各行の高さがコンパクト（py-1.5 相当）で 1 ページに多くの件数が見える
   - Given 未知の source、When 表示、Then デフォルトのジェネリックアイコンが表示される
+
+### US-120 詳細ペインの UI バグ修正とボタン改善（P0）【完了】
+
+開発者として、詳細ペインのバグを修正し、AI 分析ボタンをモダンなデザインにしたい。  
+なぜなら重複ボタンやレイアウト崩れが調査の流れを阻害するから。
+
+- 受け入れ基準
+  - Given リクエストヘッダーの details を開いた状態で別 Webhook に遷移、When 新しい詳細が表示、Then リクエストヘッダーの開閉状態が維持される
+  - Given AI 分析済みの Webhook、When 詳細を表示、Then 「再分析を実行」ボタンが 1 箇所のみ表示される（重複なし）
+  - Given AI 分析ボタン、When 確認、Then ゴーストスタイル（枠線 + テキスト、DIM テーマに調和）で表示される
+  - Given Payload テーブルのネスト行、When 確認、Then 値・型・説明の列幅が親行と揃っている
+  - Given 文字列値、When Payload テーブルで表示、Then ダブルクォーテーションなしで表示される（型列の "string" で判別可能）

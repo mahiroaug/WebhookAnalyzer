@@ -96,3 +96,4 @@
 | ID | タイトル | 受け入れ結果 | 備考 |
 |----|---------|-------------|------|
 | US-119 | 一覧ペインの UI バグ修正と source アイコン表示 | OK | フィルタ縦積み、source プルダウン、SourceIcon（fireblocks/bitgo/alchemy/quicknode+ジェネリック）、py-1.5 行 |
+| US-120 | 詳細ペインの UI バグ修正とボタン改善 | OK | RequestHeadersDetails 開閉維持、再分析 1 箇所、ゴーストボタン、Payload 表 colgroup・文字列クォート除去 |
