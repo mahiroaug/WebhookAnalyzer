@@ -250,3 +250,49 @@ async def test_list_webhooks_includes_sequence_index(
     assert len(items) >= 1
     assert "sequence_index" in items[0]
     assert isinstance(items[0]["sequence_index"], int)
+
+
+@pytest.mark.asyncio
+async def test_receive_webhook_stores_http_metadata(
+    bitgo_transfer_payload: dict,
+) -> None:
+    """受信時に HTTP メソッド・ヘッダー・IP が保存される（US-116）"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        post_resp = await client.post(
+            "/api/webhooks/receive",
+            json=bitgo_transfer_payload,
+            headers={"X-Custom-Header": "test-value"},
+        )
+        assert post_resp.status_code == 201
+        webhook_id = post_resp.json()["id"]
+        detail = await client.get(f"/api/webhooks/{webhook_id}")
+
+    assert detail.status_code == 200
+    data = detail.json()
+    assert "http_method" in data
+    assert data["http_method"] == "POST"
+    assert "remote_ip" in data
+    assert "request_headers" in data
+    assert isinstance(data["request_headers"], dict)
+
+
+@pytest.mark.asyncio
+async def test_list_webhooks_includes_http_metadata(
+    bitgo_transfer_payload: dict,
+) -> None:
+    """一覧 API に http_method と remote_ip が含まれる（US-116）"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+        resp = await client.get("/api/webhooks")
+
+    assert resp.status_code == 200
+    items = resp.json()["items"]
+    assert len(items) >= 1
+    assert "http_method" in items[0]
+    assert "remote_ip" in items[0]

@@ -34,6 +34,8 @@ class WebhookListItem(BaseModel):
     analyzed: bool
     has_drift: bool = False
     sequence_index: int | None = None
+    http_method: str | None = None
+    remote_ip: str | None = None
 
 
 class WebhookListResponse(BaseModel):
@@ -54,6 +56,9 @@ class WebhookDetail(BaseModel):
     received_at: datetime
     schema_drift: dict | None = None
     sequence_index: int | None = None
+    http_method: str | None = None
+    remote_ip: str | None = None
+    request_headers: dict | None = None
 
 
 class AdjacentResponse(BaseModel):

@@ -79,3 +79,4 @@
 | ID | タイトル | 受け入れ結果 | 備考 |
 |----|---------|-------------|------|
 | US-114 | AI 分析エラーのレジリエンス強化 | OK | trigger_analyze に try/except、ollama_analyzer.py の response.message を安全化、exc_info ログ追加 |
+| US-113 | 受信順グローバルインデックス | OK | webhooks.sequence_index カラム追加、受信時に max+1 で採番、一覧・詳細に含める |

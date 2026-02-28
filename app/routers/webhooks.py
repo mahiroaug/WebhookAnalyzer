@@ -85,12 +85,20 @@ async def receive_webhook(
     max_idx_result = await db.execute(select(func.max(Webhook.sequence_index)))
     current_max = max_idx_result.scalar() or 0
 
+    # US-116: HTTP リクエストメタデータを保存
+    http_method = request.method
+    remote_ip = request.client.host if request.client else None
+    raw_headers = {k: v for k, v in request.headers.items() if k.lower() != "content-length"}
+
     webhook = Webhook(
         source=classification.source,
         event_type=classification.event_type,
         group_key=classification.group_key,
         payload=payload,
         sequence_index=current_max + 1,
+        http_method=http_method,
+        remote_ip=remote_ip,
+        request_headers=raw_headers,
     )
     db.add(webhook)
     await db.flush()
@@ -268,6 +276,8 @@ async def list_webhooks(
             analyzed=w.id in analyzed_ids,
             has_drift=_has_drift(w),
             sequence_index=w.sequence_index,
+            http_method=w.http_method,
+            remote_ip=w.remote_ip,
         )
         for w in rows
     ]
@@ -583,4 +593,7 @@ async def get_webhook(
         received_at=webhook.received_at,
         schema_drift=webhook.schema_drift,
         sequence_index=webhook.sequence_index,
+        http_method=webhook.http_method,
+        remote_ip=webhook.remote_ip,
+        request_headers=webhook.request_headers,
     )

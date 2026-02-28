@@ -32,6 +32,9 @@ class Webhook(Base):
     group_key: Mapped[str] = mapped_column(String(256), nullable=False, index=True)
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
     sequence_index: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    http_method: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    remote_ip: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    request_headers: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     schema_drift: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     received_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
