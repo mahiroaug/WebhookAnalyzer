@@ -86,3 +86,13 @@
 | US-115 | 詳細画面セクション順序の最適化 | OK | メタ→ドリフト→Payload→分析結果→分析ボタン、辞書セクション統合削除 |
 | US-117 | ペインリサイズとレスポンシブ対応 | OK | ドラッグリサイズハンドル、localStorage 幅保存、min/max 制約 |
 | US-118 | 詳細画面のアコーディオンセクション | OK | AccordionSection、開閉アニメーション、状態 localStorage 保存、HTTPメタ表示 |
+
+---
+
+## Sprint 4（2026-02-28）Phase 8: UI バグ修正と検索強化
+
+### 完了ストーリー
+
+| ID | タイトル | 受け入れ結果 | 備考 |
+|----|---------|-------------|------|
+| US-119 | 一覧ペインの UI バグ修正と source アイコン表示 | OK | フィルタ縦積み、source プルダウン、SourceIcon（fireblocks/bitgo/alchemy/quicknode+ジェネリック）、py-1.5 行 |

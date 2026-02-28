@@ -389,3 +389,15 @@ Web3エンジニアとして、同一 event_type のpayload構造変化（追加
   - Given 詳細画面を開く、When セクションヘッダーをクリック、Then 該当セクションが折りたたみ/展開される
   - Given セクションを折りたたんだ、When 別の Webhook に遷移、Then 折りたたみ状態が維持される
   - Given 全セクション、When 確認、Then Payload セクションはデフォルト展開、他はコンパクト表示がデフォルトである
+
+### US-119 一覧ペインの UI バグ修正と source アイコン表示（P0）【完了】
+
+開発者として、一覧ペインでより多くの Webhook を快適にスキャンしたい。  
+なぜならフィルタの崩れやアイコン不在が調査スピードを落とすから。
+
+- 受け入れ基準
+  - Given 左ペインの検索窓、When ペイン幅 200px 時に確認、Then source と event_type が縦積みで崩れず表示される
+  - Given source フィルタ、When クリック、Then 受信済み source の一覧がプルダウンで選択できる（テキスト入力も可）
+  - Given 一覧のエントリ、When 表示、Then インデックス左に source 別アイコン（fireblocks / bitgo / alchemy 等）が表示される
+  - Given 一覧のエントリ、When 確認、Then 各行の高さがコンパクト（py-1.5 相当）で 1 ページに多くの件数が見える
+  - Given 未知の source、When 表示、Then デフォルトのジェネリックアイコンが表示される
