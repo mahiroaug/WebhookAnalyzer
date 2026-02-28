@@ -2,11 +2,19 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, func
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import Column, DateTime, ForeignKey, String, Table, Text, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+# Webhook と InvestigationSession の多対多の中間テーブル
+webhook_sessions = Table(
+    "webhook_sessions",
+    Base.metadata,
+    Column("webhook_id", PG_UUID(as_uuid=True), ForeignKey("webhooks.id", ondelete="CASCADE")),
+    Column("session_id", PG_UUID(as_uuid=True), ForeignKey("investigation_sessions.id", ondelete="CASCADE")),
+)
 
 
 class Webhook(Base):
@@ -15,7 +23,7 @@ class Webhook(Base):
     __tablename__ = "webhooks"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        PG_UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
     )
@@ -39,6 +47,34 @@ class Webhook(Base):
         back_populates="webhook",
         cascade="all, delete-orphan",
     )
+    sessions: Mapped[list["InvestigationSession"]] = relationship(
+        "InvestigationSession",
+        secondary=webhook_sessions,
+        back_populates="webhooks",
+    )
+
+
+class InvestigationSession(Base):
+    """調査セッション（タグ/ラベル）"""
+
+    __tablename__ = "investigation_sessions"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    webhooks: Mapped[list["Webhook"]] = relationship(
+        "Webhook",
+        secondary=webhook_sessions,
+        back_populates="sessions",
+    )
 
 
 class WebhookAnalysis(Base):
@@ -47,12 +83,12 @@ class WebhookAnalysis(Base):
     __tablename__ = "webhook_analyses"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        PG_UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
     )
     webhook_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        PG_UUID(as_uuid=True),
         ForeignKey("webhooks.id", ondelete="CASCADE"),
         nullable=False,
         index=True,

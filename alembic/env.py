@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.config import settings
 from app.db.base import Base
-from app.models import Webhook, WebhookAnalysis  # noqa: F401 - マイグレーション検出用
+from app.models import InvestigationSession, Webhook, WebhookAnalysis  # noqa: F401 - マイグレーション検出用
 
 config = context.config
 

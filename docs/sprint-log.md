@@ -4,12 +4,30 @@
 
 ---
 
-## Sprint 1（YYYY-MM-DD）
+## Sprint 1（2026-02-28）
 
 ### 完了ストーリー
 
 | ID | タイトル | 受け入れ結果 | 備考 |
 |----|---------|-------------|------|
+| US-001 | 受信一覧の即時可視化 | OK | 一覧はAPIで最新順、行クリックで詳細遷移を実装 |
+| US-002 | 絞り込みによるノイズ削減 | OK | source/event_type フィルタが既存実装で成立 |
+| US-003 | ページングで大量データを安定閲覧 | OK | API limit/offset、items+total 形式、前へ/次へUI を実装 |
+| US-004 | 状態別UI（読み込み/空/エラー）の明確化 | OK | スケルトン行、空説明+CTA、エラー帯+再試行ボタン |
+| US-005 | 詳細情報の一画面集約 | OK | source/event_type/group_key/received_at をメタ情報として表示 |
+| US-006 | Payload JSONの要素分解表示 | OK | JsonTreeView で展開/折りたたみ、型表示、コピー・JSONPath コピー |
+| US-007 | 重要フィールドの視認性向上 | OK | id/amount/status 等をハイライト、欠損時は警告表示 |
+| US-008 | フィールドごとのAI解説 | OK | 既存実装で成立（要約・フィールド別説明表示） |
+| US-009 | AI分析失敗時の回復導線 | OK | 失敗時は赤帯で理由表示、再分析ボタン、API失敗は再試行ボタン |
+| US-010 | 分析ステータスの一覧可視化 | OK | 一覧に分析済/未を表示、フィルタで未分析のみ表示可能 |
+| US-011 | リアルタイム受信反映 | OK | WebSocket /ws、受信時ブロードキャスト、自動再接続・再接続ボタン |
+| US-012 | 比較ビュー | OK | 一覧で複数選択→比較画面、差分フィールド強調表示 |
+| US-013 | 保存ビュー/共有リンク | OK | フィルタをURLに反映、共有リンクコピーで同条件を再現 |
+| US-014 | event_type別の網羅一覧 | OK | GET /grouped-by-event-type、件数・代表例・新規タイプ表示 |
+| US-015 | ペイロード構造のスキーマ自動推定 | OK | GET /schema/estimate、共通フィールド・型・出現率・必須/任意 |
+| US-016 | 調査レポートのエクスポート | OK | GET /report/markdown、要約・フィールド説明・スキーマ・サンプル |
+| US-017 | 一括AI分析 | OK | POST /batch-analyze、一覧の一括分析ボタン、完了/失敗件数表示 |
+| US-018 | 調査セッション管理 | OK | セッションCRUD、Webhook紐づけ、セッション絞り込み |
 
 ### 持ち越し
 
@@ -18,4 +36,15 @@
 
 ### 振り返りメモ
 
--
+- US-001: APIは既に `received_at.desc()` でソート済み。一覧に ID/Source/EventType/受信日時 を表示。行全体をクリック可能にし、`useNavigate` で詳細画面へ遷移するよう改善。
+- US-003: 一覧APIを `{ items, total }` 形式に変更。limit=20/offset でページング。前へ/次へボタンで連続閲覧可能。
+- US-004: ローディングはスケルトン5行+animate-pulse。空状態は説明文+フィルタ解除/再読み込みCTA。エラーは赤帯+再試行ボタン。
+- US-005: 詳細画面にメタ情報（source/event_type/group_key/received_at）を定義リストで表示。
+- US-006: JsonTreeView コンポーネント作成。展開/折りたたみ、キー・型・値、値コピー・JSONPath コピーを実装。
+- US-007: 重要キー（id/amount/status 等）をハイライト。重要キーが1件以上ある場合、未検出の重要キーを警告表示。
+- US-009: 分析失敗時（summary "[分析失敗]"）は赤帯で表示し「再分析を実行」ボタン。API呼び出し失敗時は analyzeError で「再試行」。
+- US-010: 一覧APIに analyzed フィールド追加、analyzed クエリでフィルタ。一覧に「済/未」バッジ、セレクトで未分析のみ表示。
+- US-011: WebSocket /api/webhooks/ws エンドポイント追加。receive 時に broadcast。useWebhookWebSocket フックで自動再接続・再接続ボタン。
+- US-014: GET /webhooks/grouped-by-event-type。event_type 別に件数・代表例。unknown は「新規タイプ」バッジ。
+- US-015: GET /webhooks/schema/estimate?event_type=。3件以上で推定。共通フィールド・型・出現率。必須=100%、任意<100%。event_type別ページに「スキーマ推定」リンク。
+- US-016: GET /webhooks/report/markdown。分析済みを source/event_type 別に要約・フィールド説明・スキーマ・サンプルペイロードで出力。一覧に「レポート出力」リンク。

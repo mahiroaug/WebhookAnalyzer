@@ -31,6 +31,14 @@ class WebhookListItem(BaseModel):
     event_type: str
     group_key: str
     received_at: datetime
+    analyzed: bool
+
+
+class WebhookListResponse(BaseModel):
+    """ページング付き一覧のレスポンス"""
+
+    items: list[WebhookListItem]
+    total: int
 
 
 class WebhookDetail(BaseModel):
@@ -49,3 +57,36 @@ class StatsResponse(BaseModel):
 
     by_source: dict[str, int]
     by_event_type: dict[str, int]
+
+
+class EventTypeGroup(BaseModel):
+    """event_type 別グルーピングの1件"""
+
+    event_type: str
+    count: int
+    sample: WebhookListItem
+    is_known: bool = True
+
+
+class EventTypeGroupResponse(BaseModel):
+    """event_type 別グルーピングのレスポンス"""
+
+    groups: list[EventTypeGroup]
+
+
+class SchemaField(BaseModel):
+    """スキーマ推定の1フィールド"""
+
+    path: str
+    type: str
+    occurrence_rate: float
+    required: bool
+
+
+class SchemaEstimateResponse(BaseModel):
+    """スキーマ推定のレスポンス"""
+
+    event_type: str
+    source: str | None
+    total_samples: int
+    fields: list[SchemaField]

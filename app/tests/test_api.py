@@ -41,9 +41,11 @@ async def test_list_webhooks_returns_received(
         resp = await client.get("/api/webhooks")
     assert resp.status_code == 200
     data = resp.json()
-    assert isinstance(data, list)
-    assert len(data) >= 1
-    assert data[0]["source"] == "bitgo"
+    assert "items" in data
+    assert "total" in data
+    assert isinstance(data["items"], list)
+    assert len(data["items"]) >= 1
+    assert data["items"][0]["source"] == "bitgo"
 
 
 @pytest.mark.asyncio
@@ -61,6 +63,28 @@ async def test_get_webhook_detail_includes_payload(
     assert resp.status_code == 200
     data = resp.json()
     assert data["payload"] == bitgo_transfer_payload
+
+
+@pytest.mark.asyncio
+async def test_list_webhooks_pagination(
+    bitgo_transfer_payload: dict,
+    fireblocks_tx_payload: dict,
+) -> None:
+    """100件以上で初期表示は1ページ分のみ取得される"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        # 複数件投入（テストDBの状態によるが limit/offset の挙動を検証）
+        for _ in range(3):
+            await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+        resp = await client.get("/api/webhooks?limit=2&offset=0")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "items" in data
+    assert "total" in data
+    assert len(data["items"]) <= 2
+    assert data["total"] >= 3
 
 
 @pytest.mark.asyncio

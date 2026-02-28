@@ -7,12 +7,68 @@ from sqlalchemy import select
 
 from app.db.session import get_db
 from app.models.webhook import Webhook, WebhookAnalysis
-from app.schemas.analysis import AnalyzeTriggerResponse, WebhookAnalysisResponse
+from app.schemas.analysis import (
+    AnalyzeTriggerResponse,
+    BatchAnalyzeRequest,
+    BatchAnalyzeResponse,
+    WebhookAnalysisResponse,
+)
 from app.services.llm.ollama_analyzer import analyze_payload_with_ollama
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/webhooks", tags=["analysis"])
+
+
+@router.post("/batch-analyze", response_model=BatchAnalyzeResponse)
+async def batch_analyze(
+    body: BatchAnalyzeRequest,
+    db=Depends(get_db),
+) -> BatchAnalyzeResponse:
+    """未分析 Webhook を一括で分析する（最大50件）"""
+    ids = body.webhook_ids[:50]
+    if not ids:
+        return BatchAnalyzeResponse(total=0, completed=0, failed=0)
+
+    completed = 0
+    failed = 0
+    for webhook_id in ids:
+        try:
+            stmt = select(Webhook).where(Webhook.id == webhook_id)
+            result = await db.execute(stmt)
+            webhook = result.scalar_one_or_none()
+            if not webhook:
+                failed += 1
+                continue
+            analysis_result = await analyze_payload_with_ollama(webhook.payload)
+            del_stmt = select(WebhookAnalysis).where(
+                WebhookAnalysis.webhook_id == webhook_id
+            )
+            existing = (await db.execute(del_stmt)).scalars().all()
+            for a in existing:
+                await db.delete(a)
+            if analysis_result.failed:
+                record = WebhookAnalysis(
+                    webhook_id=webhook_id,
+                    summary=f"[分析失敗] {analysis_result.error_message or 'unknown'}",
+                    field_descriptions={},
+                )
+            else:
+                record = WebhookAnalysis(
+                    webhook_id=webhook_id,
+                    summary=analysis_result.summary,
+                    field_descriptions=analysis_result.field_descriptions,
+                )
+            db.add(record)
+            completed += 1
+        except Exception:
+            failed += 1
+
+    return BatchAnalyzeResponse(
+        total=len(ids),
+        completed=completed,
+        failed=failed,
+    )
 
 
 @router.post("/{webhook_id}/analyze", response_model=AnalyzeTriggerResponse)

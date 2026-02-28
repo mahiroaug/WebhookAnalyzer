@@ -23,3 +23,17 @@ class AnalyzeTriggerResponse(BaseModel):
     summary: str | None
     field_descriptions: dict[str, str] | None
     analyzed_at: datetime
+
+
+class BatchAnalyzeRequest(BaseModel):
+    """一括分析のリクエスト"""
+
+    webhook_ids: list[UUID]
+
+
+class BatchAnalyzeResponse(BaseModel):
+    """一括分析のレスポンス"""
+
+    total: int
+    completed: int
+    failed: int

@@ -6,6 +6,8 @@ alwaysApply: false
 
 # UI デザインガイド
 
+> **洗練されたデザイン**: PolygonScan DIM モード・Apple HIG の詳細は `.cursor/skills/ui-design-polygonscan-apple/SKILL.md` を参照。ミュートな色使い・余白・階層感を優先する。
+
 ## カラーパレット
 
 - ベース: Slate 系（`slate-50` 〜 `slate-900`）

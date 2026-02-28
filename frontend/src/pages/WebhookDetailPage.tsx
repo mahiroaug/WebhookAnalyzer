@@ -7,6 +7,7 @@ import {
   type WebhookDetail,
   type WebhookAnalysisResponse,
 } from "../services/api";
+import { JsonTreeView } from "../components/JsonTreeView";
 
 export function WebhookDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -14,16 +15,18 @@ export function WebhookDetailPage() {
   const [analysis, setAnalysis] = useState<WebhookAnalysisResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
+    const webhookId = id;
     let cancelled = false;
     async function load() {
       setLoading(true);
       try {
         const [detailRes, analysisRes] = await Promise.all([
-          getWebhook(id),
-          getAnalysis(id),
+          getWebhook(webhookId),
+          getAnalysis(webhookId),
         ]);
         if (!cancelled) {
           setWebhook(detailRes);
@@ -42,13 +45,19 @@ export function WebhookDetailPage() {
   async function handleAnalyze() {
     if (!id) return;
     setAnalyzing(true);
+    setAnalyzeError(null);
     try {
       const res = await triggerAnalyze(id);
       setAnalysis(res);
+    } catch (e) {
+      setAnalyzeError(e instanceof Error ? e.message : "不明なエラー");
     } finally {
       setAnalyzing(false);
     }
   }
+
+  const analysisFailed =
+    analysis?.summary?.startsWith("[分析失敗]") ?? false;
 
   if (loading || !webhook) {
     return (
@@ -68,9 +77,16 @@ export function WebhookDetailPage() {
           ← 一覧へ
         </Link>
         <h1 className="text-2xl font-bold">Webhook 詳細</h1>
-        <p className="text-slate-600 dark:text-slate-400 font-mono text-sm">
-          {webhook.source} / {webhook.event_type}
-        </p>
+        <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+          <dt className="text-slate-500 dark:text-slate-400">source</dt>
+          <dd className="font-mono">{webhook.source}</dd>
+          <dt className="text-slate-500 dark:text-slate-400">event_type</dt>
+          <dd className="font-mono">{webhook.event_type}</dd>
+          <dt className="text-slate-500 dark:text-slate-400">group_key</dt>
+          <dd className="font-mono">{webhook.group_key}</dd>
+          <dt className="text-slate-500 dark:text-slate-400">received_at</dt>
+          <dd className="font-mono">{new Date(webhook.received_at).toLocaleString()}</dd>
+        </dl>
       </header>
 
       <div className="mb-6">
@@ -83,30 +99,78 @@ export function WebhookDetailPage() {
         </button>
       </div>
 
+      {analyzeError && (
+        <div className="mb-6 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4">
+          <p className="text-red-700 dark:text-red-300 font-medium">
+            分析の実行に失敗しました
+          </p>
+          <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+            {analyzeError}
+          </p>
+          <button
+            onClick={handleAnalyze}
+            disabled={analyzing}
+            className="mt-3 rounded bg-red-600 text-white px-4 py-2 text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+          >
+            再試行
+          </button>
+        </div>
+      )}
+
       {analysis && (
-        <div className="mb-6 rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-800">
+        <div
+          className={`mb-6 rounded-lg border p-4 ${
+            analysisFailed
+              ? "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20"
+              : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+          }`}
+        >
           <h2 className="text-lg font-semibold mb-2">分析結果</h2>
           {analysis.summary && (
-            <p className="mb-3 text-slate-700 dark:text-slate-300">{analysis.summary}</p>
+            <p
+              className={`mb-3 ${
+                analysisFailed
+                  ? "text-red-600 dark:text-red-400"
+                  : "text-slate-700 dark:text-slate-300"
+              }`}
+            >
+              {analysis.summary}
+            </p>
           )}
-          {analysis.field_descriptions && Object.keys(analysis.field_descriptions).length > 0 && (
-            <dl className="space-y-1 text-sm">
-              {Object.entries(analysis.field_descriptions).map(([key, desc]) => (
-                <div key={key} className="flex gap-2">
-                  <dt className="font-mono text-indigo-600 dark:text-indigo-400 font-medium min-w-[120px]">{key}</dt>
-                  <dd className="text-slate-600 dark:text-slate-400">{desc}</dd>
-                </div>
-              ))}
-            </dl>
+          {analysis.field_descriptions &&
+            Object.keys(analysis.field_descriptions).length > 0 && (
+              <dl className="space-y-1 text-sm">
+                {Object.entries(analysis.field_descriptions).map(([key, desc]) => (
+                  <div key={key} className="flex gap-2">
+                    <dt className="font-mono text-indigo-600 dark:text-indigo-400 font-medium min-w-[120px]">
+                      {key}
+                    </dt>
+                    <dd className="text-slate-600 dark:text-slate-400">{desc}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          {analysisFailed && (
+            <button
+              onClick={handleAnalyze}
+              disabled={analyzing}
+              className="mt-3 rounded bg-red-600 text-white px-4 py-2 text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {analyzing ? "再分析中..." : "再分析を実行"}
+            </button>
           )}
         </div>
       )}
 
       <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-800">
-        <h2 className="text-lg font-semibold mb-2">Payload (JSON)</h2>
-        <pre className="text-xs overflow-x-auto p-4 bg-slate-100 dark:bg-slate-900 rounded">
-          {JSON.stringify(webhook.payload, null, 2)}
-        </pre>
+        <h2 className="text-lg font-semibold mb-3">Payload (JSON)</h2>
+        <div className="text-sm font-mono overflow-x-auto p-4 bg-slate-100 dark:bg-slate-900 rounded min-h-[120px]">
+          <JsonTreeView
+            data={webhook.payload}
+            rootKey="payload"
+            showMissingImportant
+          />
+        </div>
       </div>
     </div>
   );

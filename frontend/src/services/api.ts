@@ -8,6 +8,7 @@ export interface WebhookListItem {
   event_type: string;
   group_key: string;
   received_at: string;
+  analyzed: boolean;
 }
 
 export interface WebhookDetail {
@@ -32,10 +33,29 @@ export interface WebhookAnalysisResponse {
   analyzed_at: string;
 }
 
+export interface WebhookListResponse {
+  items: WebhookListItem[];
+  total: number;
+}
+
 export async function listWebhooks(
-  params?: { source?: string; event_type?: string }
-): Promise<WebhookListItem[]> {
-  const search = new URLSearchParams(params as Record<string, string>).toString();
+  params?: {
+    source?: string;
+    event_type?: string;
+    analyzed?: boolean;
+    session_id?: string;
+    limit?: number;
+    offset?: number;
+  }
+): Promise<WebhookListResponse> {
+  const cleanParams: Record<string, string> = {};
+  if (params?.source) cleanParams.source = params.source;
+  if (params?.event_type) cleanParams.event_type = params.event_type;
+  if (params?.analyzed !== undefined) cleanParams.analyzed = String(params.analyzed);
+  if (params?.session_id) cleanParams.session_id = params.session_id;
+  if (params?.limit != null) cleanParams.limit = String(params.limit);
+  if (params?.offset != null) cleanParams.offset = String(params.offset);
+  const search = new URLSearchParams(cleanParams).toString();
   const url = `${BASE}/webhooks${search ? `?${search}` : ""}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -48,8 +68,105 @@ export async function getWebhook(id: string): Promise<WebhookDetail> {
   return res.json();
 }
 
+export interface EventTypeGroup {
+  event_type: string;
+  count: number;
+  sample: WebhookListItem;
+  is_known: boolean;
+}
+
+export interface EventTypeGroupResponse {
+  groups: EventTypeGroup[];
+}
+
+export interface SchemaField {
+  path: string;
+  type: string;
+  occurrence_rate: number;
+  required: boolean;
+}
+
+export interface SchemaEstimateResponse {
+  event_type: string;
+  source: string | null;
+  total_samples: number;
+  fields: SchemaField[];
+}
+
+export async function getSchemaEstimate(
+  eventType: string,
+  source?: string
+): Promise<SchemaEstimateResponse> {
+  const params = new URLSearchParams({ event_type: eventType });
+  if (source) params.set("source", source);
+  const res = await fetch(`${BASE}/webhooks/schema/estimate?${params}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg =
+      typeof err?.detail === "string"
+        ? err.detail
+        : Array.isArray(err?.detail)
+          ? err.detail.map((e: { msg?: string }) => e.msg).join(", ")
+          : `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
+export async function getGroupedByEventType(): Promise<EventTypeGroupResponse> {
+  const res = await fetch(`${BASE}/webhooks/grouped-by-event-type`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export interface Session {
+  id: string;
+  name: string;
+  webhook_count: number;
+  created_at: string;
+}
+
+export async function listSessions(): Promise<{ sessions: Session[] }> {
+  const res = await fetch(`${BASE}/sessions`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function createSession(name: string): Promise<Session> {
+  const res = await fetch(`${BASE}/sessions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function addWebhookToSession(
+  sessionId: string,
+  webhookId: string
+): Promise<void> {
+  const res = await fetch(
+    `${BASE}/sessions/${sessionId}/webhooks/${webhookId}`,
+    { method: "POST" }
+  );
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
 export async function getStats(): Promise<StatsResponse> {
   const res = await fetch(`${BASE}/webhooks/stats`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function batchAnalyze(
+  webhookIds: string[]
+): Promise<{ total: number; completed: number; failed: number }> {
+  const res = await fetch(`${BASE}/webhooks/batch-analyze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ webhook_ids: webhookIds }),
+  });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
