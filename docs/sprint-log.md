@@ -49,3 +49,4 @@
 - US-015: GET /webhooks/schema/estimate?event_type=。3件以上で推定。共通フィールド・型・出現率。必須=100%、任意<100%。event_type別ページに「スキーマ推定」リンク。
 - US-016: GET /webhooks/report/markdown。分析済みを source/event_type 別に要約・フィールド説明・スキーマ・サンプルペイロードで出力。一覧に「レポート出力」リンク。
 - US-019: フィールド辞書テンプレート（Fireblocks/BitGo）を app/services/field_templates.py に定義。GET /webhooks/field-templates API、詳細画面での辞書表示、未知フィールドの「未知」バッジ、AI分析へのテンプレート補助情報反映。
+- US-020: スキーマドリフト検知。受信時に同 event_type の基準スキーマと比較し schema_drift を保存。一覧にドリフトバッジ・フィルタ、詳細に追加/削除/型変更の表示。

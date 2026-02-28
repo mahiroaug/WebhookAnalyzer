@@ -9,6 +9,7 @@ export interface WebhookListItem {
   group_key: string;
   received_at: string;
   analyzed: boolean;
+  has_drift?: boolean;
 }
 
 export interface WebhookDetail {
@@ -18,6 +19,17 @@ export interface WebhookDetail {
   group_key: string;
   payload: Record<string, unknown>;
   received_at: string;
+  schema_drift?: {
+    has_drift: boolean;
+    added?: string[];
+    removed?: string[];
+    type_changed?: Array<{
+      path: string;
+      expected_type: string;
+      actual_type: string;
+    }>;
+    risk_level?: string;
+  } | null;
 }
 
 export interface StatsResponse {
@@ -43,6 +55,7 @@ export async function listWebhooks(
     source?: string;
     event_type?: string;
     analyzed?: boolean;
+    has_drift?: boolean;
     session_id?: string;
     limit?: number;
     offset?: number;
@@ -52,6 +65,7 @@ export async function listWebhooks(
   if (params?.source) cleanParams.source = params.source;
   if (params?.event_type) cleanParams.event_type = params.event_type;
   if (params?.analyzed !== undefined) cleanParams.analyzed = String(params.analyzed);
+  if (params?.has_drift !== undefined) cleanParams.has_drift = String(params.has_drift);
   if (params?.session_id) cleanParams.session_id = params.session_id;
   if (params?.limit != null) cleanParams.limit = String(params.limit);
   if (params?.offset != null) cleanParams.offset = String(params.offset);

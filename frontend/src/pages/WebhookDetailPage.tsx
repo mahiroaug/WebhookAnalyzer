@@ -125,6 +125,55 @@ export function WebhookDetailPage() {
         </div>
       )}
 
+      {webhook.schema_drift?.has_drift && (
+        <div className="mb-6 rounded-lg border border-amber-200 dark:border-amber-800 p-4 bg-amber-50 dark:bg-amber-900/20">
+          <h2 className="text-lg font-semibold mb-2 text-amber-800 dark:text-amber-200">
+            スキーマドリフト検知
+            {webhook.schema_drift?.risk_level === "high" && (
+              <span className="ml-2 text-sm font-normal px-2 py-0.5 rounded bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">
+                高リスク
+              </span>
+            )}
+          </h2>
+          <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
+            直近の基準スキーマとの差分
+          </p>
+          <div className="space-y-2 text-sm">
+            {webhook.schema_drift?.added && webhook.schema_drift.added.length > 0 && (
+              <div>
+                <span className="font-medium text-green-700 dark:text-green-400">
+                  追加:
+                </span>{" "}
+                <span className="font-mono">{webhook.schema_drift.added.join(", ")}</span>
+              </div>
+            )}
+            {webhook.schema_drift?.removed && webhook.schema_drift.removed.length > 0 && (
+              <div>
+                <span className="font-medium text-red-700 dark:text-red-400">
+                  削除:
+                </span>{" "}
+                <span className="font-mono">{webhook.schema_drift.removed.join(", ")}</span>
+              </div>
+            )}
+            {webhook.schema_drift?.type_changed &&
+              webhook.schema_drift.type_changed.length > 0 && (
+                <div>
+                  <span className="font-medium text-amber-700 dark:text-amber-400">
+                    型変更:
+                  </span>
+                  <ul className="mt-1 list-disc list-inside space-y-0.5">
+                    {webhook.schema_drift.type_changed.map((tc, i) => (
+                      <li key={i} className="font-mono text-xs">
+                        {tc.path}: {tc.expected_type} → {tc.actual_type}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+          </div>
+        </div>
+      )}
+
       {fieldTemplate && fieldTemplate.fields.length > 0 && (
         <div className="mb-6 rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-800">
           <h2 className="text-lg font-semibold mb-2">

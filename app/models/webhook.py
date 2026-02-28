@@ -31,6 +31,7 @@ class Webhook(Base):
     event_type: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     group_key: Mapped[str] = mapped_column(String(256), nullable=False, index=True)
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    schema_drift: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     received_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

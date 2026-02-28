@@ -7,7 +7,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import PlainTextResponse
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -27,6 +27,10 @@ from app.schemas.webhook import (
 )
 from app.services.classifier import classify_webhook
 from app.services.field_templates import get_field_template
+from app.services.schema_drift import (
+    compute_drift,
+    schema_drift_to_dict,
+)
 from app.services.websocket_manager import ws_manager
 
 logger = logging.getLogger(__name__)
@@ -85,6 +89,37 @@ async def receive_webhook(
     await db.flush()
     await db.refresh(webhook)
 
+    # スキーマドリフト検知: 同 event_type の他 Webhook を基準に比較
+    other_stmt = (
+        select(Webhook)
+        .where(
+            Webhook.event_type == webhook.event_type,
+            Webhook.id != webhook.id,
+        )
+        .order_by(Webhook.received_at.desc())
+        .limit(50)
+    )
+    other_result = await db.execute(other_stmt)
+    others = other_result.scalars().all()
+    if len(others) >= 1:
+        all_fields: dict[str, list[tuple[str, bool]]] = {}
+        for wh in others:
+            flat = _flatten_schema_with_types(wh.payload)
+            for path, ty in flat.items():
+                if path not in all_fields:
+                    all_fields[path] = []
+                all_fields[path].append((ty, True))
+        total = len(others)
+        baseline: dict[str, tuple[str, bool]] = {}
+        for path, entries in all_fields.items():
+            types = [e[0] for e in entries]
+            required = len(entries) == total
+            dominant_type = max(set(types), key=types.count)
+            baseline[path] = (dominant_type, required)
+        drift_result = compute_drift(webhook.payload, baseline)
+        webhook.schema_drift = schema_drift_to_dict(drift_result)
+        await db.flush()
+
     logger.info(
         "Webhook received id=%s source=%s event_type=%s",
         webhook.id,
@@ -114,6 +149,7 @@ async def list_webhooks(
     source: str | None = None,
     event_type: str | None = None,
     analyzed: bool | None = None,
+    has_drift: bool | None = None,
     session_id: UUID | None = None,
     limit: int = 20,
     offset: int = 0,
@@ -143,6 +179,19 @@ async def list_webhooks(
             base_stmt = base_stmt.where(exists_stmt)
         else:
             base_stmt = base_stmt.where(~exists_stmt)
+    if has_drift is not None:
+        if has_drift:
+            base_stmt = base_stmt.where(
+                Webhook.schema_drift.isnot(None),
+                Webhook.schema_drift["has_drift"].astext == "true",
+            )
+        else:
+            base_stmt = base_stmt.where(
+                or_(
+                    Webhook.schema_drift.is_(None),
+                    Webhook.schema_drift["has_drift"].astext != "true",
+                )
+            )
 
     # 総件数を取得
     count_stmt = select(func.count(Webhook.id))
@@ -166,6 +215,19 @@ async def list_webhooks(
             count_stmt = count_stmt.where(exists_stmt)
         else:
             count_stmt = count_stmt.where(~exists_stmt)
+    if has_drift is not None:
+        if has_drift:
+            count_stmt = count_stmt.where(
+                Webhook.schema_drift.isnot(None),
+                Webhook.schema_drift["has_drift"].astext == "true",
+            )
+        else:
+            count_stmt = count_stmt.where(
+                or_(
+                    Webhook.schema_drift.is_(None),
+                    Webhook.schema_drift["has_drift"].astext != "true",
+                )
+            )
     total_result = await db.execute(count_stmt)
     total = total_result.scalar_one() or 0
 
@@ -184,6 +246,11 @@ async def list_webhooks(
         analyzed_result = await db.execute(analyzed_stmt)
         analyzed_ids = {r[0] for r in analyzed_result.all()}
 
+    def _has_drift(w: Webhook) -> bool:
+        if not w.schema_drift or not isinstance(w.schema_drift, dict):
+            return False
+        return bool(w.schema_drift.get("has_drift"))
+
     items = [
         WebhookListItem(
             id=w.id,
@@ -192,6 +259,7 @@ async def list_webhooks(
             group_key=w.group_key,
             received_at=w.received_at,
             analyzed=w.id in analyzed_ids,
+            has_drift=_has_drift(w),
         )
         for w in rows
     ]
@@ -466,4 +534,5 @@ async def get_webhook(
         group_key=webhook.group_key,
         payload=webhook.payload,
         received_at=webhook.received_at,
+        schema_drift=webhook.schema_drift,
     )

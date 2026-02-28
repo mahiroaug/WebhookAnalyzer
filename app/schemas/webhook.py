@@ -32,6 +32,7 @@ class WebhookListItem(BaseModel):
     group_key: str
     received_at: datetime
     analyzed: bool
+    has_drift: bool = False
 
 
 class WebhookListResponse(BaseModel):
@@ -50,6 +51,7 @@ class WebhookDetail(BaseModel):
     group_key: str
     payload: dict
     received_at: datetime
+    schema_drift: dict | None = None
 
 
 class StatsResponse(BaseModel):

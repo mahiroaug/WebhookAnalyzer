@@ -36,6 +36,12 @@ export function WebhookListPage() {
     const a = searchParams.get("analyzed");
     return a === "true" ? "analyzed" : a === "false" ? "unanalyzed" : "all";
   });
+  const [filterHasDrift, setFilterHasDrift] = useState<"all" | "yes" | "no">(
+    () => {
+      const d = searchParams.get("has_drift");
+      return d === "true" ? "yes" : d === "false" ? "no" : "all";
+    }
+  );
   const [filterSession, setFilterSession] = useState(
     () => searchParams.get("session_id") ?? ""
   );
@@ -93,7 +99,7 @@ export function WebhookListPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [filterSource, filterEventType, filterAnalyzed, filterSession]);
+  }, [filterSource, filterEventType, filterAnalyzed, filterHasDrift, filterSession]);
 
   useEffect(() => {
     listSessions().then((r) => setSessions(r.sessions)).catch(() => {});
@@ -123,10 +129,12 @@ export function WebhookListPage() {
     if (filterSource) params.set("source", filterSource);
     if (filterEventType) params.set("event_type", filterEventType);
     if (filterAnalyzed !== "all") params.set("analyzed", filterAnalyzed);
+    if (filterHasDrift !== "all")
+      params.set("has_drift", filterHasDrift === "yes" ? "true" : "false");
     if (filterSession) params.set("session_id", filterSession);
     if (page > 1) params.set("page", String(page));
     setSearchParams(params, { replace: true });
-  }, [filterSource, filterEventType, filterAnalyzed, filterSession, page, setSearchParams]);
+  }, [filterSource, filterEventType, filterAnalyzed, filterHasDrift, filterSession, page, setSearchParams]);
 
   const [linkCopied, setLinkCopied] = useState(false);
   const copyShareLink = () => {
@@ -149,6 +157,12 @@ export function WebhookListPage() {
               filterAnalyzed === "analyzed"
                 ? true
                 : filterAnalyzed === "unanalyzed"
+                  ? false
+                  : undefined,
+            has_drift:
+              filterHasDrift === "yes"
+                ? true
+                : filterHasDrift === "no"
                   ? false
                   : undefined,
             session_id: filterSession || undefined,
@@ -174,7 +188,7 @@ export function WebhookListPage() {
 
   useEffect(() => {
     load();
-  }, [filterSource, filterEventType, filterAnalyzed, filterSession, page]);
+  }, [filterSource, filterEventType, filterAnalyzed, filterHasDrift, filterSession, page]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6">
@@ -280,6 +294,17 @@ export function WebhookListPage() {
           <option value="all">分析状態: すべて</option>
           <option value="analyzed">分析済みのみ</option>
           <option value="unanalyzed">未分析のみ</option>
+        </select>
+        <select
+          value={filterHasDrift}
+          onChange={(e) =>
+            setFilterHasDrift(e.target.value as "all" | "yes" | "no")
+          }
+          className="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+        >
+          <option value="all">ドリフト: すべて</option>
+          <option value="yes">ドリフトありのみ</option>
+          <option value="no">ドリフトなし</option>
         </select>
         <select
           value={filterSession}
@@ -441,6 +466,16 @@ export function WebhookListPage() {
                       {w.analyzed ? "済" : "未"}
                     </span>
                   </td>
+                  <td className="p-3">
+                    {w.has_drift && (
+                      <span
+                        className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300"
+                        title="スキーマドリフト検知"
+                      >
+                        ドリフト
+                      </span>
+                    )}
+                  </td>
                   <td className="p-3 text-slate-600 dark:text-slate-400">
                     {new Date(w.received_at).toLocaleString()}
                   </td>
@@ -454,16 +489,17 @@ export function WebhookListPage() {
                 Webhook がありません
               </p>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-                {filterSource || filterEventType || filterAnalyzed !== "all" || filterSession
+                {filterSource || filterEventType || filterAnalyzed !== "all" || filterHasDrift !== "all" || filterSession
                   ? "指定した条件に一致する Webhook はありません。フィルタを解除してみましょう。"
                   : "外部サービス（Fireblocks, BitGo 等）の Webhook 送信先にこのシステムの URL を設定し、送信してみましょう。"}
               </p>
               <button
                 onClick={() => {
-                  if (filterSource || filterEventType || filterAnalyzed !== "all" || filterSession) {
+                  if (filterSource || filterEventType || filterAnalyzed !== "all" || filterHasDrift !== "all" || filterSession) {
                     setFilterSource("");
                     setFilterEventType("");
                     setFilterAnalyzed("all");
+                    setFilterHasDrift("all");
                     setFilterSession("");
                   } else {
                     load();
@@ -471,7 +507,7 @@ export function WebhookListPage() {
                 }}
                 className="mt-4 rounded bg-indigo-600 text-white px-4 py-2 text-sm font-medium hover:bg-indigo-700"
               >
-                {filterSource || filterEventType || filterAnalyzed !== "all" || filterSession ? "フィルタを解除" : "再読み込み"}
+                {filterSource || filterEventType || filterAnalyzed !== "all" || filterHasDrift !== "all" || filterSession ? "フィルタを解除" : "再読み込み"}
               </button>
             </div>
           )}

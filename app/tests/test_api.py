@@ -142,3 +142,33 @@ async def test_field_templates_unknown_returns_404() -> None:
             params={"source": "unknown", "event_type": "foo"},
         )
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_schema_drift_detected_on_receive(
+    bitgo_pending_approval_payload: dict,
+) -> None:
+    """同 event_type の2件目で構造が異なると schema_drift が検知される"""
+    payload1 = dict(bitgo_pending_approval_payload)
+    payload2 = dict(bitgo_pending_approval_payload)
+    payload2["extraField"] = "unknown"  # 追加フィールド
+    payload2.pop("walletId", None)  # 削除（存在する場合）
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        r1 = await client.post("/api/webhooks/receive", json=payload1)
+        assert r1.status_code == 201
+        r2 = await client.post("/api/webhooks/receive", json=payload2)
+        assert r2.status_code == 201
+
+        # 2件目の詳細に schema_drift が入っている
+        detail = await client.get(f"/api/webhooks/{r2.json()['id']}")
+    assert detail.status_code == 200
+    data = detail.json()
+    assert "schema_drift" in data
+    drift = data["schema_drift"]
+    assert drift is not None
+    assert drift.get("has_drift") is True
+    assert "extraField" in drift.get("added", [])
