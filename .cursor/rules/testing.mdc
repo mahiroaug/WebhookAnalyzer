@@ -1,0 +1,50 @@
+---
+description: 自動テスト規約（pytest / ブラウザ検証のタイミングと配置）
+globs: app/**/*.py,frontend/**/*.tsx
+alwaysApply: false
+---
+
+# テスト規約
+
+## バックエンド（pytest）
+
+### 配置
+
+- テストファイル: `app/tests/test_{router名}.py`
+- conftest: `app/tests/conftest.py`（DB セッション・テストクライアントの共通フィクスチャ）
+
+### テストクライアント
+
+```python
+from httpx import ASGITransport, AsyncClient
+from app.main import app
+
+async with AsyncClient(
+    transport=ASGITransport(app=app),
+    base_url="http://test",
+) as client:
+    response = await client.get("/api/webhooks")
+```
+
+### 実行
+
+```bash
+pytest app/tests/ -v
+```
+
+### ルール
+
+- 新しい API エンドポイントを追加したら、対応するテストも同時に作成する
+- 正常系 + 主要な異常系（404, 400, 413 等）をカバーする
+- テスト関数名: `test_{操作}_{条件}` （例: `test_list_webhooks_with_source_filter`）
+
+## フロントエンド
+
+- Phase 1〜2: ブラウザ検証（acceptance-testing スキル）を主とする
+- ユニットテスト（Vitest）は Phase 3 以降で導入を検討する
+
+## テスト実行タイミング
+
+- API エンドポイントを追加・変更したら `pytest app/tests/` を実行する
+- フロントエンドを変更したらブラウザで受け入れ基準を検証する
+- 両方に変更がある場合は pytest → ブラウザ検証の順で実施する

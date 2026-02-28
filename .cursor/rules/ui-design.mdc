@@ -1,0 +1,64 @@
+---
+description: UI デザインガイド（カラー・状態表現・コンポーネント密度）
+globs: frontend/**/*.tsx
+alwaysApply: false
+---
+
+# UI デザインガイド
+
+## カラーパレット
+
+- ベース: Slate 系（`slate-50` 〜 `slate-900`）
+- アクセント: Indigo（`indigo-600` / `dark:indigo-400`）
+- 成功: Green（`green-600`）
+- 警告: Amber（`amber-600`）
+- エラー: Red（`red-600`）
+
+## ダークモード
+
+- 全コンポーネントで `dark:` プレフィックスを付与する
+- 背景: `bg-slate-50 dark:bg-slate-900`
+- テキスト: `text-slate-900 dark:text-slate-100`
+- サブテキスト: `text-slate-600 dark:text-slate-400`
+
+## カード / パネル
+
+```
+rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800
+```
+
+内部パディング: `p-4` を基本とする。
+
+## テーブル
+
+- フォント: `text-sm`
+- セルパディング: `p-3`
+- ヘッダー: `font-medium` + 下線 `border-b border-slate-200 dark:border-slate-700`
+- ホバー行: `hover:bg-slate-50 dark:hover:bg-slate-700/30`
+
+## 状態表現
+
+### ローディング
+
+- テーブル: スケルトン行（`animate-pulse` の矩形を3〜5行）
+- 単体: スピナー + 「読み込み中...」テキスト
+
+### 空状態
+
+- 中央配置のアイコン + 説明文 + CTA ボタン
+- 例: 「Webhook がありません。外部サービスから送信してみましょう。」
+
+### エラー状態
+
+- 赤帯（`bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800`）
+- エラーメッセージ + 「再試行」ボタン
+
+## ボタン
+
+- プライマリ: `rounded bg-indigo-600 text-white px-4 py-2 text-sm font-medium hover:bg-indigo-700`
+- 無効: `disabled:opacity-50 disabled:cursor-not-allowed`
+
+## レスポンシブ
+
+- デスクトップファースト（最小幅 1024px を想定）
+- モバイル対応は Phase 1 では不要
