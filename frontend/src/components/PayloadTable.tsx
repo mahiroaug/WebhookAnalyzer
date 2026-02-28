@@ -1,7 +1,8 @@
 /**
  * Payload を表形式で表示するコンポーネント。
- * フィールド辞書・AI分析結果の説明を「説明」列に統合表示する。
+ * フィールド辞書・AI分析結果の説明を「description」列に統合表示する。
  * US-112: Payload 表形式表示とフィールド辞書統合
+ * US-130: カラムヘッダー英語化、値の全文表示（truncate 廃止）
  */
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -123,7 +124,7 @@ function FieldRow({
             )}
           </span>
         </td>
-        <td className={`py-1.5 px-2 font-mono text-xs ${typeColor} max-w-xs truncate`}>
+        <td className={`py-1.5 px-2 font-mono text-xs ${typeColor} break-all whitespace-pre-wrap min-w-0`}>
           {isExpandable ? (
             <span className="text-slate-400">{isArray ? `[${(value as unknown[]).length}]` : `{${Object.keys(value as object).length}}`}</span>
           ) : (
@@ -139,7 +140,7 @@ function FieldRow({
         <td className="py-1.5 px-2 text-xs text-slate-400 dark:text-dim-text-muted font-mono">
           {type}
         </td>
-        <td className="py-1.5 px-2 text-xs text-slate-500 dark:text-slate-400 max-w-xs">
+        <td className="py-1.5 px-2 text-xs text-slate-500 dark:text-slate-400 break-all whitespace-pre-wrap min-w-0">
           {description || <span className="text-slate-300 dark:text-slate-600">-</span>}
         </td>
       </tr>
@@ -214,10 +215,10 @@ export function PayloadTable({
         </colgroup>
         <thead>
           <tr className="border-b border-slate-200 dark:border-slate-700 text-left">
-            <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">キー</th>
-            <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">値</th>
-            <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">型</th>
-            <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">説明</th>
+            <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">key</th>
+            <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">value</th>
+            <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">type</th>
+            <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">description</th>
           </tr>
         </thead>
         <tbody>
