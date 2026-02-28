@@ -142,34 +142,6 @@ export function WebhookDetailPage() {
         </dl>
       </header>
 
-      <div className="mb-6">
-        <button
-          onClick={handleAnalyze}
-          disabled={analyzing}
-          className="rounded bg-blue-500 text-white px-4 py-2 text-sm font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {analyzing ? "分析中..." : "AI で分析"}
-        </button>
-      </div>
-
-      {analyzeError && (
-        <div className="mb-6 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4">
-          <p className="text-red-700 dark:text-red-300 font-medium">
-            分析の実行に失敗しました
-          </p>
-          <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-            {analyzeError}
-          </p>
-          <button
-            onClick={handleAnalyze}
-            disabled={analyzing}
-            className="mt-3 rounded bg-red-600 text-white px-4 py-2 text-sm font-medium hover:bg-red-700 disabled:opacity-50"
-          >
-            再試行
-          </button>
-        </div>
-      )}
-
       {webhook.schema_drift?.has_drift && (
         <div className="mb-6 rounded-lg border border-amber-200 dark:border-amber-800 p-4 bg-amber-50 dark:bg-amber-900/20">
           <h2 className="text-lg font-semibold mb-2 text-amber-800 dark:text-amber-200">
@@ -219,93 +191,7 @@ export function WebhookDetailPage() {
         </div>
       )}
 
-      {fieldTemplate && fieldTemplate.fields.length > 0 && (
-        <div className="mb-6 rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-800">
-          <h2 className="text-lg font-semibold mb-2">
-            フィールド辞書（{fieldTemplate.source} / {fieldTemplate.event_type}）
-          </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-            主要フィールドの意味・注意点・参照先
-          </p>
-          <dl className="space-y-2 text-sm">
-            {fieldTemplate.fields.map((f) => (
-              <div key={f.path} className="flex flex-col gap-0.5">
-                <dt className="font-mono font-medium text-blue-400">
-                  {f.path}
-                </dt>
-                <dd className="text-slate-600 dark:text-slate-400 pl-2">
-                  {f.description}
-                  {f.notes && (
-                    <span className="text-amber-600 dark:text-amber-400 ml-1">
-                      （{f.notes}）
-                    </span>
-                  )}
-                  {f.reference_url && (
-                    <a
-                      href={f.reference_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ml-2 text-blue-400 hover:underline text-xs"
-                    >
-                      参照
-                    </a>
-                  )}
-                </dd>
-              </div>
-            ))}
-          </dl>
-          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-            テンプレートに未定義のフィールドは「未知」として表示され、辞書への追加候補として扱えます。
-          </p>
-        </div>
-      )}
-
-      {analysis && (
-        <div
-          className={`mb-6 rounded-lg border p-4 ${
-            analysisFailed
-              ? "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20"
-              : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
-          }`}
-        >
-          <h2 className="text-lg font-semibold mb-2">分析結果</h2>
-          {analysis.summary && (
-            <p
-              className={`mb-3 ${
-                analysisFailed
-                  ? "text-red-600 dark:text-red-400"
-                  : "text-slate-700 dark:text-slate-300"
-              }`}
-            >
-              {analysis.summary}
-            </p>
-          )}
-          {analysis.field_descriptions &&
-            Object.keys(analysis.field_descriptions).length > 0 && (
-              <dl className="space-y-1 text-sm">
-                {Object.entries(analysis.field_descriptions).map(([key, desc]) => (
-                  <div key={key} className="flex gap-2">
-                    <dt className="font-mono text-blue-400 font-medium min-w-[120px]">
-                      {key}
-                    </dt>
-                    <dd className="text-slate-600 dark:text-slate-400">{desc}</dd>
-                  </div>
-                ))}
-              </dl>
-            )}
-          {analysisFailed && (
-            <button
-              onClick={handleAnalyze}
-              disabled={analyzing}
-              className="mt-3 rounded bg-red-600 text-white px-4 py-2 text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {analyzing ? "再分析中..." : "再分析を実行"}
-            </button>
-          )}
-        </div>
-      )}
-
-      <div>
+      <div className="mb-6">
         <h2 className="text-lg font-semibold mb-3">Payload</h2>
         <PayloadTable
           data={webhook.payload}
@@ -321,6 +207,56 @@ export function WebhookDetailPage() {
               : undefined
           }
         />
+      </div>
+
+      {analysis && (
+        <div
+          className={`mb-6 rounded-lg border p-4 ${
+            analysisFailed
+              ? "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20"
+              : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+          }`}
+        >
+          <h2 className="text-lg font-semibold mb-2">AI 分析結果</h2>
+          {analysis.summary && (
+            <p className={`mb-3 ${analysisFailed ? "text-red-600 dark:text-red-400" : "text-slate-700 dark:text-slate-300"}`}>
+              {analysis.summary}
+            </p>
+          )}
+          {analysisFailed && (
+            <button
+              onClick={handleAnalyze}
+              disabled={analyzing}
+              className="mt-3 rounded bg-red-600 text-white px-4 py-2 text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {analyzing ? "再分析中..." : "再分析を実行"}
+            </button>
+          )}
+        </div>
+      )}
+
+      {analyzeError && (
+        <div className="mb-6 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4">
+          <p className="text-red-700 dark:text-red-300 font-medium">分析の実行に失敗しました</p>
+          <p className="text-sm text-red-600 dark:text-red-400 mt-1">{analyzeError}</p>
+          <button
+            onClick={handleAnalyze}
+            disabled={analyzing}
+            className="mt-3 rounded bg-red-600 text-white px-4 py-2 text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+          >
+            再試行
+          </button>
+        </div>
+      )}
+
+      <div className="mb-6">
+        <button
+          onClick={handleAnalyze}
+          disabled={analyzing}
+          className="rounded bg-blue-500 text-white px-4 py-2 text-sm font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {analyzing ? "分析中..." : analysis ? "再分析を実行" : "AI で分析"}
+        </button>
       </div>
     </div>
   );

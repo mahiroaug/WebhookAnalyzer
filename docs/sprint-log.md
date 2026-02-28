@@ -82,3 +82,4 @@
 | US-113 | 受信順グローバルインデックス | OK | webhooks.sequence_index カラム追加、受信時に max+1 で採番、一覧・詳細に含める |
 | US-116 | HTTP リクエストメタデータの保存と表示 | OK | http_method/remote_ip/request_headers カラム追加、receive 時に記録、一覧・詳細に含める |
 | US-111 | webhook.site 風 2ペインレイアウト | OK | TwoPanePage、WebhookListPane、右ペインタブ切替、URLベースルーティング |
+| US-112 | Payload 表形式表示とフィールド辞書統合 | OK | PayloadTable コンポーネント、辞書・AI 説明の統合列、入れ子テーブル、未知バッジ |
