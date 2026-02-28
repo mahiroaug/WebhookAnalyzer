@@ -83,3 +83,4 @@
 | US-126 | 定義ファイルからの分析結果キャッシュ読み込み   | OK           | load_analysis_from_yaml、get_analysis フォールバック、from_definition_file バッジ                                                    |
 | US-131 | ソースイニシャルアイコンの導入                 | OK           | SVG アイコン → 丸背景+頭文字イニシャル（w-5 h-5）、source 別カラー（fireblocks=orange, bitgo=blue, alchemy=purple, quicknode=green） |
 | US-130 | Payload テーブルのカラムヘッダー英語化と値の全文表示 | OK           | ヘッダー key/value/type/description、truncate 廃止・break-all/whitespace-pre-wrap で全文表示 |
+| US-127 | AI 分析の 3 層出力化とルールベースサニタイズ       | OK           | 3 段階 LLM（explanation→field_descriptions→summary）、サニタイズ、reference_url フェッチ、3 層 UI |

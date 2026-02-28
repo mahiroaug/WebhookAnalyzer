@@ -1,4 +1,4 @@
-summary: このWebhook JSONは、tPolygonコインのトランザクションが確認されたことを示しており、トランザクションハッシュ、ウォレットID、および転送IDが含まれています。
+summary: フィードバック反映済み
 fields:
 - path: type
   description: Webhook の種類（transfer）

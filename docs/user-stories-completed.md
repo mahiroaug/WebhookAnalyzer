@@ -479,6 +479,21 @@ Web3エンジニアとして、同一 event_type のpayload構造変化（追加
   - Given DB に分析結果があり定義ファイルも存在する、When 詳細表示、Then DB の結果が優先される
   - Given 「再分析」を実行、When 成功、Then DB が更新されるとともに定義ファイルもマージ更新される
 
+### US-127 AI 分析の 3 層出力化とルールベースサニタイズ（P0）【完了】
+
+開発者として、AI 分析結果を「個別解説・汎用キー説明・汎用概要」の 3 層に分離し、定義ファイルには固有値を含まない汎用情報のみ保存したい。  
+なぜなら固有値（ハッシュ・アドレス・ID 等）が定義ファイルに永続化されるとセキュリティリスクとなり、同タイプの他 Webhook に流用できないから。
+
+- 受け入れ基準
+  - Given AI 分析が成功する、When 分析完了、Then 3 回の LLM 呼び出しで explanation → field_descriptions → summary の順に段階的抽象化が行われる
+  - Given Step 1（explanation）、When 生成、Then ペイロードの具体値と API リファレンスを根拠にした初心者向け個別解説である
+  - Given Step 2（field_descriptions）、When 生成、Then explanation から固有値を除いた汎用的なフィールド説明であり、Payload テーブルの説明列にも反映される
+  - Given Step 3（summary）、When 生成、Then field_descriptions を 1〜2 文に要約した汎用概要であり、同 event_type の他 Webhook でも通用する文言である
+  - Given summary / field_descriptions、When ペイロード値（6 文字以上）と一致する文字列が残っている、Then ルールベースサニタイズにより自動除去される
+  - Given explanation、When 定義 YAML を確認、Then explanation は YAML に書き出されていない（DB のみ保存）
+  - Given 詳細画面の AI 分析結果セクション、When 表示、Then 「概要」「個別解説」「Key 説明」の 3 層で階層表示される
+  - Given Step 0（エビデンス収集）、When 既存 field_templates に reference_url がある、Then URL の内容をフェッチし LLM プロンプトに含める
+
 ### US-130 Payload テーブルのカラムヘッダー英語化と値の全文表示（P1）【完了】
 
 開発者として、Payload テーブルのカラムヘッダーを英語表記にし、値を省略せず改行付きで全文表示したい。  

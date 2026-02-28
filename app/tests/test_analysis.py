@@ -232,6 +232,40 @@ fields:
 
 
 @pytest.mark.asyncio
+async def test_analyze_with_user_feedback_passes_to_analyzer(
+    bitgo_transfer_payload: dict,
+) -> None:
+    """US-128: user_feedback を渡すと analyze に渡される"""
+    mock_result = type("R", (), {
+        "summary": "フィードバック反映済み",
+        "field_descriptions": {},
+        "explanation": "",
+        "failed": False,
+        "error_message": None,
+    })()
+
+    with patch(
+        "app.routers.analysis.analyze_payload_with_ollama",
+        new_callable=AsyncMock,
+        return_value=mock_result,
+    ) as mock_analyze:
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            post_resp = await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+            webhook_id = post_resp.json()["id"]
+            await client.post(
+                f"/api/webhooks/{webhook_id}/analyze",
+                json={"user_feedback": "ハッシュ値を含めないこと"},
+            )
+
+        mock_analyze.assert_called_once()
+        call_kwargs = mock_analyze.call_args[1]
+        assert call_kwargs.get("user_feedback") == "ハッシュ値を含めないこと"
+
+
+@pytest.mark.asyncio
 async def test_analyze_not_found_webhook_returns_404() -> None:
     """存在しない Webhook ID で分析を実行すると 404（US-114）"""
     async with AsyncClient(

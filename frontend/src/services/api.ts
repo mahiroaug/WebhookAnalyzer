@@ -209,9 +209,18 @@ export async function batchAnalyze(
   return res.json();
 }
 
-export async function triggerAnalyze(webhookId: string): Promise<WebhookAnalysisResponse> {
+export async function triggerAnalyze(
+  webhookId: string,
+  userFeedback?: string | null
+): Promise<WebhookAnalysisResponse> {
+  const body: { user_feedback?: string } = {};
+  if (userFeedback && userFeedback.trim()) {
+    body.user_feedback = userFeedback.trim();
+  }
   const res = await fetch(`${BASE}/webhooks/${webhookId}/analyze`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();

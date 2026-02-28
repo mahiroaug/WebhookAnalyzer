@@ -94,6 +94,7 @@ def sanitize_for_yaml(payload: dict, summary: str, field_descriptions: dict[str,
 _PROMPT_STEP1 = """あなたは Webhook の各フィールドを初心者向けに解説するエキスパートです。
 
 以下の Webhook JSON の各フィールドについて、**具体値**と API リファレンスを根拠に、初心者向けの個別解説を日本語で書いてください。
+{user_feedback_section}
 
 {evidence_section}
 
@@ -189,6 +190,7 @@ async def _call_ollama(prompt: str) -> str | None:
 async def analyze_payload_with_ollama(
     payload: dict,
     template_context: list | None = None,
+    user_feedback: str | None = None,
 ) -> AnalysisResult:
     """
     Ollama で Webhook ペイロードを分析する。
@@ -207,6 +209,14 @@ async def analyze_payload_with_ollama(
         )
 
     payload_str = json.dumps(payload, ensure_ascii=False, indent=2)
+
+    user_feedback_section = ""
+    if user_feedback and user_feedback.strip():
+        user_feedback_section = (
+            "\n**【ユーザーからの改善指示】（必ず反映すること）**:\n"
+            + user_feedback.strip()
+            + "\n\n"
+        )
 
     # Step 0: エビデンス収集（reference_url のフェッチ）
     evidence_parts: list[str] = []
@@ -228,6 +238,7 @@ async def analyze_payload_with_ollama(
 
     # Step 1: explanation
     prompt1 = _PROMPT_STEP1.format(
+        user_feedback_section=user_feedback_section,
         evidence_section=evidence_section or "（参照ドキュメントなし）",
         payload_json=payload_str,
     )

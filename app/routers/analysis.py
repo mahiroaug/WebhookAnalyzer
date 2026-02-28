@@ -4,12 +4,13 @@ import uuid
 from datetime import datetime, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy import select
 
 from app.db.session import get_db
 from app.models.webhook import Webhook, WebhookAnalysis
 from app.schemas.analysis import (
+    AnalyzeTriggerRequest,
     AnalyzeTriggerResponse,
     BatchAnalyzeRequest,
     BatchAnalyzeResponse,
@@ -95,19 +96,24 @@ async def batch_analyze(
 @router.post("/{webhook_id}/analyze", response_model=AnalyzeTriggerResponse)
 async def trigger_analyze(
     webhook_id: UUID,
+    body: AnalyzeTriggerRequest | None = Body(None),
     db=Depends(get_db),
 ) -> AnalyzeTriggerResponse:
-    """指定 Webhook を分析し、結果を保存する。LLM 障害時も 500 にせず失敗記録を返す。"""
+    """指定 Webhook を分析し、結果を保存する。LLM 障害時も 500 にせず失敗記録を返す。US-128: オプションで user_feedback を渡すと Step 1 プロンプトに反映。"""
     stmt = select(Webhook).where(Webhook.id == webhook_id)
     result = await db.execute(stmt)
     webhook = result.scalar_one_or_none()
     if not webhook:
         raise HTTPException(status_code=404, detail="Webhook not found")
 
+    user_feedback = (body.user_feedback or "").strip() if body else ""
+
     try:
         template = get_field_template(webhook.source, webhook.event_type)
         analysis_result = await analyze_payload_with_ollama(
-            webhook.payload, template_context=template
+            webhook.payload,
+            template_context=template,
+            user_feedback=user_feedback if user_feedback else None,
         )
     except Exception as e:
         logger.error("分析処理で予期しない例外: %s", e, exc_info=True)

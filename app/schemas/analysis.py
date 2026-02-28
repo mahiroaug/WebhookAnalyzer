@@ -17,6 +17,12 @@ class WebhookAnalysisResponse(BaseModel):
     from_definition_file: bool = False  # US-126: 定義ファイル由来なら True
 
 
+class AnalyzeTriggerRequest(BaseModel):
+    """POST /analyze のリクエスト（US-128: オプションでフィードバック）"""
+
+    user_feedback: str | None = None
+
+
 class AnalyzeTriggerResponse(BaseModel):
     """POST /analyze のレスポンス"""
 

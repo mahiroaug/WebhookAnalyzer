@@ -117,12 +117,15 @@ export function WebhookDetailPage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [goPrev, goNext]);
 
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+
   async function handleAnalyze() {
     if (!id) return;
     setAnalyzing(true);
     setAnalyzeError(null);
     try {
-      const res = await triggerAnalyze(id);
+      const res = await triggerAnalyze(id, feedbackText || undefined);
       setAnalysis(res);
     } catch (e) {
       setAnalyzeError(e instanceof Error ? e.message : "不明なエラー");
@@ -287,15 +290,35 @@ export function WebhookDetailPage() {
         </div>
       )}
 
-      {/* US-120: ゴーストスタイル（枠線+テキスト、DIM テーマ調和）、再分析は 1 箇所のみ */}
+      {/* US-120: ゴーストスタイル（枠線+テキスト、DIM テーマ調和）、再分析は 1 箇所のみ。US-128: フィードバック入力欄（折りたたみ式） */}
       <div className="mb-4">
-        <button
-          onClick={handleAnalyze}
-          disabled={analyzing}
-          className="rounded border border-slate-400 dark:border-slate-500 bg-transparent px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {analyzing ? "分析中..." : analyzeError ? "再試行" : analysis ? "再分析を実行" : "AI で分析"}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleAnalyze}
+            disabled={analyzing}
+            className="rounded border border-slate-400 dark:border-slate-500 bg-transparent px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {analyzing ? "分析中..." : analyzeError ? "再試行" : analysis ? "再分析を実行" : "AI で分析"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setFeedbackOpen((o) => !o)}
+            className="text-xs text-slate-400 hover:text-slate-300"
+          >
+            {feedbackOpen ? "▼ フィードバックを閉じる" : "▶ 改善指示を添える"}
+          </button>
+        </div>
+        {feedbackOpen && (
+          <div className="mt-2">
+            <textarea
+              value={feedbackText}
+              onChange={(e) => setFeedbackText(e.target.value)}
+              placeholder="例: ハッシュ値を含めないこと"
+              rows={2}
+              className="w-full rounded border border-slate-500 bg-slate-800/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-slate-400 focus:outline-none"
+            />
+          </div>
+        )}
       </div>
     </div>
   );
