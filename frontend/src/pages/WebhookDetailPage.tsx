@@ -430,8 +430,15 @@ export function WebhookDetailPage() {
               再送
             </button>
           </div>
-          <span className="text-sm font-semibold text-slate-500 dark:text-dim-text-muted">
-            {webhook.sequence_index != null ? `#${webhook.sequence_index}` : ""}
+          <span className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-slate-500 dark:text-dim-text-muted">
+              {webhook.sequence_index != null ? `#${webhook.sequence_index}` : ""}
+            </span>
+            {webhook.matched_rules && webhook.matched_rules.length > 0 && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/50 text-amber-200" title={webhook.matched_rules.map((r) => r.name).join(", ")}>
+                ⚠ 検知: {webhook.matched_rules.map((r) => r.name).join(", ")}
+              </span>
+            )}
           </span>
         </div>
         {replayOpen && (

@@ -2,6 +2,11 @@
 
 const BASE = "/api";
 
+export interface MatchedRule {
+  id: string;
+  name: string;
+}
+
 export interface WebhookListItem {
   id: string;
   source: string;
@@ -13,6 +18,7 @@ export interface WebhookListItem {
   sequence_index?: number | null;
   http_method?: string | null;
   remote_ip?: string | null;
+  matched_rules?: MatchedRule[];
 }
 
 export interface WebhookDetail {
@@ -22,6 +28,7 @@ export interface WebhookDetail {
   group_key: string;
   payload: Record<string, unknown>;
   received_at: string;
+  matched_rules?: MatchedRule[];
   schema_drift?: {
     has_drift: boolean;
     added?: string[];
@@ -37,6 +44,41 @@ export interface WebhookDetail {
   http_method?: string | null;
   remote_ip?: string | null;
   request_headers?: Record<string, string> | null;
+}
+
+/** US-146: 異常検知ルール */
+export interface AlertRule {
+  id: string;
+  name: string;
+  path: string;
+  op: string;
+  value: string | number | boolean;
+}
+
+export async function listAlertRules(): Promise<AlertRule[]> {
+  const res = await fetch(`${BASE}/alert-rules`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function createAlertRule(body: {
+  name: string;
+  path: string;
+  op: string;
+  value: string | number | boolean;
+}): Promise<AlertRule> {
+  const res = await fetch(`${BASE}/alert-rules`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function deleteAlertRule(ruleId: string): Promise<void> {
+  const res = await fetch(`${BASE}/alert-rules/${ruleId}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
 export interface StatsResponse {

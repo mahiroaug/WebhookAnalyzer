@@ -44,7 +44,10 @@ function MoonIcon({ className }: { className?: string }) {
   );
 }
 
-const navItems = [{ to: "/", label: "ダッシュボード" }];
+const navItems = [
+  { to: "/", label: "ダッシュボード" },
+  { to: "/settings/alert-rules", label: "検知ルール" },
+];
 
 export function Layout() {
   const { isDark, toggle } = useDarkMode();

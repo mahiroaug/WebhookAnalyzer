@@ -23,6 +23,13 @@ class WebhookReceiveResponse(BaseModel):
     group_key: str
 
 
+class MatchedRule(BaseModel):
+    """US-146: マッチした検知ルール"""
+
+    id: str
+    name: str
+
+
 class WebhookListItem(BaseModel):
     """一覧の1件"""
 
@@ -36,6 +43,7 @@ class WebhookListItem(BaseModel):
     sequence_index: int | None = None
     http_method: str | None = None
     remote_ip: str | None = None
+    matched_rules: list[MatchedRule] = []  # US-146
 
 
 class WebhookListResponse(BaseModel):
@@ -74,6 +82,7 @@ class WebhookDetail(BaseModel):
     http_method: str | None = None
     remote_ip: str | None = None
     request_headers: dict | None = None
+    matched_rules: list[MatchedRule] = []  # US-146
 
 
 class AdjacentResponse(BaseModel):

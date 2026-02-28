@@ -679,3 +679,12 @@ QA として、過去の Webhook payload を任意のエンドポイントへ再
   - Given 詳細画面で Webhook を表示中、When 設定から provider / model を選択して「再分析」を実行、Then 選択した provider / model で分析が実行され結果が表示される … **OK**: LLM 設定（Ollama + model オーバーライド）
   - Given 同一 Webhook に対して複数 provider / model で分析、When 比較モードを有効にする、Then 2 つ以上の結果を並べて表示し差異を把握できる … **OK**: 比較モードで複数結果をグリッド表示
   - Given 未設定の provider（例: API キー未設定の OpenAI）、When その provider を選択、Then 設定が必要な旨のエラーメッセージが表示される … **OK**: 400 で "not supported"（Ollama のみ対応）
+
+### US-146 異常検知ルール（P1）【完了】
+
+運用担当エンジニアとして、特定フィールド条件を満たす Webhook 到達時に目立つ通知を出したい。
+
+- 受け入れ基準
+  - Given 設定で検知ルール（例: amount > 1000000、status = failed）を登録、When 条件を満たす Webhook が届く、Then 一覧・詳細でバッジやハイライトで強調され、オプションで通知が発火する … **OK**: 検知ルールページで登録、一覧・詳細にバッジ表示
+  - Given ルールが複数ある、When 複数ルールに該当、Then それぞれが識別可能な形で表示される … **OK**: バッジにルール名を表示
+  - Given ルールが未登録、When Webhook が届く、Then 従来どおり通常表示される（既存動作を維持） … **OK**

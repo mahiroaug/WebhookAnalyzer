@@ -100,3 +100,4 @@
 | US-141 | 定義ファイルの UI 編集                              | OK           | PATCH /definitions、PayloadTable インライン編集、保存・キャンセル                |
 | US-142 | 定義ファイルの diff 表示                            | OK           | DefinitionDiffModal、GET/POST /definitions、マージ・スキップ・部分的適用         |
 | US-143 | LLM 比較モード                                      | OK           | provider/model オーバーライド、比較モードで並列表示（Ollama のみ対応）            |
+| US-146 | 異常検知ルール                                      | OK           | data/alert_rules.json、GET/POST/DELETE /alert-rules、一覧・詳細にバッジ表示       |

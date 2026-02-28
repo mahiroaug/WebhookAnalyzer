@@ -178,8 +178,18 @@ export function WebhookListPane({
                 <SourceIcon source={w.source} size="w-5 h-5 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono font-medium text-blue-500 dark:text-blue-400">
-                      {w.sequence_index != null ? `#${w.sequence_index}` : `#${String(w.id).slice(0, 6)}`}
+                    <span className="flex items-center gap-1">
+                      <span className="font-mono font-medium text-blue-500 dark:text-blue-400">
+                        {w.sequence_index != null ? `#${w.sequence_index}` : `#${String(w.id).slice(0, 6)}`}
+                      </span>
+                      {w.matched_rules && w.matched_rules.length > 0 && (
+                        <span
+                          className="text-[10px] px-1 py-0.5 rounded bg-amber-900/50 text-amber-200"
+                          title={w.matched_rules.map((r) => r.name).join(", ")}
+                        >
+                          ⚠ {w.matched_rules.length}
+                        </span>
+                      )}
                     </span>
                     <span className="text-slate-400 dark:text-dim-text-muted truncate text-right">
                       {w.http_method || "POST"} {w.remote_ip || ""}

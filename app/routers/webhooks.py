@@ -18,6 +18,7 @@ from app.schemas.webhook import (
     EventTypeGroupResponse,
     FieldTemplateItem,
     FieldTemplateResponse,
+    MatchedRule,
     ReplayRequest,
     ReplayResponse,
     SchemaEstimateResponse,
@@ -28,6 +29,7 @@ from app.schemas.webhook import (
     WebhookListItem,
     WebhookReceiveResponse,
 )
+from app.services.alert_rules import evaluate_rules
 from app.services.classifier import classify_webhook
 from app.services.field_templates import get_field_template
 from app.services.schema_drift import (
@@ -300,6 +302,9 @@ async def list_webhooks(
             sequence_index=w.sequence_index,
             http_method=w.http_method,
             remote_ip=w.remote_ip,
+            matched_rules=[
+                MatchedRule(id=r["id"], name=r["name"]) for r in evaluate_rules(w.payload or {})
+            ],
         )
         for w in rows
     ]
@@ -408,6 +413,10 @@ async def get_grouped_by_event_type(
                     group_key=sample_wh.group_key,
                     received_at=sample_wh.received_at,
                     analyzed=is_analyzed,
+                    matched_rules=[
+                        MatchedRule(id=r["id"], name=r["name"])
+                        for r in evaluate_rules(sample_wh.payload or {})
+                    ],
                 ),
                 is_known=event_type.lower() != "unknown",
             )
@@ -618,6 +627,9 @@ async def get_webhook(
         http_method=webhook.http_method,
         remote_ip=webhook.remote_ip,
         request_headers=webhook.request_headers,
+        matched_rules=[
+            MatchedRule(id=r["id"], name=r["name"]) for r in evaluate_rules(webhook.payload or {})
+        ],
     )
 
 
