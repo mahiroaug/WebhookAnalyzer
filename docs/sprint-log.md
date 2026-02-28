@@ -84,3 +84,4 @@
 | US-131 | ソースイニシャルアイコンの導入                 | OK           | SVG アイコン → 丸背景+頭文字イニシャル（w-5 h-5）、source 別カラー（fireblocks=orange, bitgo=blue, alchemy=purple, quicknode=green） |
 | US-130 | Payload テーブルのカラムヘッダー英語化と値の全文表示 | OK           | ヘッダー key/value/type/description、truncate 廃止・break-all/whitespace-pre-wrap で全文表示 |
 | US-127 | AI 分析の 3 層出力化とルールベースサニタイズ       | OK           | 3 段階 LLM（explanation→field_descriptions→summary）、サニタイズ、reference_url フェッチ、3 層 UI |
+| US-128 | ユーザーフィードバック付き再分析                   | OK           | 再分析ボタン横に折りたたみ式フィードバック入力、Step 1 プロンプトに反映 |

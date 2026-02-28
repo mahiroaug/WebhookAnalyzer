@@ -50,7 +50,10 @@ async def batch_analyze(
                 continue
             template = get_field_template(webhook.source, webhook.event_type)
             analysis_result = await analyze_payload_with_ollama(
-                webhook.payload, template_context=template
+                webhook.payload,
+                template_context=template,
+                source=webhook.source,
+                event_type=webhook.event_type,
             )
             del_stmt = select(WebhookAnalysis).where(
                 WebhookAnalysis.webhook_id == webhook_id
@@ -114,6 +117,8 @@ async def trigger_analyze(
             webhook.payload,
             template_context=template,
             user_feedback=user_feedback if user_feedback else None,
+            source=webhook.source,
+            event_type=webhook.event_type,
         )
     except Exception as e:
         logger.error("分析処理で予期しない例外: %s", e, exc_info=True)

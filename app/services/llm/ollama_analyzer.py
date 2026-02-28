@@ -1,7 +1,9 @@
 """Ollama による Webhook JSON 分析
 
 US-127: 3 層出力（explanation → field_descriptions → summary）とルールベースサニタイズ
+US-129: reference_url がない場合に Web 検索で API ドキュメントを補完
 """
+import asyncio
 import json
 import logging
 import re
@@ -44,6 +46,38 @@ async def _fetch_url_content(url: str, timeout_sec: float = 5) -> str:
     except Exception as e:
         logger.debug("URL フェッチ失敗 %s: %s", url, e)
         return ""
+
+
+def _web_search_sync(query: str, max_results: int = 3) -> list[dict[str, str]]:
+    """US-129: Web 検索を同期で実行。失敗時は空リスト。"""
+    try:
+        from duckduckgo_search import DDGS
+
+        results: list[dict[str, str]] = []
+        with DDGS() as ddgs:
+            for r in ddgs.text(query, max_results=max_results):
+                if isinstance(r, dict) and r.get("href") and r.get("body"):
+                    results.append({"url": str(r["href"]), "snippet": str(r.get("body", ""))[:2000]})
+        return results
+    except Exception as e:
+        logger.debug("Web 検索失敗 %s: %s", query, e)
+        return []
+
+
+async def _web_search_for_api_docs(source: str, event_type: str) -> list[dict[str, str]]:
+    """US-129: source と event_type から API ドキュメントを検索。タイムアウト時は空リスト。"""
+    query = f"{source} {event_type} API documentation"
+    try:
+        return await asyncio.wait_for(
+            asyncio.to_thread(_web_search_sync, query, max_results=3),
+            timeout=10.0,
+        )
+    except asyncio.TimeoutError:
+        logger.debug("Web 検索タイムアウト: %s", query)
+        return []
+    except Exception as e:
+        logger.debug("Web 検索失敗: %s", e)
+        return []
 
 
 def _collect_payload_values_ge_n(obj: Any, n: int) -> set[str]:
@@ -191,6 +225,8 @@ async def analyze_payload_with_ollama(
     payload: dict,
     template_context: list | None = None,
     user_feedback: str | None = None,
+    source: str = "",
+    event_type: str = "",
 ) -> AnalysisResult:
     """
     Ollama で Webhook ペイロードを分析する。
@@ -218,14 +254,26 @@ async def analyze_payload_with_ollama(
             + "\n\n"
         )
 
-    # Step 0: エビデンス収集（reference_url のフェッチ）
+    # Step 0: エビデンス収集（reference_url のフェッチ + US-129: なければ Web 検索）
     evidence_parts: list[str] = []
+    has_reference_urls = False
     if template_context:
         urls = {fd.reference_url for fd in template_context if fd.reference_url}
+        has_reference_urls = bool(urls)
         for url in urls:
             content = await _fetch_url_content(url)
             if content:
-                evidence_parts.append(f"[参照: {url}]\n{content[:8000]}")  # 各 URL 最大 8000 文字
+                evidence_parts.append(f"[参照: {url}]\n{content[:8000]}")
+
+    # US-129: reference_url がなければ source/event_type で Web 検索
+    if not has_reference_urls and source and event_type:
+        search_results = await _web_search_for_api_docs(source, event_type)
+        for r in search_results:
+            url = r.get("url", "")
+            snippet = r.get("snippet", "")
+            if url and snippet:
+                evidence_parts.append(f"[検索結果: {url}]\n{snippet}")
+
     evidence_section = ""
     if evidence_parts:
         evidence_section = "以下の API ドキュメントを参照し、解説の根拠にしてください:\n\n" + "\n\n---\n\n".join(evidence_parts)
