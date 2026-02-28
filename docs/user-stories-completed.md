@@ -456,3 +456,25 @@ Web3エンジニアとして、同一 event_type のpayload構造変化（追加
   - Given 既存の `field_templates.py` のハードコードデータ、When マイグレーション実行、Then 全データが YAML ファイルとして `definitions/` に出力される
   - Given `get_field_template()` の呼び出し元、When 動作確認、Then インターフェースが変わらず既存機能が正常に動作する
   - Given `definitions/` に YAML ファイルが存在しない source/event_type、When 詳細表示、Then 説明列は空のまま正常表示される（エラーにならない）
+
+### US-125 AI 分析成功時の定義ファイル自動書き出し（P0）【完了】
+
+開発者として、AI 分析が成功したら結果を自動的に YAML 定義ファイルに蓄積したい。  
+なぜなら一度得た分析知見をリポジトリに永続化し、チームで共有・再利用したいから。
+
+- 受け入れ基準
+  - Given AI 分析が成功する、When 分析完了、Then `definitions/{source}/{event_type}.yaml` に summary と field_descriptions が書き出される
+  - Given 同一 source/event_type の YAML が既に存在する、When AI 分析成功、Then 既存の手動記載フィールドは上書きされず、AI 由来の新規フィールドのみ追記される
+  - Given 書き出されたフィールド、When YAML を確認、Then AI 由来であることを示す `ai_generated: true` メタデータが付与されている
+  - Given YAML ファイルが存在しない source/event_type、When 初回 AI 分析成功、Then 新規 YAML ファイルが自動作成される
+
+### US-126 定義ファイルからの分析結果キャッシュ読み込み（P1）【完了】
+
+開発者として、DB に分析結果がなくても定義ファイルがあればフィールド説明を即座に表示したい。  
+なぜなら LLM が利用不可な環境でも過去の分析知見を活用して調査を進めたいから。
+
+- 受け入れ基準
+  - Given DB に分析結果がない Webhook、When 定義ファイルが存在する source/event_type の詳細を開く、Then 定義ファイルの summary と field_descriptions が表示される
+  - Given 定義ファイルから読み込んだ結果、When 表示、Then 「定義ファイルから読み込み」であることが UI 上で識別できる
+  - Given DB に分析結果があり定義ファイルも存在する、When 詳細表示、Then DB の結果が優先される
+  - Given 「再分析」を実行、When 成功、Then DB が更新されるとともに定義ファイルもマージ更新される

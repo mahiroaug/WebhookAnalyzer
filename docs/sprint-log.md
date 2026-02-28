@@ -101,3 +101,5 @@
 | US-122 | Payload 全文検索と検索結果一覧モード | OK | ヘッダー検索欄、API q パラメータ（ILIKE）、0件時「該当する Webhook がありません」 |
 | US-123 | グローバルヘッダーのホームリンク | OK | ロゴを Link to="/" に、クリックで初期状態へ |
 | US-124 | フィールド辞書の YAML 定義ファイル化 | OK | definitions/ 優先読み込み、migrate_field_templates_to_yaml.py、PyYAML |
+| US-125 | AI 分析成功時の定義ファイル自動書き出し | OK | write_analysis_to_yaml、マージ、ai_generated |
+| US-126 | 定義ファイルからの分析結果キャッシュ読み込み | OK | load_analysis_from_yaml、get_analysis フォールバック、from_definition_file バッジ |
