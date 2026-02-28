@@ -43,9 +43,10 @@ function getType(val: unknown): string {
   return typeof val;
 }
 
+/** US-120: 文字列はダブルクォーテーションなし（型列の "string" で判別可能） */
 function formatValue(val: unknown): string {
   if (val === null) return "null";
-  if (typeof val === "string") return `"${val}"`;
+  if (typeof val === "string") return val;
   if (typeof val === "object") return Array.isArray(val) ? `[${val.length} items]` : `{...}`;
   return String(val);
 }
@@ -150,8 +151,15 @@ function FieldRow({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
           >
-            <td colSpan={4} className="p-0">
-              <table className="w-full">
+            <td colSpan={4} className="p-0 align-top">
+              {/* US-120: ネスト行の列幅を親と揃える */}
+              <table className="w-full table-fixed">
+                <colgroup>
+                  <col style={{ width: "25%" }} />
+                  <col style={{ width: "33.33%" }} />
+                  <col style={{ width: "4rem" }} />
+                  <col />
+                </colgroup>
                 <tbody>
                   {isObject &&
                     Object.entries(value as Record<string, unknown>).map(([k, v]) => (
@@ -197,12 +205,18 @@ export function PayloadTable({
 }: PayloadTableProps) {
   return (
     <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-      <table className="w-full text-sm">
+      <table className="w-full text-sm table-fixed">
+        <colgroup>
+          <col style={{ width: "25%" }} />
+          <col style={{ width: "33.33%" }} />
+          <col style={{ width: "4rem" }} />
+          <col />
+        </colgroup>
         <thead>
           <tr className="border-b border-slate-200 dark:border-slate-700 text-left">
-            <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted w-1/4">キー</th>
-            <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted w-1/3">値</th>
-            <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted w-16">型</th>
+            <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">キー</th>
+            <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">値</th>
+            <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">型</th>
             <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">説明</th>
           </tr>
         </thead>

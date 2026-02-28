@@ -1,4 +1,43 @@
 import { useEffect, useState, useCallback } from "react";
+
+/** US-120: Webhook 遷移時も開閉状態を維持するリクエストヘッダー details */
+const REQUEST_HEADERS_STORAGE_KEY = "webhook-detail-request-headers-open";
+
+function RequestHeadersDetails({ headers, count }: { headers: Record<string, string>; count: number }) {
+  const [open, setOpen] = useState(() => {
+    try {
+      return localStorage.getItem(REQUEST_HEADERS_STORAGE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(REQUEST_HEADERS_STORAGE_KEY, open ? "1" : "0");
+    } catch { /* ignore */ }
+  }, [open]);
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="text-xs text-slate-400 cursor-pointer hover:text-slate-300 flex items-center gap-1"
+      >
+        {open ? "▼" : "▶"} リクエストヘッダー ({count})
+      </button>
+      {open && (
+        <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs font-mono">
+          {Object.entries(headers).map(([k, v]) => (
+            <span key={k} className="contents">
+              <dt className="text-slate-400">{k}</dt>
+              <dd className="truncate text-slate-300">{v}</dd>
+            </span>
+          ))}
+        </dl>
+      )}
+    </div>
+  );
+}
 import { useParams, useNavigate } from "react-router-dom";
 import {
   getWebhook,
@@ -143,14 +182,10 @@ export function WebhookDetailPage() {
           </>}
         </dl>
         {webhook.request_headers && Object.keys(webhook.request_headers).length > 0 && (
-          <details className="mt-3">
-            <summary className="text-xs text-slate-400 cursor-pointer">リクエストヘッダー ({Object.keys(webhook.request_headers).length})</summary>
-            <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs font-mono">
-              {Object.entries(webhook.request_headers).map(([k, v]) => (
-                <><dt key={`k-${k}`} className="text-slate-400">{k}</dt><dd key={`v-${k}`} className="truncate text-slate-300">{v}</dd></>
-              ))}
-            </dl>
-          </details>
+          <RequestHeadersDetails
+            headers={webhook.request_headers}
+            count={Object.keys(webhook.request_headers).length}
+          />
         )}
       </AccordionSection>
 
@@ -212,12 +247,7 @@ export function WebhookDetailPage() {
           {analysis.summary && (
             <p className={`mb-3 text-sm ${analysisFailed ? "text-red-400" : "text-slate-300"}`}>{analysis.summary}</p>
           )}
-          {analysisFailed && (
-            <button onClick={handleAnalyze} disabled={analyzing}
-              className="rounded bg-red-600 text-white px-3 py-1.5 text-xs font-medium hover:bg-red-700 disabled:opacity-50">
-              {analyzing ? "再分析中..." : "再分析を実行"}
-            </button>
-          )}
+          {/* US-120: 再分析ボタンは 1 箇所のみ（下の AnalyzeButton に集約） */}
         </AccordionSection>
       )}
 
@@ -225,15 +255,17 @@ export function WebhookDetailPage() {
         <div className="mb-4 rounded-lg border border-red-800 bg-red-900/20 p-3">
           <p className="text-red-300 text-sm font-medium">分析の実行に失敗しました</p>
           <p className="text-xs text-red-400 mt-1">{analyzeError}</p>
-          <button onClick={handleAnalyze} disabled={analyzing}
-            className="mt-2 rounded bg-red-600 text-white px-3 py-1.5 text-xs font-medium hover:bg-red-700 disabled:opacity-50">再試行</button>
         </div>
       )}
 
+      {/* US-120: ゴーストスタイル（枠線+テキスト、DIM テーマ調和）、再分析は 1 箇所のみ */}
       <div className="mb-4">
-        <button onClick={handleAnalyze} disabled={analyzing}
-          className="rounded bg-blue-500 text-white px-4 py-2 text-sm font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed">
-          {analyzing ? "分析中..." : analysis ? "再分析を実行" : "AI で分析"}
+        <button
+          onClick={handleAnalyze}
+          disabled={analyzing}
+          className="rounded border border-slate-400 dark:border-slate-500 bg-transparent px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {analyzing ? "分析中..." : analyzeError ? "再試行" : analysis ? "再分析を実行" : "AI で分析"}
         </button>
       </div>
     </div>
