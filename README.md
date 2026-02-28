@@ -15,7 +15,7 @@
 
 ```bash
 git clone <repository-url>
-cd 20260100_webhook
+cd WebhookAnalyzer
 ```
 
 ### 2) `.env` を作成（任意）
@@ -238,7 +238,7 @@ docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi
 ## ディレクトリ構成
 
 ```text
-20260100_webhook/
+WebhookAnalyzer/
 ├── .devcontainer/          # Dev Container / Docker Compose / 起動スクリプト
 ├── app/                    # FastAPI backend
 ├── frontend/               # React + Vite frontend
@@ -249,7 +249,18 @@ docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi
 
 ## クリーンアップ
 
-DB ボリュームを含めて停止・削除:
+### DB のデータのみ初期化
+
+テーブル構造を保持したまま全レコードを削除する（DevContainer 内で実行）:
+
+```bash
+psql -h db -U webhook -d webhook_analyzer -c \
+  "TRUNCATE webhooks, webhook_analyses, webhook_sessions, investigation_sessions RESTART IDENTITY CASCADE;"
+```
+
+### DB ボリュームごと削除
+
+ボリュームを含めて停止・削除（テーブル構造も消えるため、再起動後に Alembic マイグレーションが必要）:
 
 ```bash
 docker compose -f .devcontainer/docker-compose.yml down -v

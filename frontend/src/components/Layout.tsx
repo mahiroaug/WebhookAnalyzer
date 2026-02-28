@@ -11,7 +11,16 @@ import { useDarkMode } from "../hooks/useDarkMode";
 
 function SunIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <circle cx="12" cy="12" r="4" />
       <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
     </svg>
@@ -20,15 +29,22 @@ function SunIcon({ className }: { className?: string }) {
 
 function MoonIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
     </svg>
   );
 }
 
-const navItems = [
-  { to: "/", label: "ダッシュボード" },
-];
+const navItems = [{ to: "/", label: "ダッシュボード" }];
 
 export function Layout() {
   const { isDark, toggle } = useDarkMode();
@@ -61,7 +77,7 @@ export function Layout() {
             <div className="flex-1 max-w-xs mx-4">
               <input
                 type="text"
-                placeholder="payload 全文検索..."
+                placeholder="全文検索..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -71,35 +87,31 @@ export function Layout() {
               />
             </div>
             <div className="flex items-center gap-4 shrink-0">
-            <button
-              type="button"
-              onClick={toggle}
-              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600/40 text-slate-500 dark:text-dim-text-muted hover:text-slate-700 dark:hover:text-dim-text transition-colors"
-              title={isDark ? "ライトモードに切り替え" : "ダークモードに切り替え"}
-            >
-              {isDark ? (
-                <SunIcon className="w-5 h-5" />
-              ) : (
-                <MoonIcon className="w-5 h-5" />
-              )}
-            </button>
-            <nav className="flex items-center gap-1">
-              {navItems.map(({ to, label }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  className={({ isActive }) =>
-                    `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-slate-200 text-slate-900 dark:bg-slate-600/60 dark:text-dim-text"
-                        : "text-slate-600 dark:text-dim-text-muted hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-700/40 dark:hover:text-dim-text"
-                    }`
-                  }
-                >
-                  {label}
-                </NavLink>
-              ))}
-            </nav>
+              <button
+                type="button"
+                onClick={toggle}
+                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600/40 text-slate-500 dark:text-dim-text-muted hover:text-slate-700 dark:hover:text-dim-text transition-colors"
+                title={isDark ? "ライトモードに切り替え" : "ダークモードに切り替え"}
+              >
+                {isDark ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
+              </button>
+              <nav className="flex items-center gap-1">
+                {navItems.map(({ to, label }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    className={({ isActive }) =>
+                      `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        isActive
+                          ? "bg-slate-200 text-slate-900 dark:bg-slate-600/60 dark:text-dim-text"
+                          : "text-slate-600 dark:text-dim-text-muted hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-700/40 dark:hover:text-dim-text"
+                      }`
+                    }
+                  >
+                    {label}
+                  </NavLink>
+                ))}
+              </nav>
             </div>
           </div>
         </div>
