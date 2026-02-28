@@ -1,4 +1,17 @@
 import { useEffect, useState, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  getWebhook,
+  getAnalysis,
+  getFieldTemplate,
+  getAdjacentWebhooks,
+  triggerAnalyze,
+  type WebhookDetail,
+  type WebhookAnalysisResponse,
+  type FieldTemplateResponse,
+} from "../services/api";
+import { PayloadTable } from "../components/PayloadTable";
+import { AccordionSection } from "../components/AccordionSection";
 
 /** US-120: Webhook 遷移時も開閉状態を維持するリクエストヘッダー details */
 const REQUEST_HEADERS_STORAGE_KEY = "webhook-detail-request-headers-open";
@@ -38,19 +51,37 @@ function RequestHeadersDetails({ headers, count }: { headers: Record<string, str
     </div>
   );
 }
-import { useParams, useNavigate } from "react-router-dom";
-import {
-  getWebhook,
-  getAnalysis,
-  getFieldTemplate,
-  getAdjacentWebhooks,
-  triggerAnalyze,
-  type WebhookDetail,
-  type WebhookAnalysisResponse,
-  type FieldTemplateResponse,
-} from "../services/api";
-import { PayloadTable } from "../components/PayloadTable";
-import { AccordionSection } from "../components/AccordionSection";
+/** US-132: 初回アクセス時のスケルトン（テキスト「読み込み中...」の代わり） */
+function DetailSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="flex items-center gap-2">
+        <div className="h-7 w-16 rounded border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-700/50" />
+        <div className="h-7 w-16 rounded border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-700/50" />
+        <div className="h-4 w-12 rounded bg-slate-200 dark:bg-slate-600/50" />
+      </div>
+      <div className="rounded-lg border border-slate-200 dark:border-slate-600 p-4">
+        <div className="h-4 w-24 mb-3 rounded bg-slate-200 dark:bg-slate-600/50" />
+        <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
+          {[1, 2, 3, 4].map((i) => (
+            <span key={i} className="contents">
+              <div className="h-4 w-20 rounded bg-slate-200 dark:bg-slate-600/50" />
+              <div className="h-4 w-40 rounded bg-slate-100 dark:bg-slate-700/50" />
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="rounded-lg border border-slate-200 dark:border-slate-600 p-4">
+        <div className="h-4 w-16 mb-3 rounded bg-slate-200 dark:bg-slate-600/50" />
+        <div className="space-y-2">
+          <div className="h-8 w-full rounded bg-slate-100 dark:bg-slate-700/50" />
+          <div className="h-8 w-[80%] rounded bg-slate-100 dark:bg-slate-700/50" />
+          <div className="h-8 w-[60%] rounded bg-slate-100 dark:bg-slate-700/50" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function WebhookDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -86,8 +117,10 @@ export function WebhookDetailPage() {
           if (!cancelled) setFieldTemplate(templateRes ?? null);
         }
       } catch {
-        if (!cancelled) setWebhook(null);
-        if (!cancelled) setAdjacent(null);
+        if (!cancelled) {
+          setWebhook(null);
+          setAdjacent(null);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -137,18 +170,34 @@ export function WebhookDetailPage() {
   const analysisFailed =
     analysis?.summary?.startsWith("[分析失敗]") ?? false;
 
-  if (loading || !webhook) {
+  // US-132: 初回アクセス時はスケルトン、遷移時は前コンテンツを表示し続ける
+  if (!loading && !webhook) {
     return (
-      <div>
-        <div className="text-slate-500">
-          {loading ? "読み込み中..." : "Webhook が見つかりません"}
-        </div>
+      <div className="text-slate-500 dark:text-dim-text-muted">
+        Webhook が見つかりません
       </div>
     );
   }
 
+  if (loading && !webhook) {
+    return <DetailSkeleton />;
+  }
+
+  // この分岐では webhook は必ず存在（早期 return 済み）
+  if (!webhook) return null;
+
   return (
-    <div>
+    <div className="relative">
+      {/* US-132: ローディング中は前コンテンツを表示しつつ、控えめなプログレスバーを表示 */}
+      {loading && (
+        <div className="absolute left-0 right-0 top-0 z-10 h-0.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+          <div
+            className="h-full w-1/3 bg-blue-400 dark:bg-blue-500 us132-progress"
+            role="progressbar"
+            aria-busy="true"
+          />
+        </div>
+      )}
       <header className="mb-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
