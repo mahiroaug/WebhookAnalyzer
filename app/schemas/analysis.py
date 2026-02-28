@@ -1,0 +1,25 @@
+"""AI 分析関連の Pydantic スキーマ"""
+from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel
+
+
+class WebhookAnalysisResponse(BaseModel):
+    """分析結果レスポンス"""
+
+    id: UUID
+    webhook_id: UUID
+    summary: str | None
+    field_descriptions: dict[str, str] | None
+    analyzed_at: datetime
+
+
+class AnalyzeTriggerResponse(BaseModel):
+    """POST /analyze のレスポンス"""
+
+    id: UUID
+    webhook_id: UUID
+    summary: str | None
+    field_descriptions: dict[str, str] | None
+    analyzed_at: datetime

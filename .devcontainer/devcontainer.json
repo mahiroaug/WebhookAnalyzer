@@ -99,7 +99,8 @@
 
         // --- developer tools ---
         "mhutchie.git-graph",
-        "dotenv.dotenv-vscode"
+        "dotenv.dotenv-vscode",
+        "bierner.markdown-mermaid"
       ],
       "settings": {
         // Python インタープリターのパス (コンテナ内)
@@ -124,6 +125,12 @@
   // コンテナ作成後に自動実行されるスクリプト。
   // pip install, npm install, Ollama モデルのプルを行う。
   "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  // ---------------------------------------------------------------------------
+  // 起動時サービス自動起動
+  // ---------------------------------------------------------------------------
+  // コンテナ起動のたびに実行。uvicorn と Vite をバックグラウンドで起動する。
+  "postStartCommand": "bash .devcontainer/start-services.sh",
 
   // ---------------------------------------------------------------------------
   // 環境変数
