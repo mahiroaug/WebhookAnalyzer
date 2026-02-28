@@ -608,3 +608,23 @@ Web3エンジニアとして、同一 event_type のpayload構造変化（追加
   - Given `python scripts/dbadmin.py maintain vacuum` を実行、When 実行、Then 全テーブルに VACUUM ANALYZE が実行される
   - Given `python scripts/dbadmin.py maintain reindex` を実行、When 実行、Then sequence_index が received_at 順に 1 から連番で再採番される
   - Given reindex 完了後、When 一覧を確認、Then 欠番なく連続した番号が振られている
+
+### US-144 マスキング表示（P1）【完了】
+
+開発者として、個人情報や秘密情報を自動でマスクして画面を安全に共有したい。
+なぜなら社内共有やドキュメント化の際に誤って機密を漏らすリスクを減らしたいから。
+
+- 受け入れ基準
+  - Given デフォルトマスキング対象（private_key, api_key, address 等）が設定済み、When Payload を表示、Then 該当フィールドの値が `***` でマスクされる
+  - Given マスキング ON / OFF のチェックボックスがある、When OFF にする、Then フル値が表示される
+  - Given マスキング対象のフィールドがネストされている、When 表示、Then ネストしたフィールドもマスクされる
+
+### US-145 受信リクエスト再送（Replay）（P1）【完了】
+
+QA として、過去の Webhook payload を任意のエンドポイントへ再送して再現試験したい。
+なぜなら webhook.site の Replay のように、本番相当のリクエストで開発環境やステージングのエンドポイントを検証したいから。
+
+- 受け入れ基準
+  - Given 詳細画面で Webhook を表示中、When 「再送」ボタンをクリックし対象 URL を入力して送信、Then 同じ payload と可能な限り同じ HTTP ヘッダーで指定 URL へ POST される
+  - Given 再送実行、When 送信成功、Then レスポンスステータス・所要時間が表示される
+  - Given 再送先 URL が無効、When 再送を実行、Then 接続エラー等が表示され、送信失敗が明確に分かる

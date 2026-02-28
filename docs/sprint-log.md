@@ -93,3 +93,5 @@
 | US-138 | データ削除・パージ CLI                             | OK           | delete, purge --older-than 30d, reset --all、確認プロンプト + --yes               |
 | US-139 | AI 分析結果リセット CLI                            | OK           | analysis reset --source/--all, analysis status                                   |
 | US-140 | DB メンテナンス CLI                                | OK           | maintain vacuum (asyncpg), maintain reindex                                      |
+| US-144 | マスキング表示                                     | OK           | デフォルトパターン（private_key等）、ON/OFF トグル、ネスト対応                    |
+| US-145 | 受信リクエスト再送（Replay）                        | OK           | POST /webhooks/{id}/replay、URL 入力、ステータス・所要時間表示                    |
