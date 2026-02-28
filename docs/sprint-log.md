@@ -99,3 +99,4 @@
 | US-120 | 詳細ペインの UI バグ修正とボタン改善 | OK | RequestHeadersDetails 開閉維持、再分析 1 箇所、ゴーストボタン、Payload 表 colgroup・文字列クォート除去 |
 | US-121 | AI 分析の JSON パース堅牢化 | OK | プレーンテキスト→「LLM 出力が JSON ではありません」、parsed非dict→「不正な応答形式」、raw 500chars ログ、summary のみ許容 |
 | US-122 | Payload 全文検索と検索結果一覧モード | OK | ヘッダー検索欄、API q パラメータ（ILIKE）、0件時「該当する Webhook がありません」 |
+| US-123 | グローバルヘッダーのホームリンク | OK | ロゴを Link to="/" に、クリックで初期状態へ |

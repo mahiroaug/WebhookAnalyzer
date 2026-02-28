@@ -445,3 +445,14 @@ Web3エンジニアとして、同一 event_type のpayload構造変化（追加
 - 受け入れ基準
   - Given ヘッダーの「Webhook Analyzer」、When クリック、Then URL が `/`（FQDN のルート）に遷移し、2ペイン画面が初期状態で表示される
   - Given 詳細表示中、When ロゴクリック、Then 右ペインの選択状態がリセットされ、プレースホルダーが表示される
+
+### US-124 フィールド辞書の YAML 定義ファイル化（P0）【完了】
+
+開発者として、フィールド辞書をリポジトリ内の YAML ファイルで管理したい。  
+なぜなら Python ハードコードでは追加・修正のたびにコード変更が必要で、非エンジニアが編集できないから。
+
+- 受け入れ基準
+  - Given `definitions/{source}/{event_type}.yaml` が存在する、When 詳細画面を開く、Then YAML から読み込んだフィールド説明が Payload テーブルの「説明」列に表示される
+  - Given 既存の `field_templates.py` のハードコードデータ、When マイグレーション実行、Then 全データが YAML ファイルとして `definitions/` に出力される
+  - Given `get_field_template()` の呼び出し元、When 動作確認、Then インターフェースが変わらず既存機能が正常に動作する
+  - Given `definitions/` に YAML ファイルが存在しない source/event_type、When 詳細表示、Then 説明列は空のまま正常表示される（エラーにならない）
