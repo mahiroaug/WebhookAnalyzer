@@ -25,9 +25,9 @@
 
 ### Phase 9: AI 分析結果の定義ファイル化
 
-> US-141 は完了。→ [`user-stories-completed.md`](./user-stories-completed.md)
+> US-141, US-142 は完了。→ [`user-stories-completed.md`](./user-stories-completed.md)
 
-#### US-142 定義ファイルの diff 表示（P1）【未着手】
+#### US-142 定義ファイルの diff 表示（P1）【完了】
 
 開発者として、AI 再分析時に既存定義と新結果の差分を確認してからマージしたい。
 なぜなら AI の提案を盲目的に取り込まず、意図しない上書きを防ぎたいから。
@@ -35,7 +35,7 @@
 - 受け入れ基準
   - Given 既存定義があり AI 再分析を実行、When 分析完了、Then 既存 vs 新結果の diff（追加・削除・変更）が表示される
   - Given diff 表示中、When 「マージ」「スキップ」「部分的に適用」を選択、Then 選択に応じて定義が更新される、または更新されない
-  - Given diff に conflict がない場合、When マージを実行、Then 定義が更新され success 等のフィードバックが表示される
+  - Given diff に conflict がない場合、When マージを実行、Then 定義が更新され success 等のフィードバックが表示される … **OK**: マージ後画面更新
 
 ### Phase 10: AI 分析品質とセキュリティ
 

@@ -329,6 +329,43 @@ export async function getDefinitionStatus(
   return res.json();
 }
 
+/** US-142: 定義ファイルの内容を取得 */
+export async function getDefinitionContent(
+  source: string,
+  eventType: string
+): Promise<{ summary: string; field_descriptions: Record<string, string> }> {
+  const res = await fetch(
+    `${BASE}/definitions/${encodeURIComponent(source)}/${encodeURIComponent(eventType)}/content`
+  );
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+/** US-142: AI 分析結果を定義ファイルにマージ */
+export async function mergeDefinition(
+  source: string,
+  eventType: string,
+  body: {
+    summary?: string;
+    field_descriptions?: Record<string, string>;
+    removed_paths?: string[];
+  }
+): Promise<void> {
+  const res = await fetch(
+    `${BASE}/definitions/${encodeURIComponent(source)}/${encodeURIComponent(eventType)}/merge`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        summary: body.summary,
+        field_descriptions: body.field_descriptions ?? {},
+        ...(body.removed_paths?.length ? { removed_paths: body.removed_paths } : {}),
+      }),
+    }
+  );
+  if (!res.ok) throw new Error(await res.text().catch(() => `HTTP ${res.status}`));
+}
+
 /** US-141: 定義ファイルのフィールド description を更新 */
 export async function updateFieldDescription(
   source: string,

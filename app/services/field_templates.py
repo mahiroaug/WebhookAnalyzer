@@ -417,6 +417,64 @@ def definition_is_writable(source: str, event_type: str) -> bool:
     return os.access(path, os.W_OK)
 
 
+def get_definition_content(source: str, event_type: str) -> dict | None:
+    """
+    US-142: 定義ファイルの内容（summary, field_descriptions）を返す。
+    存在しなければ None。
+    """
+    loaded = load_analysis_from_yaml(source, event_type)
+    if not loaded:
+        return None
+    summary, field_descriptions = loaded
+    return {"summary": summary, "field_descriptions": field_descriptions}
+
+
+def merge_analysis_to_yaml(
+    source: str,
+    event_type: str,
+    summary: str | None,
+    field_descriptions: dict[str, str],
+    removed_paths: list[str] | None = None,
+) -> None:
+    """
+    US-142: AI 分析結果を定義ファイルにマージする。
+    summary が指定されれば上書き。field_descriptions の各パスを更新または追加。
+    既存のメタデータ（reference_url 等）は可能な限り維持。
+    定義ファイルが存在しない場合は新規作成する。
+    """
+    yaml_path = _yaml_path(source, event_type)
+    existing = _load_yaml_full(source, event_type)
+
+    fields_list = (existing.get("fields") or []) if existing else []
+    fields_by_path: dict[str, dict] = {}
+    for item in fields_list:
+        if isinstance(item, dict) and item.get("path"):
+            fields_by_path[str(item["path"])] = dict(item)
+
+    for path in removed_paths or []:
+        fields_by_path.pop(path, None)
+
+    for path, desc in field_descriptions.items():
+        if not path:
+            continue
+        if path in fields_by_path:
+            fields_by_path[path]["description"] = desc
+        else:
+            fields_by_path[path] = {"path": path, "description": desc, "ai_generated": True}
+
+    data: dict = {
+        "summary": summary if summary is not None else (str(existing.get("summary", "")) if existing else ""),
+        "fields": list(fields_by_path.values()),
+    }
+
+    try:
+        yaml_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(yaml_path, "w", encoding="utf-8") as f:
+            yaml.dump(data, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+    except OSError as e:
+        raise PermissionError(f"Definition file is read-only: {e}") from e
+
+
 def update_field_description(
     source: str,
     event_type: str,

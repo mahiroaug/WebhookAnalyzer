@@ -119,3 +119,63 @@ async def test_patch_definition_not_found_returns_404(tmp_path: Path) -> None:
                 json={"path": "x", "description": "y"},
             )
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_get_definition_content_returns_summary_and_fields(tmp_path: Path) -> None:
+    """US-142: GET /content で summary と field_descriptions を返す"""
+    from app.services import field_templates
+
+    (tmp_path / "bitgo").mkdir(parents=True)
+    (tmp_path / "bitgo" / "transfer.yaml").write_text("""summary: My summary
+fields:
+- path: type
+  description: Webhook type
+- path: coin
+  description: Asset
+""")
+
+    with patch.object(field_templates, "_DEFINITIONS_DIR", tmp_path):
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            resp = await client.get("/api/definitions/bitgo/transfer/content")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["summary"] == "My summary"
+    assert data["field_descriptions"]["type"] == "Webhook type"
+    assert data["field_descriptions"]["coin"] == "Asset"
+
+
+@pytest.mark.asyncio
+async def test_merge_updates_and_adds_fields(tmp_path: Path) -> None:
+    """US-142: POST /merge でフィールドを更新・追加できる"""
+    from app.services import field_templates
+
+    (tmp_path / "bitgo").mkdir(parents=True)
+    (tmp_path / "bitgo" / "transfer.yaml").write_text("""summary: Old
+fields:
+- path: type
+  description: Old type
+- path: coin
+  description: Asset
+""")
+
+    with patch.object(field_templates, "_DEFINITIONS_DIR", tmp_path):
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            resp = await client.post(
+                "/api/definitions/bitgo/transfer/merge",
+                json={
+                    "summary": "New summary",
+                    "field_descriptions": {"type": "Updated type", "hash": "New field"},
+                },
+            )
+    assert resp.status_code == 200
+    content = (tmp_path / "bitgo" / "transfer.yaml").read_text(encoding="utf-8")
+    assert "New summary" in content
+    assert "Updated type" in content
+    assert "New field" in content

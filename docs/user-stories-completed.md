@@ -660,3 +660,13 @@ QA として、過去の Webhook payload を任意のエンドポイントへ再
   - Given 定義ファイル由来のフィールド辞書が表示されている、When 該当フィールドの description をクリックして編集モードにし内容を変更し保存、Then 変更が YAML 定義ファイルに書き込まれ、画面に即時反映される … **OK**: PATCH /api/definitions/{source}/{event_type}/fields、PayloadTable インライン編集
   - Given 編集を開始したがキャンセルする場合、When キャンセルを選択、Then 変更は破棄され元の内容が表示される … **OK**: キャンセルボタン
   - Given 定義ファイルが読み取り専用または存在しない、When 編集を試みる、Then 編集不可の旨が表示されるか編集 UI が無効になる … **OK**: writable=false 時は編集 UI 非表示
+
+### US-142 定義ファイルの diff 表示（P1）【完了】
+
+開発者として、AI 再分析時に既存定義と新結果の差分を確認してからマージしたい。
+なぜなら AI の提案を盲目的に取り込まず、意図しない上書きを防ぎたいから。
+
+- 受け入れ基準
+  - Given 既存定義があり AI 再分析を実行、When 分析完了、Then 既存 vs 新結果の diff（追加・削除・変更）が表示される … **OK**: DefinitionDiffModal、computeDiff
+  - Given diff 表示中、When 「マージ」「スキップ」「部分的に適用」を選択、Then 選択に応じて定義が更新される、または更新されない … **OK**: すべてマージ / 選択だけマージ / スキップ
+  - Given diff に conflict がない場合、When マージを実行、Then 定義が更新され success 等のフィードバックが表示される … **OK**: マージ後 refetch で即時反映

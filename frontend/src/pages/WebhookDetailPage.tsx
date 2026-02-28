@@ -8,13 +8,21 @@ import {
   triggerAnalyzeStream,
   replayWebhook,
   getDefinitionStatus,
+  getDefinitionContent,
   updateFieldDescription,
+  mergeDefinition,
   type WebhookDetail,
   type WebhookAnalysisResponse,
   type FieldTemplateResponse,
 } from "../services/api";
 import { PayloadTable } from "../components/PayloadTable";
 import { AccordionSection } from "../components/AccordionSection";
+import {
+  DefinitionDiffModal,
+  computeDiff,
+  type DefinitionDiff,
+  type PartialApplyPayload,
+} from "../components/DefinitionDiffModal";
 
 /** US-120: Webhook 遷移時も開閉状態を維持するリクエストヘッダー details */
 const REQUEST_HEADERS_STORAGE_KEY = "webhook-detail-request-headers-open";
@@ -215,6 +223,12 @@ export function WebhookDetailPage() {
   /** US-141: 定義ファイル編集可否 */
   const [definitionWritable, setDefinitionWritable] = useState(false);
 
+  /** US-142: 定義 diff モーダル */
+  const [diffModal, setDiffModal] = useState<{
+    diff: DefinitionDiff;
+    newResult: WebhookAnalysisResponse;
+  } | null>(null);
+
   /** US-144: マスキング ON/OFF（localStorage で永続化、デフォルト ON） */
   const [maskEnabled, setMaskEnabled] = useState(() => {
     try {
@@ -279,7 +293,26 @@ export function WebhookDetailPage() {
           if (ev.step === "saved" && ev.analysis) setAnalysis(ev.analysis as WebhookAnalysisResponse);
         }
       );
-      if (res) setAnalysis(res);
+      if (res) {
+        setAnalysis(res);
+        // US-142: 定義ファイルが存在し差分があれば diff モーダルを表示
+        if (webhook && !res.summary?.startsWith("[分析失敗]")) {
+          try {
+            const existing = await getDefinitionContent(webhook.source, webhook.event_type);
+            const diff = computeDiff(
+              existing,
+              { summary: res.summary, field_descriptions: res.field_descriptions || {} }
+            );
+            const hasChanges =
+              diff.added.length > 0 || diff.removed.length > 0 || diff.changed.length > 0 || diff.summaryChanged;
+            if (hasChanges) {
+              setDiffModal({ diff, newResult: res });
+            }
+          } catch {
+            // 定義ファイルなし（404）の場合はスキップ
+          }
+        }
+      }
       // US-134: 完了時にログを sessionStorage に保存
       try {
         sessionStorage.setItem("webhook-analysis-logs", JSON.stringify(logs));
@@ -290,6 +323,38 @@ export function WebhookDetailPage() {
       setAnalyzing(false);
     }
   }
+
+  /** US-142: マージ完了時のリフレッシュ */
+  const refetchAfterMerge = useCallback(async () => {
+    if (!id || !webhook) return;
+    const [analysisRes, templateRes] = await Promise.all([
+      getAnalysis(webhook.id),
+      getFieldTemplate(webhook.source, webhook.event_type),
+    ]);
+    setAnalysis(analysisRes ?? null);
+    setFieldTemplate(templateRes ?? null);
+  }, [id, webhook]);
+
+  const handleDiffMerge = useCallback(async () => {
+    if (!webhook || !diffModal) return;
+    await mergeDefinition(webhook.source, webhook.event_type, {
+      summary: diffModal.newResult.summary ?? undefined,
+      field_descriptions: diffModal.newResult.field_descriptions || {},
+      removed_paths: diffModal.diff.removed.map((r) => r.path),
+    });
+    setDiffModal(null);
+    await refetchAfterMerge();
+  }, [webhook, diffModal, refetchAfterMerge]);
+
+  const handleDiffPartial = useCallback(
+    async (payload: PartialApplyPayload) => {
+      if (!webhook || !diffModal) return;
+      await mergeDefinition(webhook.source, webhook.event_type, payload);
+      setDiffModal(null);
+      await refetchAfterMerge();
+    },
+    [webhook, diffModal, refetchAfterMerge]
+  );
 
   const analysisFailed =
     analysis?.summary?.startsWith("[分析失敗]") ?? false;
@@ -312,6 +377,19 @@ export function WebhookDetailPage() {
 
   return (
     <div className="relative">
+      {/* US-142: 定義 diff モーダル */}
+      {diffModal && webhook && (
+        <DefinitionDiffModal
+          diff={diffModal.diff}
+          newResult={{
+            summary: diffModal.newResult.summary,
+            field_descriptions: diffModal.newResult.field_descriptions || {},
+          }}
+          onMerge={handleDiffMerge}
+          onSkip={() => setDiffModal(null)}
+          onPartialApply={handleDiffPartial}
+        />
+      )}
       {/* US-132: ローディング中は前コンテンツを表示しつつ、控えめなプログレスバーを表示 */}
       {loading && (
         <div className="absolute left-0 right-0 top-0 z-10 h-0.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">

@@ -97,3 +97,5 @@
 | US-145 | 受信リクエスト再送（Replay）                        | OK           | POST /webhooks/{id}/replay、URL 入力、ステータス・所要時間表示                    |
 | US-134 | AI 分析の実行ログリアルタイムストリーミング        | OK           | POST /analyze/stream SSE、ログビューア自動展開、sessionStorage、総所要時間       |
 | US-135 | AI 分析の 4 ステッププログレスバー                  | OK           | エビデンス→解説→フィールド→保存、緑/グレー表示、ストリーム同期                  |
+| US-141 | 定義ファイルの UI 編集                              | OK           | PATCH /definitions、PayloadTable インライン編集、保存・キャンセル                |
+| US-142 | 定義ファイルの diff 表示                            | OK           | DefinitionDiffModal、GET/POST /definitions、マージ・スキップ・部分的適用         |
