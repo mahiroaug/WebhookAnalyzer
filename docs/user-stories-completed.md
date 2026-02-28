@@ -505,6 +505,17 @@ Web3エンジニアとして、同一 event_type のpayload構造変化（追加
   - Given フィードバック未入力、When 再分析実行、Then 従来通り通常の 3 層分析が実行される（後方互換）
   - Given フィードバック付き再分析の結果、When DB・YAML に保存、Then US-127 のサニタイズも適用された状態で保存される
 
+### US-129 API リファレンス自動 Web 検索（P1）【完了】
+
+開発者として、未知のサービスからの Webhook でも API ドキュメントを自動検索して AI 分析の根拠にしたい。  
+なぜなら field_templates に reference_url が登録されていないサービスでは、LLM がドキュメントなしに推測するしかなく解説品質が低下するから。
+
+- 受け入れ基準
+  - Given field_templates に reference_url が登録されていない source/event_type、When AI 分析を実行、Then source 名と event_type から Web 検索が自動実行され、関連する API ドキュメントが取得される
+  - Given Web 検索で取得したドキュメント、When Step 1（explanation 生成）の LLM プロンプトを確認、Then 検索結果の関連部分がコンテキストとして含まれている
+  - Given Web 検索がタイムアウトまたは失敗、When AI 分析を実行、Then 検索結果なしで分析が続行される（エラーにならない）
+  - Given 検索結果、When 確認、Then 取得元 URL が explanation に出典として記載される
+
 ### US-130 Payload テーブルのカラムヘッダー英語化と値の全文表示（P1）【完了】
 
 開発者として、Payload テーブルのカラムヘッダーを英語表記にし、値を省略せず改行付きで全文表示したい。  

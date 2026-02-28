@@ -33,16 +33,3 @@
 ### Phase 10: AI 分析品質とセキュリティ
 
 
-#### US-129 API リファレンス自動 Web 検索（P1）【実装中】
-
-開発者として、未知のサービスからの Webhook でも API ドキュメントを自動検索して AI 分析の根拠にしたい。  
-なぜなら field_templates に reference_url が登録されていないサービスでは、LLM がドキュメントなしに推測するしかなく解説品質が低下するから。
-
-US-127 の Step 0（エビデンス収集）を拡張する位置づけ。US-127 では既存 reference_url のフェッチのみだが、本ストーリーで「URL が無い場合に自動検索で補完する」機能を追加する。
-
-- 受け入れ基準
-  - Given field_templates に reference_url が登録されていない source/event_type、When AI 分析を実行、Then source 名と event_type から Web 検索が自動実行され、関連する API ドキュメントが取得される
-  - Given Web 検索で取得したドキュメント、When Step 1（explanation 生成）の LLM プロンプトを確認、Then 検索結果の関連部分がコンテキストとして含まれている
-  - Given Web 検索がタイムアウトまたは失敗、When AI 分析を実行、Then 検索結果なしで分析が続行される（エラーにならない）
-  - Given 検索結果、When 確認、Then 取得元 URL が explanation に出典として記載される
-
