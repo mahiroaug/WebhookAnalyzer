@@ -1,0 +1,109 @@
+# =============================================================================
+# Webhook Analyzer - Docker Compose 構成
+# =============================================================================
+# 3つのサービスで構成:
+#   1. app    - 開発用メインコンテナ (Python 3.12 + Node.js 20)
+#   2. db     - PostgreSQL 16 (Webhook データ保管)
+#   3. ollama - ローカル LLM サーバー (Webhook の AI 分類)
+#
+# このファイルは devcontainer.json から参照され、
+# 「Reopen in Container」実行時に自動で docker compose up される。
+# =============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # app: 開発コンテナ (FastAPI バックエンド + React フロントエンド)
+  # ---------------------------------------------------------------------------
+  # このコンテナの中に VS Code / Cursor がアタッチされ、開発を行う。
+  # "sleep infinity" で常時起動し、ターミナルから手動でサーバーを起動する。
+  app:
+    build:
+      context: ..                          # プロジェクトルートをビルドコンテキストに
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      # ホストのプロジェクトディレクトリを /workspace にマウント
+      # "cached" はホスト→コンテナ方向の同期を優先 (パフォーマンス向上)
+      - ..:/workspace:cached
+    # コンテナを常時起動状態にする (VS Code がアタッチするため)
+    command: sleep infinity
+    depends_on:
+      # DB と Ollama が正常起動してからこのコンテナを起動する
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    environment:
+      # アプリケーションが参照する環境変数
+      - DATABASE_URL=postgresql://webhook:webhook@db:5432/webhook_analyzer
+      - OLLAMA_HOST=http://ollama:11434   # Docker ネットワーク内のサービス名で接続
+      - LLM_PROVIDER=ollama               # デフォルトは Ollama (openai / anthropic に変更可)
+
+  # ---------------------------------------------------------------------------
+  # db: PostgreSQL 16
+  # ---------------------------------------------------------------------------
+  # Webhook のペイロード (生 JSON) と分類結果を保管する。
+  # PostgreSQL の jsonb 型を活用し、JSON 内のフィールドでの検索・フィルタが可能。
+  db:
+    image: postgres:16-alpine              # Alpine ベースで軽量
+    restart: unless-stopped                # クラッシュ時に自動再起動
+    volumes:
+      # データを永続化。コンテナを削除してもデータは残る。
+      # 完全にリセットしたい場合: docker volume rm <project>_pgdata
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: webhook               # DB 接続ユーザー名
+      POSTGRES_PASSWORD: webhook           # DB 接続パスワード (開発環境用)
+      POSTGRES_DB: webhook_analyzer        # 初回起動時に自動作成されるデータベース名
+    # ヘルスチェック: app コンテナが depends_on で待機するために必要
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U webhook -d webhook_analyzer"]
+      interval: 5s                         # 5秒ごとにチェック
+      timeout: 3s                          # 3秒でタイムアウト
+      retries: 5                           # 5回失敗で unhealthy
+
+  # ---------------------------------------------------------------------------
+  # ollama: ローカル LLM サーバー
+  # ---------------------------------------------------------------------------
+  # Webhook ペイロードの AI 分類を担当する。
+  # ローカルで LLM を実行するため、API キー不要・プライバシー保護・低コスト。
+  #
+  # GPU がある場合: NVIDIA GPU を自動検出して高速推論
+  # GPU がない場合: CPU フォールバックで動作 (deploy セクションは無視される)
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      # ダウンロード済みモデルを永続化。
+      # コンテナ再作成時も再ダウンロード不要になる。
+      - ollama_data:/root/.ollama
+    ports:
+      # ホストからも直接 Ollama API にアクセス可能にする
+      # curl http://localhost:11434/api/tags でモデル一覧を確認できる
+      - "11434:11434"
+    # ヘルスチェック: Ollama の API が応答可能になるまで待つ
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      interval: 10s                        # 10秒ごとにチェック (起動に時間がかかるため長め)
+      timeout: 5s
+      retries: 10                          # 最大100秒待つ
+      start_period: 30s                    # 最初の30秒はチェックをスキップ
+    # GPU パススルー設定 (NVIDIA)
+    # WSL2 + NVIDIA ドライバー + nvidia-container-toolkit が必要。
+    # GPU がない環境ではこのセクションは自動的に無視され、CPU で動作する。
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all                   # 利用可能な全 GPU を割り当て
+              capabilities: [gpu]
+
+# =============================================================================
+# ボリューム定義
+# =============================================================================
+# Named Volume を使うことで、コンテナを削除してもデータが永続化される。
+# 全データを削除したい場合: docker compose down -v
+volumes:
+  pgdata:                                  # PostgreSQL データ
+  ollama_data:                             # Ollama のダウンロード済みモデル

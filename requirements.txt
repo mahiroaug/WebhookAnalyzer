@@ -1,0 +1,28 @@
+# =============================================================================
+# Webhook Analyzer - Python 依存パッケージ
+# =============================================================================
+
+# --- Web フレームワーク ---
+fastapi>=0.115                # 非同期 Web フレームワーク (Webhook 受信エンドポイント)
+uvicorn[standard]>=0.34       # ASGI サーバー ([standard] で websockets, watchfiles 等を含む)
+
+# --- データベース ---
+sqlalchemy>=2.0               # ORM / SQL ツールキット (非同期対応)
+asyncpg>=0.30                 # PostgreSQL 用非同期ドライバー (SQLAlchemy のバックエンド)
+alembic>=1.14                 # DB マイグレーションツール (テーブル定義の変更管理)
+
+# --- バリデーション & 設定 ---
+pydantic>=2.10                # データバリデーション (API リクエスト/レスポンスの型定義)
+pydantic-settings>=2.7        # 環境変数からの設定読み込み (.env ファイル対応)
+
+# --- HTTP クライアント ---
+httpx>=0.28                   # 非同期 HTTP クライアント (外部 API 呼び出し、Webhook テスト送信)
+
+# --- AI / LLM プロバイダー ---
+ollama>=0.4                   # Ollama Python SDK (ローカル LLM — メインの分類エンジン)
+openai>=1.60                  # OpenAI Python SDK (GPT-4o 等 — クラウド LLM オプション)
+anthropic>=0.43               # Anthropic Python SDK (Claude 等 — クラウド LLM オプション)
+
+# --- ユーティリティ ---
+python-multipart>=0.0.20      # マルチパートフォームデータの解析 (ファイルアップロード対応)
+websockets>=14.0              # WebSocket サポート (リアルタイム Webhook 通知をフロントに配信)

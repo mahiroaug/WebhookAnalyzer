@@ -1,0 +1,130 @@
+// =============================================================================
+// Webhook Analyzer - Dev Container 設定
+// =============================================================================
+// 外部サービスからの Webhook を受信し、AI で自動分類・保管する開発環境。
+//
+// 構成:
+//   - app:    Python 3.12 (FastAPI) + Node.js 20 (React フロントエンド)
+//   - db:     PostgreSQL 16 (jsonb 型で Webhook ペイロードを保管)
+//   - ollama: ローカル LLM サーバー (Webhook 分類エンジン)
+//
+// 起動方法:
+//   Cursor / VS Code で「Reopen in Container」を実行
+// =============================================================================
+{
+  "name": "Webhook Analyzer",
+
+  // ---------------------------------------------------------------------------
+  // コンテナ定義
+  // ---------------------------------------------------------------------------
+  // docker-compose.yml で app / db / ollama の3サービスを起動。
+  // "service" で指定した "app" コンテナの中で開発を行う。
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+
+  // ---------------------------------------------------------------------------
+  // Dev Container Features
+  // ---------------------------------------------------------------------------
+  // ベースイメージに追加でインストールされるツール群。
+  // 参考: https://containers.dev/features
+  "features": {
+    // Node.js 20 LTS — React フロントエンドのビルド・開発サーバーに使用
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    // Docker-in-Docker — コンテナ内から Docker コマンドを使えるようにする
+    // Webhook 送信元サービスのモック起動などに便利
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    // Git — バージョン管理
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+
+  // ---------------------------------------------------------------------------
+  // ポートフォワード
+  // ---------------------------------------------------------------------------
+  // コンテナ内のポートをホスト側に転送し、ブラウザからアクセス可能にする。
+  "forwardPorts": [
+    8000,   // FastAPI バックエンド (Webhook 受信エンドポイント)
+    5173,   // Vite 開発サーバー (React フロントエンド)
+    5432,   // PostgreSQL (外部ツールからの直接接続用)
+    11434   // Ollama API (ローカル LLM)
+  ],
+  "portsAttributes": {
+    // バックエンド: 起動時にデスクトップ通知を表示
+    "8000": { "label": "FastAPI Backend", "onAutoForward": "notify" },
+    // フロントエンド: 起動時にブラウザを自動で開く
+    "5173": { "label": "React Frontend (Vite)", "onAutoForward": "openBrowser" },
+    // DB / LLM: バックグラウンドで静かに転送
+    "5432": { "label": "PostgreSQL", "onAutoForward": "silent" },
+    "11434": { "label": "Ollama LLM", "onAutoForward": "silent" }
+  },
+
+  // ---------------------------------------------------------------------------
+  // エディタ拡張機能 & 設定
+  // ---------------------------------------------------------------------------
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // --- Python ---
+        "ms-python.python",           // Python 言語サポート (IntelliSense, デバッグ)
+        "ms-python.vscode-pylance",   // 型チェック・高速補完
+        "charliermarsh.ruff",         // Ruff: 超高速 Python リンター & フォーマッター
+
+        // --- データベース ---
+        "mtxr.sqltools",              // SQLTools: DB クエリ実行 GUI
+        "mtxr.sqltools-driver-pg",    // SQLTools 用 PostgreSQL ドライバー
+
+        // --- フロントエンド ---
+        "dbaeumer.vscode-eslint",     // ESLint: JavaScript/TypeScript リンター
+        "esbenp.prettier-vscode",     // Prettier: コードフォーマッター
+        "bradlc.vscode-tailwindcss",  // Tailwind CSS IntelliSense
+
+        // --- インフラ ---
+        "ms-azuretools.vscode-docker" // Docker ファイルのシンタックスハイライト & 管理
+      ],
+      "settings": {
+        // Python インタープリターのパス (コンテナ内)
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        // Python: 保存時に Ruff で自動フォーマット
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true
+        },
+        // TSX (React): 保存時に Prettier で自動フォーマット
+        "[typescriptreact]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.formatOnSave": true
+        }
+      }
+    }
+  },
+
+  // ---------------------------------------------------------------------------
+  // 初回セットアップ
+  // ---------------------------------------------------------------------------
+  // コンテナ作成後に自動実行されるスクリプト。
+  // pip install, npm install, Ollama モデルのプルを行う。
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  // ---------------------------------------------------------------------------
+  // 環境変数
+  // ---------------------------------------------------------------------------
+  // コンテナ内のシェル・プロセスに渡される環境変数。
+  // ${localEnv:...} はホスト側の環境変数を参照する構文。
+  "remoteEnv": {
+    // --- ローカル LLM (デフォルト) ---
+    "OLLAMA_HOST": "http://ollama:11434",  // Ollama サービスのエンドポイント
+    "LLM_PROVIDER": "ollama",              // デフォルトの LLM プロバイダー
+    "OLLAMA_MODEL": "gemma3:4b",           // デフォルトのモデル (軽量・分類向き)
+
+    // --- クラウド LLM (オプション) ---
+    // ホスト OS 側で export OPENAI_API_KEY=sk-... のように設定しておくと
+    // コンテナ内に自動で引き渡される。未設定の場合は空文字になる。
+    "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}",
+    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
+
+    // --- データベース ---
+    "DATABASE_URL": "postgresql://webhook:webhook@db:5432/webhook_analyzer"
+  }
+}
