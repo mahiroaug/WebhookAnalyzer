@@ -339,14 +339,17 @@ export function WebhookDetailPage() {
         </div>
       )}
 
-      {/* US-120: ゴーストスタイル（枠線+テキスト、DIM テーマ調和）、再分析は 1 箇所のみ。US-128: フィードバック入力欄（折りたたみ式） */}
+      {/* US-120: ゴーストスタイル、再分析は 1 箇所のみ。US-128: フィードバック入力欄。US-133: 分析中スピナー */}
       <div className="mb-4">
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleAnalyze}
             disabled={analyzing}
-            className="rounded border border-slate-400 dark:border-slate-500 bg-transparent px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="rounded border border-slate-400 dark:border-slate-500 bg-transparent px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
           >
+            {analyzing && (
+              <span className="inline-block w-4 h-4 border-2 border-slate-400 dark:border-slate-400 border-t-transparent rounded-full us133-spinner" aria-hidden />
+            )}
             {analyzing ? "分析中..." : analyzeError ? "再試行" : analysis ? "再分析を実行" : "AI で分析"}
           </button>
           <button
