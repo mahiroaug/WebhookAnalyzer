@@ -103,3 +103,4 @@
 | US-124 | フィールド辞書の YAML 定義ファイル化 | OK | definitions/ 優先読み込み、migrate_field_templates_to_yaml.py、PyYAML |
 | US-125 | AI 分析成功時の定義ファイル自動書き出し | OK | write_analysis_to_yaml、マージ、ai_generated |
 | US-126 | 定義ファイルからの分析結果キャッシュ読み込み | OK | load_analysis_from_yaml、get_analysis フォールバック、from_definition_file バッジ |
+| US-131 | ソースイニシャルアイコンの導入 | OK | SVG アイコン → 丸背景+頭文字イニシャル（w-5 h-5）、source 別カラー（fireblocks=orange, bitgo=blue, alchemy=purple, quicknode=green） |

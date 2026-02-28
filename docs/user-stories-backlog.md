@@ -28,17 +28,6 @@
 
 ### Phase 8: UI バグ修正と検索体験の強化
 
-#### US-131 ソースイニシャルアイコンの導入（P1）【実装中】
-
-開発者として、一覧ペインの source アイコンを source 名の頭文字イニシャルを使った丸形カラーアイコンに変更したい。
-なぜなら現在の抽象的な SVG アイコンでは一目でどのサービスか判別できず、Webhook 調査時のスキャン効率が下がるから。
-
-- 受け入れ基準
-  - Given 一覧ペインに Webhook が表示されている、When source アイコンを確認、Then source 名の頭文字（大文字）が丸い色付き背景の上に白文字で表示されている
-  - Given 異なる source（例: fireblocks, bitgo）の Webhook、When アイコンを比較、Then source ごとに異なる背景色が割り当てられている
-  - Given 未知の source（KNOWN_SOURCES に定義がない場合）、When アイコンを確認、Then source 名の頭文字がデフォルトカラーの丸アイコンで表示される（エラーにならない）
-  - Given アイコン、When サイズを確認、Then w-5 h-5（20px）で表示されている
-
 ### Phase 9: AI 分析結果の定義ファイル化
 
 ### Phase 10: AI 分析品質とセキュリティ

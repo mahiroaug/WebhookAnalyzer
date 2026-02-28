@@ -478,3 +478,14 @@ Web3エンジニアとして、同一 event_type のpayload構造変化（追加
   - Given 定義ファイルから読み込んだ結果、When 表示、Then 「定義ファイルから読み込み」であることが UI 上で識別できる
   - Given DB に分析結果があり定義ファイルも存在する、When 詳細表示、Then DB の結果が優先される
   - Given 「再分析」を実行、When 成功、Then DB が更新されるとともに定義ファイルもマージ更新される
+
+### US-131 ソースイニシャルアイコンの導入（P1）【完了】
+
+開発者として、一覧ペインの source アイコンを source 名の頭文字イニシャルを使った丸形カラーアイコンに変更したい。
+なぜなら現在の抽象的な SVG アイコンでは一目でどのサービスか判別できず、Webhook 調査時のスキャン効率が下がるから。
+
+- 受け入れ基準
+  - Given 一覧ペインに Webhook が表示されている、When source アイコンを確認、Then source 名の頭文字（大文字）が丸い色付き背景の上に白文字で表示されている
+  - Given 異なる source（例: fireblocks, bitgo）の Webhook、When アイコンを比較、Then source ごとに異なる背景色が割り当てられている
+  - Given 未知の source（KNOWN_SOURCES に定義がない場合）、When アイコンを確認、Then source 名の頭文字がデフォルトカラーの丸アイコンで表示される（エラーにならない）
+  - Given アイコン、When サイズを確認、Then w-5 h-5（20px）で表示されている
