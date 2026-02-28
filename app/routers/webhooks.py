@@ -80,11 +80,17 @@ async def receive_webhook(
         raise HTTPException(status_code=400, detail="Payload must be a JSON object")
 
     classification = classify_webhook(payload)
+
+    # US-113: 受信順グローバルインデックスを採番
+    max_idx_result = await db.execute(select(func.max(Webhook.sequence_index)))
+    current_max = max_idx_result.scalar() or 0
+
     webhook = Webhook(
         source=classification.source,
         event_type=classification.event_type,
         group_key=classification.group_key,
         payload=payload,
+        sequence_index=current_max + 1,
     )
     db.add(webhook)
     await db.flush()
@@ -261,6 +267,7 @@ async def list_webhooks(
             received_at=w.received_at,
             analyzed=w.id in analyzed_ids,
             has_drift=_has_drift(w),
+            sequence_index=w.sequence_index,
         )
         for w in rows
     ]
@@ -575,4 +582,5 @@ async def get_webhook(
         payload=webhook.payload,
         received_at=webhook.received_at,
         schema_drift=webhook.schema_drift,
+        sequence_index=webhook.sequence_index,
     )

@@ -2,7 +2,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, String, Table, Text, func
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -31,6 +31,7 @@ class Webhook(Base):
     event_type: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     group_key: Mapped[str] = mapped_column(String(256), nullable=False, index=True)
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    sequence_index: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     schema_drift: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     received_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

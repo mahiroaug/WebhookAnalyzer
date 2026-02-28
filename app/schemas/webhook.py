@@ -33,6 +33,7 @@ class WebhookListItem(BaseModel):
     received_at: datetime
     analyzed: bool
     has_drift: bool = False
+    sequence_index: int | None = None
 
 
 class WebhookListResponse(BaseModel):
@@ -52,6 +53,7 @@ class WebhookDetail(BaseModel):
     payload: dict
     received_at: datetime
     schema_drift: dict | None = None
+    sequence_index: int | None = None
 
 
 class AdjacentResponse(BaseModel):

@@ -201,3 +201,52 @@ async def test_schema_drift_detected_on_receive(
     assert drift is not None
     assert drift.get("has_drift") is True
     assert "extraField" in drift.get("added", [])
+
+
+@pytest.mark.asyncio
+async def test_receive_webhook_assigns_sequence_index(
+    bitgo_transfer_payload: dict,
+) -> None:
+    """受信時に sequence_index が自動付与される（US-113）"""
+    import asyncio
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        ids = []
+        for _ in range(3):
+            r = await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+            assert r.status_code == 201
+            ids.append(r.json()["id"])
+            await asyncio.sleep(0.01)
+
+        resp1 = await client.get(f"/api/webhooks/{ids[0]}")
+        resp2 = await client.get(f"/api/webhooks/{ids[1]}")
+        resp3 = await client.get(f"/api/webhooks/{ids[2]}")
+
+    d1 = resp1.json()
+    d2 = resp2.json()
+    d3 = resp3.json()
+    assert "sequence_index" in d1
+    assert "sequence_index" in d2
+    assert "sequence_index" in d3
+    assert d1["sequence_index"] < d2["sequence_index"] < d3["sequence_index"]
+
+
+@pytest.mark.asyncio
+async def test_list_webhooks_includes_sequence_index(
+    bitgo_transfer_payload: dict,
+) -> None:
+    """一覧 API に sequence_index が含まれる（US-113）"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+        resp = await client.get("/api/webhooks")
+    assert resp.status_code == 200
+    items = resp.json()["items"]
+    assert len(items) >= 1
+    assert "sequence_index" in items[0]
+    assert isinstance(items[0]["sequence_index"], int)
