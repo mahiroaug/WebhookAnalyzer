@@ -29,23 +29,3 @@
 ### Phase 8: UI バグ修正と検索体験の強化
 
 ### Phase 9: AI 分析結果の定義ファイル化
-
-
-開発者として、AI 分析が成功したら結果を自動的に YAML 定義ファイルに蓄積したい。  
-なぜなら一度得た分析知見をリポジトリに永続化し、チームで共有・再利用したいから。
-
-- 受け入れ基準
-  - Given AI 分析が成功する、When 分析完了、Then `definitions/{source}/{event_type}.yaml` に summary と field_descriptions が書き出される
-  - Given 同一 source/event_type の YAML が既に存在する、When AI 分析成功、Then 既存の手動記載フィールドは上書きされず、AI 由来の新規フィールドのみ追記される
-  - Given 書き出されたフィールド、When YAML を確認、Then AI 由来であることを示す `ai_generated: true` メタデータが付与されている
-  - Given YAML ファイルが存在しない source/event_type、When 初回 AI 分析成功、Then 新規 YAML ファイルが自動作成される
-
-
-開発者として、DB に分析結果がなくても定義ファイルがあればフィールド説明を即座に表示したい。  
-なぜなら LLM が利用不可な環境でも過去の分析知見を活用して調査を進めたいから。
-
-- 受け入れ基準
-  - Given DB に分析結果がない Webhook、When 定義ファイルが存在する source/event_type の詳細を開く、Then 定義ファイルの summary と field_descriptions が表示される
-  - Given 定義ファイルから読み込んだ結果、When 表示、Then 「定義ファイルから読み込み」であることが UI 上で識別できる
-  - Given DB に分析結果があり定義ファイルも存在する、When 詳細表示、Then DB の結果が優先される
-  - Given 「再分析」を実行、When 成功、Then DB が更新されるとともに定義ファイルもマージ更新される
