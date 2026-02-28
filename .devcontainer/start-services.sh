@@ -17,6 +17,14 @@ export PATH="/usr/local/share/nvm/current/bin:${PATH:-/usr/bin:/bin}"
 
 cd /workspace
 
+# Git safe.directory: リビルド時の dubious ownership 対策（確実に適用されるよう毎回チェック）
+mkdir -p /home/cursor/.config/git
+GIT_CFG="/home/cursor/.config/git/config"
+if [ ! -f "$GIT_CFG" ] || ! grep -q 'safe.directory.*/workspace' "$GIT_CFG" 2>/dev/null; then
+  git config --file "$GIT_CFG" --add safe.directory /workspace 2>/dev/null || true
+  chown cursor:cursor "$GIT_CFG" 2>/dev/null || true
+fi
+
 echo "=== Starting backend and frontend ==="
 
 # uvicorn: ポート 8000 が未使用なら起動

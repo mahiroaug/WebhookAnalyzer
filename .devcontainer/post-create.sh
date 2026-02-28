@@ -20,6 +20,18 @@ echo "=== Setting up Webhook Analyzer ==="
 cd /workspace
 
 # ---------------------------------------------------------------------------
+# 0. Git safe.directory (リビルド時の dubious ownership 対策)
+# ---------------------------------------------------------------------------
+# /workspace はマウントのため所有者が cursor と一致せず Git がブロックする。
+# post-create で cursor の config に追加し、リビルド後も自動で有効にする。
+mkdir -p /home/cursor/.config/git
+GIT_CONFIG=/home/cursor/.config/git/config
+if ! grep -q 'safe.directory.*/workspace' "$GIT_CONFIG" 2>/dev/null; then
+  git config --file "$GIT_CONFIG" --add safe.directory /workspace
+fi
+chown -R cursor:cursor /home/cursor/.config/git 2>/dev/null || true
+
+# ---------------------------------------------------------------------------
 # 1. Python パッケージのインストール
 # ---------------------------------------------------------------------------
 # Dockerfile でも事前インストールしているが、

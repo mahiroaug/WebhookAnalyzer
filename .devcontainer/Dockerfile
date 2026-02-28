@@ -8,7 +8,7 @@
 # ベースイメージに含まれるもの:
 #   - Python 3.12 (pip, venv 含む)
 #   - 一般的な開発ツール (gcc, make, etc.)
-#   - vscode ユーザー (非 root)
+#   - cursor ユーザー (非 root, ベースイメージの vscode をリネーム)
 #   - ngrok (外部からの Webhook 受信用トンネル)
 #
 # devcontainer features (devcontainer.json で定義) により追加されるもの:
@@ -18,6 +18,16 @@
 # =============================================================================
 
 FROM mcr.microsoft.com/devcontainers/python:1-3.12-bookworm
+
+# ---------------------------------------------------------------------------
+# ユーザーリネーム: vscode → cursor
+# ---------------------------------------------------------------------------
+# ベースイメージが作成する vscode (UID 1000) を cursor にリネームする。
+# ホームディレクトリも /home/cursor に移動し、所有権を修正する。
+RUN usermod -l cursor -d /home/cursor -m vscode && \
+    groupmod -n cursor vscode && \
+    [ -d /home/cursor ] || mv /home/vscode /home/cursor && \
+    chown -R cursor:cursor /home/cursor
 
 # ---------------------------------------------------------------------------
 # システムパッケージのインストール
