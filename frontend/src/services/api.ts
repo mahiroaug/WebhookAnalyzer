@@ -185,3 +185,27 @@ export async function getAnalysis(webhookId: string): Promise<WebhookAnalysisRes
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
+
+export interface FieldTemplateItem {
+  path: string;
+  description: string;
+  notes?: string | null;
+  reference_url?: string | null;
+}
+
+export interface FieldTemplateResponse {
+  source: string;
+  event_type: string;
+  fields: FieldTemplateItem[];
+}
+
+export async function getFieldTemplate(
+  source: string,
+  eventType: string
+): Promise<FieldTemplateResponse | null> {
+  const params = new URLSearchParams({ source, event_type: eventType });
+  const res = await fetch(`${BASE}/webhooks/field-templates?${params}`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}

@@ -21,10 +21,12 @@ class AnalysisResult:
 # 期待する出力JSONスキーマを固定（決定性のため）
 _EXPECTED_KEYS = {"summary", "field_descriptions"}
 
-_PROMPT_TEMPLATE = """以下の Webhook JSON の各フィールドを日本語で簡潔に説明し、
+_PROMPT_BASE = """以下の Webhook JSON の各フィールドを日本語で簡潔に説明し、
 全体の要約を書いてください。
 出力は必ず次のJSON形式のみで返してください（他に説明文は含めない）:
 {"summary": "全体の要約（1〜2文）", "field_descriptions": {"フィールド名": "説明", ...}}
+
+{template_section}
 
 Webhook JSON:
 ```json
@@ -33,7 +35,25 @@ Webhook JSON:
 """
 
 
-async def analyze_payload_with_ollama(payload: dict) -> AnalysisResult:
+def _format_template_context(field_defs: list) -> str:
+    """フィールド辞書テンプレートをプロンプト用の文字列に変換する"""
+    if not field_defs:
+        return ""
+    lines = ["以下のサービス別フィールド辞書を参考に、解説に反映してください:"]
+    for fd in field_defs:
+        line = f"- {fd.path}: {fd.description}"
+        if fd.notes:
+            line += f"（注意: {fd.notes}）"
+        if fd.reference_url:
+            line += f" [参照: {fd.reference_url}]"
+        lines.append(line)
+    return "\n".join(lines)
+
+
+async def analyze_payload_with_ollama(
+    payload: dict,
+    template_context: list | None = None,
+) -> AnalysisResult:
     """
     Ollama で Webhook ペイロードを分析する。
     失敗時は analysis_failed を返す。
@@ -50,7 +70,13 @@ async def analyze_payload_with_ollama(payload: dict) -> AnalysisResult:
         )
 
     payload_str = json.dumps(payload, ensure_ascii=False, indent=2)
-    prompt = _PROMPT_TEMPLATE.format(payload_json=payload_str)
+    template_section = ""
+    if template_context:
+        template_section = _format_template_context(template_context) + "\n\n"
+    prompt = _PROMPT_BASE.format(
+        template_section=template_section,
+        payload_json=payload_str,
+    )
 
     try:
         client = ollama.AsyncClient(host=settings.ollama_host)

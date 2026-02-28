@@ -49,6 +49,8 @@ interface JsonTreeViewProps {
   jsonPath?: string;
   /** 重要フィールド欠損表示を上部に出す場合 true */
   showMissingImportant?: boolean;
+  /** 辞書テンプレートに含まれるフィールドパス（例: data.id, data.status）。未指定時は未知フィールドの区別をしない */
+  knownFieldPaths?: Set<string>;
 }
 
 function getValueType(val: unknown): string {
@@ -61,11 +63,17 @@ function copyToClipboard(text: string): void {
   navigator.clipboard.writeText(text);
 }
 
+/** jsonPath "$.data.id" を "data.id" に正規化 */
+function normalizePath(jsonPath: string): string {
+  return jsonPath.replace(/^\$\./, "");
+}
+
 export function JsonTreeView({
   data,
   rootKey = "payload",
   jsonPath = "$",
   showMissingImportant = false,
+  knownFieldPaths,
 }: JsonTreeViewProps) {
   const foundImportant =
     showMissingImportant && typeof data === "object" && data !== null
@@ -188,22 +196,37 @@ export function JsonTreeView({
           {keys.map((key) => {
             const val = obj[key];
             const childPath = path === "$" ? `$.${key}` : `${path}.${key}`;
+            const normalizedPath = normalizePath(childPath);
             const isPrimitive =
               val === null ||
               val === undefined ||
               (typeof val !== "object");
             const important = isImportantKey(key);
+            const isKnownPath =
+              !knownFieldPaths ||
+              knownFieldPaths.has(normalizedPath) ||
+              [...(knownFieldPaths || [])].some((p) =>
+                p.startsWith(normalizedPath + ".")
+              );
+            const isUnknownField = knownFieldPaths && !isKnownPath;
+            const keyClassName = isUnknownField
+              ? "text-violet-500 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/30 px-1 rounded border border-dashed border-violet-300 dark:border-violet-700"
+              : important
+                ? "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-1 rounded"
+                : "text-emerald-600 dark:text-emerald-400";
             return (
               <div key={key} className="pl-4">
-                <span
-                  className={`font-mono font-medium ${
-                    important
-                      ? "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-1 rounded"
-                      : "text-emerald-600 dark:text-emerald-400"
-                  }`}
-                >
+                <span className={`font-mono font-medium ${keyClassName}`}>
                   {key}
                 </span>
+                {isUnknownField && (
+                  <span
+                    className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-300"
+                    title="辞書テンプレートに未定義のフィールド（追加候補）"
+                  >
+                    未知
+                  </span>
+                )}
                 {isPrimitive ? (
                   <>
                     <span className="text-slate-500 mx-1">:</span>
@@ -221,7 +244,13 @@ export function JsonTreeView({
                     </button>
                   </>
                 ) : (
-                  <JsonTreeView data={val} rootKey={key} jsonPath={childPath} />
+                  <JsonTreeView
+                    data={val}
+                    rootKey={key}
+                    jsonPath={childPath}
+                    knownFieldPaths={knownFieldPaths}
+                    showMissingImportant={showMissingImportant}
+                  />
                 )}
               </div>
             );

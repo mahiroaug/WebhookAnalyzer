@@ -13,6 +13,7 @@ from app.schemas.analysis import (
     BatchAnalyzeResponse,
     WebhookAnalysisResponse,
 )
+from app.services.field_templates import get_field_template
 from app.services.llm.ollama_analyzer import analyze_payload_with_ollama
 
 logger = logging.getLogger(__name__)
@@ -40,7 +41,10 @@ async def batch_analyze(
             if not webhook:
                 failed += 1
                 continue
-            analysis_result = await analyze_payload_with_ollama(webhook.payload)
+            template = get_field_template(webhook.source, webhook.event_type)
+            analysis_result = await analyze_payload_with_ollama(
+                webhook.payload, template_context=template
+            )
             del_stmt = select(WebhookAnalysis).where(
                 WebhookAnalysis.webhook_id == webhook_id
             )
@@ -83,7 +87,10 @@ async def trigger_analyze(
     if not webhook:
         raise HTTPException(status_code=404, detail="Webhook not found")
 
-    analysis_result = await analyze_payload_with_ollama(webhook.payload)
+    template = get_field_template(webhook.source, webhook.event_type)
+    analysis_result = await analyze_payload_with_ollama(
+        webhook.payload, template_context=template
+    )
 
     # 既存の分析を削除してから新規作成（1対1で最新を保持）
     del_stmt = select(WebhookAnalysis).where(WebhookAnalysis.webhook_id == webhook_id)

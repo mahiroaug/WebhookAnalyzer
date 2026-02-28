@@ -106,3 +106,39 @@ async def test_stats_reflects_received_webhooks(
     assert "by_event_type" in data
     assert data["by_source"].get("bitgo", 0) >= 1
     assert data["by_source"].get("fireblocks", 0) >= 1
+
+
+@pytest.mark.asyncio
+async def test_field_templates_fireblocks_returns_template() -> None:
+    """Fireblocks transaction.created のフィールド辞書テンプレートが取得できる"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        resp = await client.get(
+            "/api/webhooks/field-templates",
+            params={"source": "fireblocks", "event_type": "transaction.created"},
+        )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["source"] == "fireblocks"
+    assert data["event_type"] == "transaction.created"
+    assert "fields" in data
+    assert len(data["fields"]) >= 1
+    paths = [f["path"] for f in data["fields"]]
+    assert "data.status" in paths
+    assert "data.id" in paths
+
+
+@pytest.mark.asyncio
+async def test_field_templates_unknown_returns_404() -> None:
+    """未対応の source/event_type は 404"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        resp = await client.get(
+            "/api/webhooks/field-templates",
+            params={"source": "unknown", "event_type": "foo"},
+        )
+    assert resp.status_code == 404

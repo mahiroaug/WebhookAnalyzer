@@ -15,6 +15,8 @@ from app.models.webhook import Webhook, WebhookAnalysis
 from app.schemas.webhook import (
     EventTypeGroup,
     EventTypeGroupResponse,
+    FieldTemplateItem,
+    FieldTemplateResponse,
     SchemaEstimateResponse,
     SchemaField,
     StatsResponse,
@@ -24,6 +26,7 @@ from app.schemas.webhook import (
     WebhookReceiveResponse,
 )
 from app.services.classifier import classify_webhook
+from app.services.field_templates import get_field_template
 from app.services.websocket_manager import ws_manager
 
 logger = logging.getLogger(__name__)
@@ -211,6 +214,36 @@ async def get_stats(db: AsyncSession = Depends(get_db)) -> StatsResponse:
     by_event_type = {row[0]: row[1] for row in by_event_result.all()}
 
     return StatsResponse(by_source=by_source, by_event_type=by_event_type)
+
+
+@router.get("/field-templates", response_model=FieldTemplateResponse)
+async def get_field_templates_api(
+    source: str,
+    event_type: str,
+) -> FieldTemplateResponse:
+    """
+    サービス別・event_type 別のフィールド辞書テンプレートを返す。
+    未対応の source/event_type の場合は 404。
+    """
+    template = get_field_template(source, event_type)
+    if template is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No field template for source={source} event_type={event_type}",
+        )
+    return FieldTemplateResponse(
+        source=source,
+        event_type=event_type,
+        fields=[
+            FieldTemplateItem(
+                path=f.path,
+                description=f.description,
+                notes=f.notes,
+                reference_url=f.reference_url,
+            )
+            for f in template
+        ],
+    )
 
 
 # 未知の event_type（ classifier が判定できなかった場合）を新規タイプとして表示

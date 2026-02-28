@@ -90,3 +90,20 @@ class SchemaEstimateResponse(BaseModel):
     source: str | None
     total_samples: int
     fields: list[SchemaField]
+
+
+class FieldTemplateItem(BaseModel):
+    """フィールド辞書テンプレートの1エントリ"""
+
+    path: str
+    description: str
+    notes: str | None = None
+    reference_url: str | None = None
+
+
+class FieldTemplateResponse(BaseModel):
+    """フィールド辞書テンプレート API のレスポンス"""
+
+    source: str
+    event_type: str
+    fields: list[FieldTemplateItem]

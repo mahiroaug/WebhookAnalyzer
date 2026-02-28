@@ -3,9 +3,11 @@ import { useParams, Link } from "react-router-dom";
 import {
   getWebhook,
   getAnalysis,
+  getFieldTemplate,
   triggerAnalyze,
   type WebhookDetail,
   type WebhookAnalysisResponse,
+  type FieldTemplateResponse,
 } from "../services/api";
 import { JsonTreeView } from "../components/JsonTreeView";
 
@@ -13,6 +15,7 @@ export function WebhookDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [webhook, setWebhook] = useState<WebhookDetail | null>(null);
   const [analysis, setAnalysis] = useState<WebhookAnalysisResponse | null>(null);
+  const [fieldTemplate, setFieldTemplate] = useState<FieldTemplateResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
@@ -31,6 +34,11 @@ export function WebhookDetailPage() {
         if (!cancelled) {
           setWebhook(detailRes);
           setAnalysis(analysisRes ?? null);
+          const templateRes = await getFieldTemplate(
+            detailRes.source,
+            detailRes.event_type
+          );
+          if (!cancelled) setFieldTemplate(templateRes ?? null);
         }
       } catch {
         if (!cancelled) setWebhook(null);
@@ -117,6 +125,47 @@ export function WebhookDetailPage() {
         </div>
       )}
 
+      {fieldTemplate && fieldTemplate.fields.length > 0 && (
+        <div className="mb-6 rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-800">
+          <h2 className="text-lg font-semibold mb-2">
+            フィールド辞書（{fieldTemplate.source} / {fieldTemplate.event_type}）
+          </h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+            主要フィールドの意味・注意点・参照先
+          </p>
+          <dl className="space-y-2 text-sm">
+            {fieldTemplate.fields.map((f) => (
+              <div key={f.path} className="flex flex-col gap-0.5">
+                <dt className="font-mono font-medium text-indigo-600 dark:text-indigo-400">
+                  {f.path}
+                </dt>
+                <dd className="text-slate-600 dark:text-slate-400 pl-2">
+                  {f.description}
+                  {f.notes && (
+                    <span className="text-amber-600 dark:text-amber-400 ml-1">
+                      （{f.notes}）
+                    </span>
+                  )}
+                  {f.reference_url && (
+                    <a
+                      href={f.reference_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-2 text-indigo-600 dark:text-indigo-400 hover:underline text-xs"
+                    >
+                      参照
+                    </a>
+                  )}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+            テンプレートに未定義のフィールドは「未知」として表示され、辞書への追加候補として扱えます。
+          </p>
+        </div>
+      )}
+
       {analysis && (
         <div
           className={`mb-6 rounded-lg border p-4 ${
@@ -169,6 +218,11 @@ export function WebhookDetailPage() {
             data={webhook.payload}
             rootKey="payload"
             showMissingImportant
+            knownFieldPaths={
+              fieldTemplate?.fields?.length
+                ? new Set(fieldTemplate.fields.map((f) => f.path))
+                : undefined
+            }
           />
         </div>
       </div>
