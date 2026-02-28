@@ -1,23 +1,2 @@
-summary: フィードバック反映済み
-fields:
-- path: type
-  description: Webhook の種類（transfer）
-  reference_url: https://developers.bitgo.com/
-- path: coin
-  description: アセット種別
-  reference_url: https://developers.bitgo.com/
-- path: wallet
-  description: ウォレット情報
-  reference_url: https://developers.bitgo.com/
-- path: hash
-  description: トランザクションハッシュ
-  ai_generated: true
-- path: a
-  description: 説明A
-  ai_generated: true
-- path: state
-  description: 'confirmed: トランザクションの状態。ここではトランザクションが完了（確認）したことを示します。'
-  ai_generated: true
-- path: transfer
-  description: '6989f7bafbbe2bc87d1cab0cbb528b15: 転送されたtPolygonコインのトランザクションID。'
-  ai_generated: true
+summary: このフィールドは、イベントに関する追加情報を提供します。イベントの性質に応じて、関連する詳細を記述するために使用されます。
+fields: []
