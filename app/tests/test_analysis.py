@@ -27,6 +27,7 @@ async def test_analyze_success_returns_analysis(
     mock_result = type("R", (), {
         "summary": "BitGoの送金確認Webhookです。",
         "field_descriptions": {"hash": "トランザクションハッシュ", "type": "イベント種別"},
+        "explanation": "個別解説テキスト",
         "failed": False,
         "error_message": None,
     })()
@@ -59,6 +60,7 @@ async def test_analyze_failure_saves_fallback(
     mock_result = type("R", (), {
         "summary": "",
         "field_descriptions": {},
+        "explanation": "",
         "failed": True,
         "error_message": "connection_refused",
     })()
@@ -90,6 +92,7 @@ async def test_get_analysis_after_analyze(
     mock_result = type("R", (), {
         "summary": "要約テキスト",
         "field_descriptions": {"a": "説明A"},
+        "explanation": "個別解説",
         "failed": False,
         "error_message": None,
     })()
@@ -158,6 +161,7 @@ async def test_analyze_success_writes_yaml(tmp_path: Path) -> None:
     mock_result = type("R", (), {
         "summary": "テスト要約",
         "field_descriptions": {"newField": "新規AIフィールドの説明"},
+        "explanation": "個別解説",
         "failed": False,
         "error_message": None,
     })()

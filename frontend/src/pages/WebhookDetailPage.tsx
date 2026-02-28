@@ -250,8 +250,31 @@ export function WebhookDetailPage() {
                 : undefined
           }
         >
+          {/* US-127: 3 層表示（概要・個別解説・Key 説明） */}
           {analysis.summary && (
-            <p className={`mb-3 text-sm ${analysisFailed ? "text-red-400" : "text-slate-300"}`}>{analysis.summary}</p>
+            <div className="mb-4">
+              <h4 className="text-xs font-medium text-slate-500 dark:text-dim-text-muted mb-1">概要</h4>
+              <p className={`text-sm whitespace-pre-wrap ${analysisFailed ? "text-red-400" : "text-slate-300"}`}>{analysis.summary}</p>
+            </div>
+          )}
+          {analysis.explanation && !analysis.from_definition_file && (
+            <div className="mb-4">
+              <h4 className="text-xs font-medium text-slate-500 dark:text-dim-text-muted mb-1">個別解説</h4>
+              <p className="text-sm text-slate-300 whitespace-pre-wrap">{analysis.explanation}</p>
+            </div>
+          )}
+          {analysis.field_descriptions && Object.keys(analysis.field_descriptions).length > 0 && (
+            <div>
+              <h4 className="text-xs font-medium text-slate-500 dark:text-dim-text-muted mb-2">Key 説明</h4>
+              <dl className="space-y-2">
+                {Object.entries(analysis.field_descriptions).map(([key, desc]) => (
+                  <div key={key} className="flex gap-2">
+                    <dt className="font-mono text-xs text-[#D4A574] shrink-0">{key}:</dt>
+                    <dd className="text-xs text-slate-400 flex-1">{desc}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
           )}
           {/* US-120: 再分析ボタンは 1 箇所のみ（下の AnalyzeButton に集約） */}
         </AccordionSection>

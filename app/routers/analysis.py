@@ -62,12 +62,14 @@ async def batch_analyze(
                     webhook_id=webhook_id,
                     summary=f"[分析失敗] {analysis_result.error_message or 'unknown'}",
                     field_descriptions={},
+                    explanation=None,
                 )
             else:
                 record = WebhookAnalysis(
                     webhook_id=webhook_id,
                     summary=analysis_result.summary,
                     field_descriptions=analysis_result.field_descriptions,
+                    explanation=analysis_result.explanation or None,
                 )
                 try:
                     write_analysis_to_yaml(
@@ -127,12 +129,14 @@ async def trigger_analyze(
             webhook_id=webhook_id,
             summary=f"[分析失敗] {analysis_result.error_message or 'unknown'}",
             field_descriptions={},
+            explanation=None,
         )
     else:
         record = WebhookAnalysis(
             webhook_id=webhook_id,
             summary=analysis_result.summary,
             field_descriptions=analysis_result.field_descriptions,
+            explanation=analysis_result.explanation or None,
         )
         try:
             write_analysis_to_yaml(
@@ -160,6 +164,7 @@ async def trigger_analyze(
         webhook_id=record.webhook_id,
         summary=record.summary,
         field_descriptions=record.field_descriptions or {},
+        explanation=record.explanation,
         analyzed_at=record.analyzed_at,
     )
 
@@ -184,6 +189,7 @@ async def get_analysis(
             webhook_id=record.webhook_id,
             summary=record.summary,
             field_descriptions=record.field_descriptions or {},
+            explanation=record.explanation,
             analyzed_at=record.analyzed_at,
             from_definition_file=False,
         )
@@ -202,6 +208,7 @@ async def get_analysis(
             webhook_id=webhook_id,
             summary=summary,
             field_descriptions=field_descriptions,
+            explanation=None,  # US-127: 定義ファイルには explanation は保存しない
             analyzed_at=datetime.now(timezone.utc),
             from_definition_file=True,
         )

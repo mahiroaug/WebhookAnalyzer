@@ -1,8 +1,13 @@
-"""US-121: AI 分析の JSON パース堅牢化の単体テスト"""
+"""US-121: AI 分析の JSON パース堅牢化の単体テスト
+US-127: 3 層出力・サニタイズの単体テスト"""
 import ollama  # noqa: F401 - patch のためモジュールを事前ロード
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from app.services.llm.ollama_analyzer import analyze_payload_with_ollama
+
+from app.services.llm.ollama_analyzer import (
+    analyze_payload_with_ollama,
+    sanitize_for_yaml,
+)
 
 
 @pytest.mark.asyncio
@@ -79,3 +84,13 @@ async def test_parsed_string_returns_invalid_format() -> None:
 
     assert result.failed is True
     assert result.error_message == "不正な応答形式"
+
+
+def test_sanitize_for_yaml_removes_payload_values() -> None:
+    """US-127: ペイロード値（6文字以上）が summary/field_descriptions から除去される"""
+    payload = {"txHash": "0x1234567890abcdef", "amount": "100"}
+    summary = "トランザクション 0x1234567890abcdef が完了しました。"
+    field_descriptions = {"txHash": "ハッシュ 0x1234567890abcdef で検索"}
+    safe_summary, safe_descriptions = sanitize_for_yaml(payload, summary, field_descriptions)
+    assert "0x1234567890abcdef" not in safe_summary
+    assert "0x1234567890abcdef" not in safe_descriptions["txHash"]

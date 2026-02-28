@@ -49,6 +49,7 @@ export interface WebhookAnalysisResponse {
   webhook_id: string;
   summary: string | null;
   field_descriptions: Record<string, string>;
+  explanation?: string | null;  // US-127: DB のみ、YAML には出さない
   analyzed_at: string;
   from_definition_file?: boolean;
 }

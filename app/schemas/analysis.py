@@ -12,6 +12,7 @@ class WebhookAnalysisResponse(BaseModel):
     webhook_id: UUID
     summary: str | None
     field_descriptions: dict[str, str] | None
+    explanation: str | None = None  # US-127: DB のみ、YAML には出さない
     analyzed_at: datetime
     from_definition_file: bool = False  # US-126: 定義ファイル由来なら True
 
@@ -23,6 +24,7 @@ class AnalyzeTriggerResponse(BaseModel):
     webhook_id: UUID
     summary: str | None
     field_descriptions: dict[str, str] | None
+    explanation: str | None = None
     analyzed_at: datetime
 
 

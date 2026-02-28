@@ -1,7 +1,14 @@
-"""Ollama による Webhook JSON 分析"""
+"""Ollama による Webhook JSON 分析
+
+US-127: 3 層出力（explanation → field_descriptions → summary）とルールベースサニタイズ
+"""
 import json
 import logging
+import re
 from dataclasses import dataclass
+from typing import Any
+
+import httpx
 
 from app.config import settings
 
@@ -10,28 +17,117 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AnalysisResult:
-    """分析結果"""
+    """分析結果（US-127: explanation 追加）"""
 
     summary: str
     field_descriptions: dict[str, str]
+    explanation: str = ""
     failed: bool = False
     error_message: str | None = None
 
 
-# 期待する出力JSONスキーマを固定（決定性のため）
-_EXPECTED_KEYS = {"summary", "field_descriptions"}
+# --- Step 0: エビデンス収集 ---
 
-_PROMPT_BASE = """以下の Webhook JSON の各フィールドを日本語で簡潔に説明し、
-全体の要約を書いてください。
-出力は必ず次のJSON形式のみで返してください（他に説明文は含めない）:
-{{"summary": "全体の要約（1〜2文）", "field_descriptions": {{"フィールド名": "説明", ...}}}}
 
-{template_section}
+async def _fetch_url_content(url: str, timeout_sec: float = 5) -> str:
+    """reference_url の内容をフェッチ。失敗時は空文字を返す。"""
+    try:
+        async with httpx.AsyncClient(timeout=timeout_sec, follow_redirects=True) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            text = resp.text
+            # 長すぎる場合は先頭 N 文字のみ（LLM トークン制限対策）
+            max_chars = 15_000
+            if len(text) > max_chars:
+                text = text[:max_chars] + "\n...[省略]"
+            return text
+    except Exception as e:
+        logger.debug("URL フェッチ失敗 %s: %s", url, e)
+        return ""
+
+
+def _collect_payload_values_ge_n(obj: Any, n: int) -> set[str]:
+    """ペイロードから n 文字以上の文字列値を再帰的に収集。"""
+    out: set[str] = set()
+    if isinstance(obj, str):
+        if len(obj) >= n:
+            out.add(obj)
+        return out
+    if isinstance(obj, dict):
+        for v in obj.values():
+            out.update(_collect_payload_values_ge_n(v, n))
+        return out
+    if isinstance(obj, list):
+        for v in obj:
+            out.update(_collect_payload_values_ge_n(v, n))
+        return out
+    return out
+
+
+def _sanitize_text(text: str, values_to_remove: set[str]) -> str:
+    """values_to_remove に含まれる文字列をテキストから除去。"""
+    result = text
+    # 長い順に置換（部分一致を避けるため）
+    for v in sorted(values_to_remove, key=len, reverse=True):
+        if v and v in result:
+            result = result.replace(v, "")
+    # 連続空白を単一に
+    result = re.sub(r"\s+", " ", result).strip()
+    return result
+
+
+def sanitize_for_yaml(payload: dict, summary: str, field_descriptions: dict[str, str]) -> tuple[str, dict[str, str]]:
+    """
+    ペイロードの具体値（6文字以上）を summary / field_descriptions から除去。
+    US-127: ルールベースサニタイズ。
+    """
+    values = _collect_payload_values_ge_n(payload, 6)
+    if not values:
+        return (summary, dict(field_descriptions))
+    safe_summary = _sanitize_text(summary, values)
+    safe_descriptions = {k: _sanitize_text(v, values) for k, v in field_descriptions.items()}
+    return (safe_summary, safe_descriptions)
+
+
+# --- プロンプト定義 ---
+
+_PROMPT_STEP1 = """あなたは Webhook の各フィールドを初心者向けに解説するエキスパートです。
+
+以下の Webhook JSON の各フィールドについて、**具体値**と API リファレンスを根拠に、初心者向けの個別解説を日本語で書いてください。
+
+{evidence_section}
 
 Webhook JSON:
 ```json
 {payload_json}
 ```
+
+出力は必ず次の JSON 形式のみで返してください（他に説明文は含めない）:
+{{"explanation": "各フィールドの具体値を交えた初心者向けの個別解説を1つのテキストで記述してください。"}}
+"""
+
+_PROMPT_STEP2 = """以下の「個別解説」から、**固有値（ハッシュ・アドレス・ID・具体的な数値など）を除いた**汎用的なフィールド説明を導出してください。
+各フィールド名をキー、その汎用的な説明を値とした JSON で返してください。
+
+個別解説:
+```
+{explanation}
+```
+
+出力は必ず次の JSON 形式のみで返してください:
+{{"field_descriptions": {{"フィールド名またはパス": "汎用的な説明（固有値を含まない）", ...}}}}
+"""
+
+_PROMPT_STEP3 = """以下の field_descriptions を 1〜2 文の汎用概要に要約してください。
+同 event_type の他の Webhook にも通用する文言にしてください。固有値は含めないでください。
+
+field_descriptions:
+```json
+{field_descriptions_json}
+```
+
+出力は必ず次の JSON 形式のみで返してください:
+{{"summary": "1〜2文の汎用概要"}}
 """
 
 
@@ -50,78 +146,8 @@ def _format_template_context(field_defs: list) -> str:
     return "\n".join(lines)
 
 
-async def analyze_payload_with_ollama(
-    payload: dict,
-    template_context: list | None = None,
-) -> AnalysisResult:
-    """
-    Ollama で Webhook ペイロードを分析する。
-    失敗時は analysis_failed を返す。
-    """
-    try:
-        import ollama
-    except ImportError:
-        logger.error("ollama パッケージがインストールされていません")
-        return AnalysisResult(
-            summary="",
-            field_descriptions={},
-            failed=True,
-            error_message="ollama_not_installed",
-        )
-
-    payload_str = json.dumps(payload, ensure_ascii=False, indent=2)
-    template_section = ""
-    if template_context:
-        template_section = _format_template_context(template_context) + "\n\n"
-    prompt = _PROMPT_BASE.format(
-        template_section=template_section,
-        payload_json=payload_str,
-    )
-
-    try:
-        client = ollama.AsyncClient(host=settings.ollama_host)
-        response = await client.chat(
-            model=settings.ollama_model,
-            messages=[{"role": "user", "content": prompt}],
-            options={"temperature": 0.1},  # 出力の揺らぎを抑える
-        )
-    except Exception as e:
-        logger.warning("Ollama 呼び出し失敗: %s", e, exc_info=True)
-        return AnalysisResult(
-            summary="",
-            field_descriptions={},
-            failed=True,
-            error_message=str(e)[:200],
-        )
-
-    try:
-        msg = response.message if hasattr(response, "message") else None
-        if msg is None:
-            logger.warning("Ollama レスポンスに message が存在しません: %s", type(response))
-            return AnalysisResult(
-                summary="",
-                field_descriptions={},
-                failed=True,
-                error_message="invalid_response_structure",
-            )
-        content = (msg if isinstance(msg, dict) else {"content": getattr(msg, "content", "")}).get("content", "").strip()
-    except Exception as e:
-        logger.warning("Ollama レスポンスの解析に失敗: %s", e, exc_info=True)
-        return AnalysisResult(
-            summary="",
-            field_descriptions={},
-            failed=True,
-            error_message=f"response_parse_error: {str(e)[:150]}",
-        )
-    if not content:
-        return AnalysisResult(
-            summary="",
-            field_descriptions={},
-            failed=True,
-            error_message="empty_response",
-        )
-
-    # JSON ブロックを抽出（```json ... ``` があればその中身を使う）
+def _extract_json(content: str) -> dict | None:
+    """LLM 出力から JSON を抽出してパース。"""
     if "```json" in content:
         start = content.find("```json") + 7
         end = content.find("```", start)
@@ -130,34 +156,167 @@ async def analyze_payload_with_ollama(
         start = content.find("```") + 3
         end = content.find("```", start)
         content = content[start:end].strip()
-
     try:
-        parsed = json.loads(content)
-    except json.JSONDecodeError as e:
-        logger.warning("LLM 出力の JSON 解析失敗: %s raw_output=%s", e, content[:500])
+        return json.loads(content)
+    except json.JSONDecodeError:
+        return None
+
+
+async def _call_ollama(prompt: str) -> str | None:
+    """Ollama に 1 回チャットして応答テキストを返す。失敗時は None。"""
+    try:
+        import ollama
+    except ImportError:
+        logger.error("ollama パッケージがインストールされていません")
+        return None
+    try:
+        client = ollama.AsyncClient(host=settings.ollama_host)
+        response = await client.chat(
+            model=settings.ollama_model,
+            messages=[{"role": "user", "content": prompt}],
+            options={"temperature": 0.1},
+        )
+        msg = response.message if hasattr(response, "message") else None
+        if msg is None:
+            return None
+        raw = msg if isinstance(msg, dict) else {"content": getattr(msg, "content", "")}
+        return (raw.get("content") or "").strip()
+    except Exception as e:
+        logger.warning("Ollama 呼び出し失敗: %s", e, exc_info=True)
+        return None
+
+
+async def analyze_payload_with_ollama(
+    payload: dict,
+    template_context: list | None = None,
+) -> AnalysisResult:
+    """
+    Ollama で Webhook ペイロードを分析する。
+    US-127: 3 回の LLM 呼び出しで explanation → field_descriptions → summary の段階的抽象化。
+    失敗時は analysis_failed を返す。
+    """
+    try:
+        import ollama  # noqa: F401
+    except ImportError:
         return AnalysisResult(
             summary="",
             field_descriptions={},
+            explanation="",
+            failed=True,
+            error_message="ollama_not_installed",
+        )
+
+    payload_str = json.dumps(payload, ensure_ascii=False, indent=2)
+
+    # Step 0: エビデンス収集（reference_url のフェッチ）
+    evidence_parts: list[str] = []
+    if template_context:
+        urls = {fd.reference_url for fd in template_context if fd.reference_url}
+        for url in urls:
+            content = await _fetch_url_content(url)
+            if content:
+                evidence_parts.append(f"[参照: {url}]\n{content[:8000]}")  # 各 URL 最大 8000 文字
+    evidence_section = ""
+    if evidence_parts:
+        evidence_section = "以下の API ドキュメントを参照し、解説の根拠にしてください:\n\n" + "\n\n---\n\n".join(evidence_parts)
+
+    template_section = ""
+    if template_context:
+        template_section = _format_template_context(template_context) + "\n\n"
+    if template_section:
+        evidence_section = template_section + evidence_section
+
+    # Step 1: explanation
+    prompt1 = _PROMPT_STEP1.format(
+        evidence_section=evidence_section or "（参照ドキュメントなし）",
+        payload_json=payload_str,
+    )
+    content1 = await _call_ollama(prompt1)
+    if not content1:
+        return AnalysisResult(
+            summary="",
+            field_descriptions={},
+            explanation="",
+            failed=True,
+            error_message="step1_empty_response",
+        )
+    parsed1 = _extract_json(content1)
+    if parsed1 is None:
+        logger.warning("Step 1 の JSON 解析失敗: %s", content1[:300])
+        return AnalysisResult(
+            summary="",
+            field_descriptions={},
+            explanation="",
             failed=True,
             error_message="LLM 出力が JSON ではありません",
         )
-
-    if not isinstance(parsed, dict):
-        logger.warning("LLM 応答が dict ではない: type=%s raw_output=%s", type(parsed).__name__, content[:500])
+    if not isinstance(parsed1, dict):
+        logger.warning("Step 1 の応答が dict ではない: %s", content1[:300])
         return AnalysisResult(
             summary="",
             field_descriptions={},
+            explanation="",
             failed=True,
             error_message="不正な応答形式",
         )
+    explanation = str(parsed1.get("explanation", "")).strip()
 
-    summary = parsed.get("summary", "")
-    field_descriptions = parsed.get("field_descriptions", {})
+    # Step 2: field_descriptions
+    prompt2 = _PROMPT_STEP2.format(explanation=explanation)
+    content2 = await _call_ollama(prompt2)
+    if not content2:
+        return AnalysisResult(
+            summary="",
+            field_descriptions={},
+            explanation=explanation,
+            failed=True,
+            error_message="step2_empty_response",
+        )
+    parsed2 = _extract_json(content2)
+    if not parsed2 or not isinstance(parsed2, dict):
+        logger.warning("Step 2 の JSON 解析失敗: %s", content2[:300])
+        return AnalysisResult(
+            summary="",
+            field_descriptions={},
+            explanation=explanation,
+            failed=True,
+            error_message="不正な応答形式",
+        )
+    field_descriptions = parsed2.get("field_descriptions", {})
     if not isinstance(field_descriptions, dict):
         field_descriptions = {}
 
+    # Step 3: summary
+    prompt3 = _PROMPT_STEP3.format(
+        field_descriptions_json=json.dumps(field_descriptions, ensure_ascii=False, indent=2),
+    )
+    content3 = await _call_ollama(prompt3)
+    if not content3:
+        return AnalysisResult(
+            summary="",
+            field_descriptions=field_descriptions,
+            explanation=explanation,
+            failed=True,
+            error_message="step3_empty_response",
+        )
+    parsed3 = _extract_json(content3)
+    if not parsed3 or not isinstance(parsed3, dict):
+        logger.warning("Step 3 の JSON 解析失敗: %s", content3[:300])
+        return AnalysisResult(
+            summary="",
+            field_descriptions=field_descriptions,
+            explanation=explanation,
+            failed=True,
+            error_message="不正な応答形式",
+        )
+    summary = str(parsed3.get("summary", "")).strip()
+
+    # サニタイズ（YAML 用に保存する summary / field_descriptions のみ）
+    safe_summary, safe_field_descriptions = sanitize_for_yaml(payload, summary, field_descriptions)
+
     return AnalysisResult(
-        summary=summary,
-        field_descriptions=field_descriptions,
+        summary=safe_summary,
+        field_descriptions=safe_field_descriptions,
+        explanation=explanation,
         failed=False,
     )
