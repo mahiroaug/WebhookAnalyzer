@@ -7,6 +7,8 @@ import {
   getAdjacentWebhooks,
   triggerAnalyzeStream,
   replayWebhook,
+  getDefinitionStatus,
+  updateFieldDescription,
   type WebhookDetail,
   type WebhookAnalysisResponse,
   type FieldTemplateResponse,
@@ -167,6 +169,19 @@ export function WebhookDetailPage() {
     return () => { cancelled = true; };
   }, [id]);
 
+  /** US-141: 定義ファイルが存在し編集可能な場合に getDefinitionStatus で確認 */
+  useEffect(() => {
+    if (!webhook) {
+      setDefinitionWritable(false);
+      return;
+    }
+    let cancelled = false;
+    getDefinitionStatus(webhook.source, webhook.event_type)
+      .then((s) => { if (!cancelled) setDefinitionWritable(s.exists && s.writable); })
+      .catch(() => { if (!cancelled) setDefinitionWritable(false); });
+    return () => { cancelled = true; };
+  }, [webhook?.id, webhook?.source, webhook?.event_type]);
+
   const goPrev = useCallback(() => {
     if (adjacent?.prev_id) navigate(`/webhooks/${adjacent.prev_id}`);
   }, [adjacent?.prev_id, navigate]);
@@ -197,6 +212,9 @@ export function WebhookDetailPage() {
   const [replayResult, setReplayResult] = useState<{ status: number; elapsed: number; error?: string } | null>(null);
   const [replaying, setReplaying] = useState(false);
 
+  /** US-141: 定義ファイル編集可否 */
+  const [definitionWritable, setDefinitionWritable] = useState(false);
+
   /** US-144: マスキング ON/OFF（localStorage で永続化、デフォルト ON） */
   const [maskEnabled, setMaskEnabled] = useState(() => {
     try {
@@ -208,6 +226,18 @@ export function WebhookDetailPage() {
       localStorage.setItem("webhook-mask-enabled", maskEnabled ? "1" : "0");
     } catch { /* ignore */ }
   }, [maskEnabled]);
+
+  /** US-141: 定義ファイルの description を保存して再取得 */
+  const handleDescriptionSave = useCallback(async (path: string, description: string) => {
+    if (!webhook) return;
+    await updateFieldDescription(webhook.source, webhook.event_type, path, description);
+    const [analysisRes, templateRes] = await Promise.all([
+      getAnalysis(webhook.id),
+      getFieldTemplate(webhook.source, webhook.event_type),
+    ]);
+    setAnalysis(analysisRes ?? null);
+    setFieldTemplate(templateRes ?? null);
+  }, [webhook]);
 
   async function handleReplay() {
     if (!id || !replayUrl.trim()) return;
@@ -423,6 +453,10 @@ export function WebhookDetailPage() {
               ? new Set(fieldTemplate.fields.map((f) => f.path))
               : undefined
           }
+          definitionEditable={
+            definitionWritable ? { source: webhook.source, eventType: webhook.event_type } : undefined
+          }
+          onDescriptionSave={definitionWritable ? handleDescriptionSave : undefined}
         />
       </AccordionSection>
 

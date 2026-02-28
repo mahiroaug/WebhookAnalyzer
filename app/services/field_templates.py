@@ -402,6 +402,56 @@ def _load_from_yaml(source: str, event_type: str) -> list[FieldDefinition] | Non
         return None
 
 
+def definition_exists(source: str, event_type: str) -> bool:
+    """US-141: 定義ファイルが存在するか"""
+    return _yaml_path(source, event_type).exists()
+
+
+def definition_is_writable(source: str, event_type: str) -> bool:
+    """US-141: 定義ファイルが書き込み可能か（存在し、書き込み可能な場合 True）"""
+    import os
+
+    path = _yaml_path(source, event_type)
+    if not path.exists():
+        return False
+    return os.access(path, os.W_OK)
+
+
+def update_field_description(
+    source: str,
+    event_type: str,
+    path: str,
+    description: str,
+) -> None:
+    """
+    US-141: 定義ファイル内の指定フィールドの description を更新する。
+    存在しない、読み取り専用、パス未定義の場合は例外を送出。
+    """
+    yaml_path = _yaml_path(source, event_type)
+    if not yaml_path.exists():
+        raise FileNotFoundError(f"Definition file not found: {source}/{event_type}")
+    data = _load_yaml_full(source, event_type)
+    if not data or not isinstance(data.get("fields"), list):
+        raise ValueError("Invalid definition file structure")
+
+    fields_list = data["fields"]
+    found = False
+    for item in fields_list:
+        if isinstance(item, dict) and str(item.get("path")) == path:
+            item["description"] = description
+            found = True
+            break
+    if not found:
+        raise KeyError(f"Field path not found: {path}")
+
+    try:
+        yaml_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(yaml_path, "w", encoding="utf-8") as f:
+            yaml.dump(data, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+    except OSError as e:
+        raise PermissionError(f"Definition file is read-only: {e}") from e
+
+
 def get_field_template(source: str, event_type: str) -> list[FieldDefinition] | None:
     """
     指定した source と event_type に対応するフィールド辞書テンプレートを返す。

@@ -7,6 +7,12 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+/** US-141: 定義ファイル編集可能時 */
+export interface DefinitionEditable {
+  source: string;
+  eventType: string;
+}
+
 interface PayloadTableProps {
   data: Record<string, unknown>;
   /** フィールド辞書テンプレートの説明（パス -> 説明） */
@@ -17,6 +23,10 @@ interface PayloadTableProps {
   knownFieldPaths?: Set<string>;
   /** US-144: マスキング有効時、該当フィールドの値を *** で表示 */
   maskEnabled?: boolean;
+  /** US-141: 定義ファイル編集可能時（source, eventType） */
+  definitionEditable?: DefinitionEditable;
+  /** US-141: 説明保存コールバック */
+  onDescriptionSave?: (path: string, description: string) => Promise<void>;
 }
 
 /** クリップボードにコピー */
@@ -76,6 +86,8 @@ interface FieldRowProps {
   analysisDescriptions?: Record<string, string>;
   knownFieldPaths?: Set<string>;
   maskEnabled?: boolean;
+  definitionEditable?: DefinitionEditable;
+  onDescriptionSave?: (path: string, description: string) => Promise<void>;
 }
 
 function FieldRow({
@@ -87,9 +99,14 @@ function FieldRow({
   analysisDescriptions,
   knownFieldPaths,
   maskEnabled = false,
+  definitionEditable,
+  onDescriptionSave,
 }: FieldRowProps) {
   const [expanded, setExpanded] = useState(depth < 2);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [editValue, setEditValue] = useState("");
+  const [saving, setSaving] = useState(false);
   const isObject = value !== null && typeof value === "object" && !Array.isArray(value);
   const isArray = Array.isArray(value);
   const isExpandable = isObject || isArray;
@@ -158,7 +175,57 @@ function FieldRow({
           {type}
         </td>
         <td className="py-1.5 px-2 text-xs text-slate-500 dark:text-slate-400 break-all whitespace-pre-wrap min-w-0">
-          {description || <span className="text-slate-300 dark:text-slate-600">-</span>}
+          {editingDesc ? (
+            <div className="flex flex-col gap-1">
+              <textarea
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                rows={2}
+                className="w-full rounded border border-slate-500 bg-slate-800 px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-slate-400"
+                autoFocus
+              />
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!onDescriptionSave) return;
+                    setSaving(true);
+                    try {
+                      await onDescriptionSave(path, editValue.trim());
+                      setEditingDesc(false);
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                  disabled={saving}
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-green-700/50 text-green-200 hover:bg-green-700 disabled:opacity-50"
+                >
+                  保存
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEditingDesc(false); setEditValue(description || ""); }}
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-300 hover:bg-slate-600"
+                >
+                  キャンセル
+                </button>
+              </div>
+            </div>
+          ) : description && definitionEditable && onDescriptionSave ? (
+            <button
+              type="button"
+              onClick={() => { setEditValue(description); setEditingDesc(true); }}
+              className="text-left w-full hover:bg-slate-700/50 rounded px-1 -mx-1 cursor-pointer group/btn"
+              title="クリックして編集"
+            >
+              <span className="group-hover/btn:underline">{description}</span>
+              <span className="ml-1 opacity-0 group-hover/btn:opacity-70 text-slate-500">✎</span>
+            </button>
+          ) : description ? (
+            description
+          ) : (
+            <span className="text-slate-300 dark:text-slate-600">-</span>
+          )}
         </td>
       </tr>
       <AnimatePresence initial={false}>
@@ -191,6 +258,8 @@ function FieldRow({
                         analysisDescriptions={analysisDescriptions}
                         knownFieldPaths={knownFieldPaths}
                         maskEnabled={maskEnabled}
+                        definitionEditable={definitionEditable}
+                        onDescriptionSave={onDescriptionSave}
                       />
                     ))}
                   {isArray &&
@@ -205,6 +274,8 @@ function FieldRow({
                         analysisDescriptions={analysisDescriptions}
                         knownFieldPaths={knownFieldPaths}
                         maskEnabled={maskEnabled}
+                        definitionEditable={definitionEditable}
+                        onDescriptionSave={onDescriptionSave}
                       />
                     ))}
                 </tbody>
@@ -223,6 +294,8 @@ export function PayloadTable({
   analysisDescriptions,
   knownFieldPaths,
   maskEnabled = false,
+  definitionEditable,
+  onDescriptionSave,
 }: PayloadTableProps) {
   return (
     <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
@@ -253,6 +326,8 @@ export function PayloadTable({
               analysisDescriptions={analysisDescriptions}
               knownFieldPaths={knownFieldPaths}
               maskEnabled={maskEnabled}
+              definitionEditable={definitionEditable}
+              onDescriptionSave={onDescriptionSave}
             />
           ))}
         </tbody>

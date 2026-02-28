@@ -317,6 +317,36 @@ export interface FieldTemplateResponse {
   fields: FieldTemplateItem[];
 }
 
+/** US-141: 定義ファイルの存在・編集可否 */
+export async function getDefinitionStatus(
+  source: string,
+  eventType: string
+): Promise<{ exists: boolean; writable: boolean }> {
+  const res = await fetch(
+    `${BASE}/definitions/${encodeURIComponent(source)}/${encodeURIComponent(eventType)}`
+  );
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+/** US-141: 定義ファイルのフィールド description を更新 */
+export async function updateFieldDescription(
+  source: string,
+  eventType: string,
+  path: string,
+  description: string
+): Promise<void> {
+  const res = await fetch(
+    `${BASE}/definitions/${encodeURIComponent(source)}/${encodeURIComponent(eventType)}/fields`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path, description }),
+    }
+  );
+  if (!res.ok) throw new Error(await res.text().catch(() => `HTTP ${res.status}`));
+}
+
 export async function getFieldTemplate(
   source: string,
   eventType: string
