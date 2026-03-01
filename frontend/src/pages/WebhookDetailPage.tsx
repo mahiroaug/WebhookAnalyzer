@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   getWebhook,
@@ -141,6 +141,36 @@ export function WebhookDetailPage() {
     saved: boolean;
   }>({ evidence: false, explanation: false, fields: false, saved: false });
   const [streamElapsedMs, setStreamElapsedMs] = useState<number | null>(null);
+  /** US-148: リアルタイムカウント用の開始時刻 */
+  const analysisStartTimeRef = useRef<number | null>(null);
+
+  /** US-148: 分析中は 1 秒ごとに経過時間を更新 */
+  useEffect(() => {
+    if (!analyzing) return;
+    analysisStartTimeRef.current = Date.now();
+    const iv = setInterval(() => {
+      if (analysisStartTimeRef.current != null) {
+        setStreamElapsedMs(Date.now() - analysisStartTimeRef.current);
+      }
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [analyzing]);
+
+  /** US-134/148: ページ表示時に sessionStorage から前回ログ・所要時間を復元 */
+  useEffect(() => {
+    if (analyzing) return;
+    try {
+      const raw = sessionStorage.getItem("webhook-analysis-logs");
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      const storedLogs = Array.isArray(parsed) ? parsed : parsed?.logs;
+      const storedElapsed = !Array.isArray(parsed) && typeof parsed?.elapsedMs === "number" ? parsed.elapsedMs : undefined;
+      if (storedLogs?.length) {
+        setAnalysisLogs(storedLogs);
+        if (storedElapsed != null) setStreamElapsedMs(storedElapsed);
+      }
+    } catch { /* ignore */ }
+  }, [analyzing]);
 
   useEffect(() => {
     if (!id) return;
@@ -281,6 +311,7 @@ export function WebhookDetailPage() {
     setAnalysisProgress({ evidence: false, explanation: false, fields: false, saved: false });
     setStreamElapsedMs(null);
     const logs: string[] = [];
+    let lastElapsedMs: number | null = null;
     try {
       const res = await triggerAnalyzeStream(
         id,
@@ -291,7 +322,10 @@ export function WebhookDetailPage() {
             logs.push(ev.message);
             setAnalysisLogs((prev) => [...prev, ev.message!]);
           }
-          if (ev.total_elapsed_ms != null) setStreamElapsedMs(ev.total_elapsed_ms);
+          if (ev.total_elapsed_ms != null) {
+            lastElapsedMs = ev.total_elapsed_ms;
+            setStreamElapsedMs(ev.total_elapsed_ms);
+          }
           setAnalysisProgress((p) => {
             if (step && step in p) return { ...p, [step]: true };
             return p;
@@ -326,9 +360,12 @@ export function WebhookDetailPage() {
           }
         }
       }
-      // US-134: 完了時にログを sessionStorage に保存
+      // US-134: 完了時にログを sessionStorage に保存（US-148: elapsed も保存）
       try {
-        sessionStorage.setItem("webhook-analysis-logs", JSON.stringify(logs));
+        sessionStorage.setItem(
+          "webhook-analysis-logs",
+          JSON.stringify({ logs, elapsedMs: lastElapsedMs ?? undefined })
+        );
       } catch { /* ignore */ }
     } catch (e) {
       setAnalyzeError(e instanceof Error ? e.message : "不明なエラー");
