@@ -14,9 +14,10 @@ export interface DetailNavBarData {
 interface DetailNavBarProps {
   data: DetailNavBarData | null;
   searchQuery?: string;
+  onNavigate?: (id: string) => void;
 }
 
-export function DetailNavBar({ data, searchQuery = "" }: DetailNavBarProps) {
+export function DetailNavBar({ data, searchQuery = "", onNavigate }: DetailNavBarProps) {
   const navigate = useNavigate();
   const [replayOpen, setReplayOpen] = useState(false);
   const [replayUrl, setReplayUrl] = useState("");
@@ -25,17 +26,25 @@ export function DetailNavBar({ data, searchQuery = "" }: DetailNavBarProps) {
 
   const goPrev = useCallback(() => {
     if (data?.adjacent?.prev_id) {
-      const search = searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : "";
-      navigate(`/webhooks/${data.adjacent.prev_id}${search}`);
+      if (onNavigate) {
+        onNavigate(data.adjacent.prev_id);
+      } else {
+        const search = searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : "";
+        navigate(`/webhooks/${data.adjacent.prev_id}${search}`);
+      }
     }
-  }, [data?.adjacent?.prev_id, navigate, searchQuery]);
+  }, [data?.adjacent?.prev_id, navigate, searchQuery, onNavigate]);
 
   const goNext = useCallback(() => {
     if (data?.adjacent?.next_id) {
-      const search = searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : "";
-      navigate(`/webhooks/${data.adjacent.next_id}${search}`);
+      if (onNavigate) {
+        onNavigate(data.adjacent.next_id);
+      } else {
+        const search = searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : "";
+        navigate(`/webhooks/${data.adjacent.next_id}${search}`);
+      }
     }
-  }, [data?.adjacent?.next_id, navigate, searchQuery]);
+  }, [data?.adjacent?.next_id, navigate, searchQuery, onNavigate]);
 
   const handleReplay = useCallback(async () => {
     if (!data?.webhook?.id || !replayUrl.trim()) return;

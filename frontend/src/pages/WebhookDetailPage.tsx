@@ -200,9 +200,10 @@ function DetailSkeleton() {
 interface WebhookDetailPageProps {
   webhookId?: string;
   onNavBarData?: (data: DetailNavBarData) => void;
+  onNavigate?: (id: string) => void;
 }
 
-export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData }: WebhookDetailPageProps) {
+export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNavigate }: WebhookDetailPageProps) {
   const { id: idFromParams } = useParams<{ id: string }>();
   const id = webhookIdProp ?? idFromParams ?? undefined;
   const navigate = useNavigate();
@@ -317,16 +318,24 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData }: We
 
   const goPrev = useCallback(() => {
     if (adjacent?.prev_id) {
-      const search = searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : "";
-      navigate(`/webhooks/${adjacent.prev_id}${search}`);
+      if (onNavigate) {
+        onNavigate(adjacent.prev_id);
+      } else {
+        const search = searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : "";
+        navigate(`/webhooks/${adjacent.prev_id}${search}`);
+      }
     }
-  }, [adjacent?.prev_id, navigate, searchQuery]);
+  }, [adjacent?.prev_id, navigate, searchQuery, onNavigate]);
   const goNext = useCallback(() => {
     if (adjacent?.next_id) {
-      const search = searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : "";
-      navigate(`/webhooks/${adjacent.next_id}${search}`);
+      if (onNavigate) {
+        onNavigate(adjacent.next_id);
+      } else {
+        const search = searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : "";
+        navigate(`/webhooks/${adjacent.next_id}${search}`);
+      }
     }
-  }, [adjacent?.next_id, navigate, searchQuery]);
+  }, [adjacent?.next_id, navigate, searchQuery, onNavigate]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {

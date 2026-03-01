@@ -77,14 +77,21 @@ export function TwoPanePage() {
     setSelectedId((prev) => (prev !== urlId ? urlId : prev));
   }, [location.pathname]);
 
-  const handleSelect = useCallback(
+  const handleNavigate = useCallback(
     (webhookId: string) => {
       setSelectedId(webhookId);
-      setRightPane("detail");
       const search = searchParams.toString();
       navigate({ pathname: `/webhooks/${webhookId}`, search: search ? `?${search}` : "" }, { replace: true });
     },
     [navigate, searchParams]
+  );
+
+  const handleSelect = useCallback(
+    (webhookId: string) => {
+      setRightPane("detail");
+      handleNavigate(webhookId);
+    },
+    [handleNavigate]
   );
 
   const paneButtons: { key: RightPane; label: string }[] = [
@@ -146,12 +153,13 @@ export function TwoPanePage() {
           <DetailNavBar
             data={navBarData}
             searchQuery={searchQuery}
+            onNavigate={handleNavigate}
           />
         )}
 
         <div className="flex-1 overflow-y-auto p-4">
           {rightPane === "detail" && selectedId ? (
-            <WebhookDetailPage key={selectedId} webhookId={selectedId} onNavBarData={(d) => selectedId && d.webhook.id === selectedId && setNavBarData(d)} />
+            <WebhookDetailPage key={selectedId} webhookId={selectedId} onNavigate={handleNavigate} onNavBarData={(d) => selectedId && d.webhook.id === selectedId && setNavBarData(d)} />
           ) : rightPane === "detail" && !selectedId ? (
             <div className="flex items-center justify-center h-full text-slate-400 dark:text-dim-text-muted">
               左のリストから Webhook を選択してください
