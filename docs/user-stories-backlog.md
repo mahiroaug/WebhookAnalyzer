@@ -29,15 +29,7 @@
 
 ### Phase 10: AI 分析品質とセキュリティ
 
-#### US-143 LLM 比較モード（P1）【完了】
-
-開発者として、provider（Ollama / OpenAI / Anthropic）や model を切り替えて同一 Webhook の AI 分析結果を比較したい。
-なぜならプロンプト改善やモデル選定のフィードバックループを効率化したいから。
-
-- 受け入れ基準
-  - Given 詳細画面で Webhook を表示中、When 設定から provider / model を選択して「再分析」を実行、Then 選択した provider / model で分析が実行され結果が表示される
-  - Given 同一 Webhook に対して複数 provider / model で分析、When 比較モードを有効にする、Then 2 つ以上の結果を並べて表示し差異を把握できる
-  - Given 未設定の provider（例: API キー未設定の OpenAI）、When その provider を選択、Then 設定が必要な旨のエラーメッセージが表示される
+> US-143 は完了。→ [`user-stories-completed.md`](./user-stories-completed.md)
 
 ### Phase 11: 画面遷移リファインメントと分析可観測性
 
