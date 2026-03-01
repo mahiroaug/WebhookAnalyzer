@@ -1,2 +1,50 @@
-summary: このフィールドは、イベントに関する追加情報を提供します。イベントの性質に応じて、関連する詳細を記述するために使用されます。
-fields: []
+summary: フィードバック反映済み
+fields:
+- path: coin
+  description: 送金に使用されているトークンの種類
+  ai_generated: true
+- path: type
+  description: 送金の種類
+  ai_generated: true
+- path: state
+  description: トランザクションの状態
+  ai_generated: true
+- path: value
+  description: 送金されたトークンの量
+  ai_generated: true
+- path: wallet
+  description: 送金されたトークンが保管されているウォレットのアドレス
+  ai_generated: true
+- path: transfer
+  description: 送金されたトークンが保管されている別のウォレットのアドレス
+  ai_generated: true
+- path: baseValue
+  description: 送金されたトークンの基本値
+  ai_generated: true
+- path: feeString
+  description: トランザクションの実行に必要な手数料の文字列
+  ai_generated: true
+- path: initiator
+  description: トランザクションを開始したウォレットのアドレスの配列
+  ai_generated: true
+- path: sequenceId
+  description: トランザクションのシーケンスID
+  ai_generated: true
+- path: walletType
+  description: ウォレットの種類
+  ai_generated: true
+- path: systemNotes
+  description: トランザクションに関するシステムノート
+  ai_generated: true
+- path: valueString
+  description: 送金されたトークンの値の文字列
+  ai_generated: true
+- path: transferType
+  description: 送金のタイプ
+  ai_generated: true
+- path: hash
+  description: トランザクションハッシュ
+  ai_generated: true
+- path: a
+  description: 説明A
+  ai_generated: true
