@@ -13,7 +13,8 @@ import {
 } from "../services/api";
 import { SourceIcon } from "./SourceIcon";
 
-const PAGE_SIZE = 50;
+/** US-161: 一覧ペインの表示件数拡大（500 件） */
+const PAGE_SIZE = 500;
 
 interface WebhookListPaneProps {
   selectedId: string | null;
