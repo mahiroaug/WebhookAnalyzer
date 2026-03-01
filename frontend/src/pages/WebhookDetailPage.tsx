@@ -1,13 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
   getWebhook,
   getAnalysis,
   getFieldTemplate,
   getAdjacentWebhooks,
   triggerAnalyzeStream,
-  replayWebhook,
-  exportWebhookPdf,
   getDefinitionStatus,
   getDefinitionContent,
   updateFieldDescription,
@@ -25,6 +23,7 @@ import {
   type PartialApplyPayload,
 } from "../components/DefinitionDiffModal";
 import { formatReceivedAt } from "../utils/formatDate";
+import type { DetailNavBarData } from "../components/DetailNavBar";
 
 /** US-120: Webhook 遷移時も開閉状態を維持するリクエストヘッダー details */
 const REQUEST_HEADERS_STORAGE_KEY = "webhook-detail-request-headers-open";
@@ -198,9 +197,15 @@ function DetailSkeleton() {
   );
 }
 
-export function WebhookDetailPage() {
+interface WebhookDetailPageProps {
+  onNavBarData?: (data: DetailNavBarData) => void;
+}
+
+export function WebhookDetailPage({ onNavBarData }: WebhookDetailPageProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("q") ?? "";
   const [webhook, setWebhook] = useState<WebhookDetail | null>(null);
   const [analysis, setAnalysis] = useState<WebhookAnalysisResponse | null>(null);
   const [fieldTemplate, setFieldTemplate] = useState<FieldTemplateResponse | null>(null);
@@ -309,11 +314,17 @@ export function WebhookDetailPage() {
   }, [webhook?.id, webhook?.source, webhook?.event_type]);
 
   const goPrev = useCallback(() => {
-    if (adjacent?.prev_id) navigate(`/webhooks/${adjacent.prev_id}`);
-  }, [adjacent?.prev_id, navigate]);
+    if (adjacent?.prev_id) {
+      const search = searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : "";
+      navigate(`/webhooks/${adjacent.prev_id}${search}`);
+    }
+  }, [adjacent?.prev_id, navigate, searchQuery]);
   const goNext = useCallback(() => {
-    if (adjacent?.next_id) navigate(`/webhooks/${adjacent.next_id}`);
-  }, [adjacent?.next_id, navigate]);
+    if (adjacent?.next_id) {
+      const search = searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : "";
+      navigate(`/webhooks/${adjacent.next_id}${search}`);
+    }
+  }, [adjacent?.next_id, navigate, searchQuery]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -337,12 +348,6 @@ export function WebhookDetailPage() {
   const [llmModel, setLlmModel] = useState("");
   const [compareMode, setCompareMode] = useState(false);
   const [compareResults, setCompareResults] = useState<Array<{ provider: string; model: string; result: WebhookAnalysisResponse }>>([]);
-
-  /** US-145: 再送 */
-  const [replayOpen, setReplayOpen] = useState(false);
-  const [replayUrl, setReplayUrl] = useState("");
-  const [replayResult, setReplayResult] = useState<{ status: number; elapsed: number; error?: string } | null>(null);
-  const [replaying, setReplaying] = useState(false);
 
   /** US-141: 定義ファイル編集可否 */
   const [definitionWritable, setDefinitionWritable] = useState(false);
@@ -379,19 +384,12 @@ export function WebhookDetailPage() {
     setFieldTemplate(templateRes ?? null);
   }, [webhook]);
 
-  async function handleReplay() {
-    if (!id || !replayUrl.trim()) return;
-    setReplaying(true);
-    setReplayResult(null);
-    try {
-      const res = await replayWebhook(id, replayUrl.trim());
-      setReplayResult({ status: res.status_code, elapsed: res.elapsed_ms, error: res.error ?? undefined });
-    } catch (e) {
-      setReplayResult({ status: 0, elapsed: 0, error: e instanceof Error ? e.message : "不明なエラー" });
-    } finally {
-      setReplaying(false);
+  /** US-174: 親にナビゲーションデータを渡す（タブ直下の DetailNavBar 用） */
+  useEffect(() => {
+    if (webhook && adjacent && onNavBarData) {
+      onNavBarData({ webhook, adjacent });
     }
-  }
+  }, [webhook, adjacent, onNavBarData]);
 
   async function handleAnalyze() {
     if (!id) return;
@@ -548,67 +546,7 @@ export function WebhookDetailPage() {
           />
         </div>
       )}
-      <header className="mb-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <button type="button" onClick={goPrev} disabled={!adjacent?.prev_id}
-              className="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40"
-              title="Previous Webhook (←)">← Prev</button>
-            <button type="button" onClick={goNext} disabled={!adjacent?.next_id}
-              className="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40"
-              title="Next Webhook (→)">Next →</button>
-            <button
-              type="button"
-              onClick={() => { setReplayOpen((o) => !o); setReplayResult(null); }}
-              className="rounded border border-slate-400 dark:border-slate-500 bg-transparent px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50"
-            >
-              Replay
-            </button>
-            <button
-              type="button"
-              onClick={() => exportWebhookPdf(webhook.id).catch((e) => alert(e?.message ?? "Export failed"))}
-              className="rounded border border-slate-400 dark:border-slate-500 bg-transparent px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50"
-            >
-              Export PDF
-            </button>
-          </div>
-          <span className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-slate-500 dark:text-dim-text-muted">
-              {webhook.sequence_index != null ? `#${webhook.sequence_index}` : ""}
-            </span>
-            {webhook.matched_rules && webhook.matched_rules.length > 0 && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/50 text-amber-200" title={webhook.matched_rules.map((r) => r.name).join(", ")}>
-                ⚠ 検知: {webhook.matched_rules.map((r) => r.name).join(", ")}
-              </span>
-            )}
-          </span>
-        </div>
-        {replayOpen && (
-          <div className="mt-2 flex flex-wrap items-center gap-2 p-2 rounded border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50">
-            <input
-              type="url"
-              value={replayUrl}
-              onChange={(e) => setReplayUrl(e.target.value)}
-              placeholder="https://example.com/webhook"
-              className="flex-1 min-w-[200px] rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-sm font-mono"
-            />
-            <button
-              type="button"
-              onClick={handleReplay}
-              disabled={replaying || !replayUrl.trim()}
-              className="rounded border border-slate-400 px-2 py-1 text-xs font-medium disabled:opacity-50"
-            >
-              {replaying ? "Sending..." : "Send"}
-            </button>
-            {replayResult && (
-              <span className={`text-xs ${replayResult.error ? "text-red-400" : "text-green-400"}`}>
-                {replayResult.error ?? `HTTP ${replayResult.status} (${replayResult.elapsed}ms)`}
-              </span>
-            )}
-          </div>
-        )}
-      </header>
-
+      {/* US-174: ナビバーはタブ直下の DetailNavBar に移動済み */}
       <AccordionSection id="meta" title="リクエスト情報" defaultOpen={false}>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
           <dt className="text-slate-500 dark:text-slate-400">source</dt>

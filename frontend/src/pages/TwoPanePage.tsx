@@ -5,6 +5,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { WebhookListPane } from "../components/WebhookListPane";
+import { DetailNavBar, type DetailNavBarData } from "../components/DetailNavBar";
 import { WebhookDetailPage } from "./WebhookDetailPage";
 import { EventTypeGroupPage } from "./EventTypeGroupPage";
 import { SchemaEstimatePage } from "./SchemaEstimatePage";
@@ -23,6 +24,7 @@ export function TwoPanePage() {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get("q") ?? "";
   const [rightPane, setRightPane] = useState<RightPane>("detail");
+  const [navBarData, setNavBarData] = useState<DetailNavBarData | null>(null);
   const [filterSource, setFilterSource] = useState("");
   const [filterEventType, setFilterEventType] = useState("");
   const [paneWidth, setPaneWidth] = useState(() => {
@@ -33,6 +35,11 @@ export function TwoPanePage() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const selectedId = id || null;
+
+  /** US-174: Webhook 切替時にナビバーデータをクリア（ロード中は空表示） */
+  useEffect(() => {
+    setNavBarData(null);
+  }, [selectedId]);
 
   const handleMouseDown = useCallback(() => {
     draggingRef.current = true;
@@ -105,7 +112,7 @@ export function TwoPanePage() {
 
       {/* 右ペイン */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex items-center gap-1 px-4 py-2 border-b border-slate-200 dark:border-dim-border bg-white dark:bg-dim-card">
+        <div className="flex-shrink-0 flex items-center gap-1 px-4 py-2 border-b border-slate-200 dark:border-dim-border bg-white dark:bg-dim-card">
           {paneButtons.map(({ key, label }) => (
             <button
               key={key}
@@ -126,9 +133,17 @@ export function TwoPanePage() {
           ))}
         </div>
 
+        {/* US-174: ナビゲーションバーをタブ直下・詳細ペイン上端に固定 */}
+        {rightPane === "detail" && selectedId && (
+          <DetailNavBar
+            data={navBarData}
+            searchQuery={searchQuery}
+          />
+        )}
+
         <div className="flex-1 overflow-y-auto p-4">
           {rightPane === "detail" && selectedId ? (
-            <WebhookDetailPage />
+            <WebhookDetailPage onNavBarData={(d) => selectedId && d.webhook.id === selectedId && setNavBarData(d)} />
           ) : rightPane === "detail" && !selectedId ? (
             <div className="flex items-center justify-center h-full text-slate-400 dark:text-dim-text-muted">
               左のリストから Webhook を選択してください

@@ -122,3 +122,10 @@
 | US-164 | フィルタ入力のインクリメンタルサーチ                 | OK           | useDebounce 300ms、source/event_type 入力で自動フィルタ                            |
 | US-162 | INBOX ヘッダーのサービス接続状況表示                 | OK           | GET /api/health/services、ServiceStatusPanel、30秒ポーリング、ngrok/API/DB/Ollama |
 | US-167 | 一括既読操作と未読フィルタ                           | OK           | Mark All Read ボタン、Unread Only チェックボックス、POST /mark-all-read            |
+| US-171 | PDF AI 分析結果の出力修正                            | OK           | DB に分析がない場合 load_analysis_from_yaml で定義ファイルからフォールバック       |
+| US-172 | 未読エントリの恒久的背景ハイライト強化                | OK           | bg-blue-50/60 dark:bg-blue-900/25 で恒久表示、isSelected 優先                     |
+| US-168 | ServiceStatusPanel の表形式化と UX 改善               | OK           | 5行テーブル、CopyableUrl、Live=緑/Offline=灰、text-xs、DB/Ollama url 追加         |
+| US-169 | PDF Payload のテーブル形式表示                         | OK           | _flatten_payload で key/value/type/description、ドット記法、field_descriptions    |
+| US-170 | PDF ヘッダー・フッターメタデータの追加                 | OK           | NumberedCanvas、#NNN、YYYY/MM/DD HH:MM:SS、Page X/Y                                |
+| US-173 | 受信日時書式の統一（YYYY/MM/DD HH:MM:SS）               | OK           | formatReceivedAt ユーティリティ、一覧・詳細・比較・event_type別で統一               |
+| US-174 | 詳細ペインナビゲーションバーの位置調整                  | OK           | DetailNavBar をタブ直下に固定、スクロールに追従せず Prev/Next/Replay/Export PDF 常時表示 |

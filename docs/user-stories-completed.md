@@ -911,3 +911,77 @@ QA として、過去の Webhook payload を任意のエンドポイントへ再
   - Given 一覧ペインに未読エントリがある、When 「Mark All Read」ボタンをクリックする、Then 現在のフィルタ条件に一致する全エントリが既読に変更される … **OK**: POST /mark-all-read
   - Given 一覧ペイン、When 「Unread Only」フィルタを有効にする、Then 未読エントリだけが表示される … **OK**: listWebhooks is_read=false
   - Given 全て既読にした後、When フィルタを解除する、Then 全エントリが通常表示に戻る … **OK**
+
+### US-171 PDF AI 分析結果の出力修正（P0）【完了】
+
+開発者として、AI 分析済みの Webhook を PDF 出力した際に分析結果（Summary / Explanation / Field Descriptions）が正しく含まれてほしい。
+なぜなら現状 AI 分析済みでも「Not analyzed」と出力されるケースがあり、レポートとしての価値が損なわれるから。
+
+- 受け入れ基準
+  - Given AI 分析済みの Webhook を PDF エクスポートする、When AI Analysis セクションを確認する、Then Summary・Explanation・Field Descriptions が正しく出力される … **OK**
+  - Given 定義ファイルからのキャッシュ読み込み（US-126）で分析結果が表示されている Webhook、When PDF 出力する、Then 定義ファイルベースの結果も PDF に反映される … **OK**: load_analysis_from_yaml フォールバック
+  - Given AI 分析が未実行の Webhook、When PDF 出力する、Then 「Not analyzed」と表示されエラーにならない（既存動作維持） … **OK**
+
+### US-172 未読エントリの恒久的背景ハイライト強化（P0）【完了】
+
+開発者として、一覧ペインの未読エントリが既読になるまで恒久的に明るい背景色と太字で表示されてほしい。
+なぜなら現状の左端アクセントバーと太字のみでは 500 件表示の中で未読を見落としやすいから。
+
+- 受け入れ基準
+  - Given 未読の Webhook エントリ、When 一覧ペインを確認する、Then 既読エントリより明るい背景色（例: `bg-blue-50/50 dark:bg-blue-900/20`）と太字テキストで恒久的に表示される … **OK**: bg-blue-50/60 dark:bg-blue-900/25
+  - Given 未読エントリをクリックして既読にする、When 一覧に戻る、Then 背景色が通常に戻り太字が解除される … **OK**
+  - Given 新着 Webhook が WebSocket で到着する、When 一覧を確認する、Then 新着エントリも未読として恒久的にハイライトされる（数秒で消えない） … **OK**
+  - Given 選択中の未読エントリ、When 確認する、Then 選択状態のスタイルが優先される（背景色の競合なし） … **OK**: isSelected が先に評価
+
+### US-168 ServiceStatusPanel の表形式化と UX 改善（P1）【完了】
+
+開発者として、サービス接続状況を表形式で整列表示し、URL をワンクリックでコピーしたい。
+なぜなら現状のテキスト羅列では URL が切れて読みにくく、コピー操作も手間がかかるから。
+
+- 受け入れ基準
+  - Given INBOX ヘッダーを表示する、When ServiceStatusPanel を確認する、Then 5 行（Public / Local / Backend / DB / LLM）が表形式（ラベル・URL・ステータス）で整列表示される … **OK**
+  - Given 各行の URL 部分、When クリックする、Then クリップボードに URL がコピーされコピー完了フィードバック（✓）が表示される … **OK**: CopyableUrl
+  - Given ステータスが Live のサービス、When 確認する、Then 「live」の文字が緑色で表示され、左隣に緑色の丸（StatusDot）が表示される … **OK**
+  - Given ステータスが Offline のサービス、When 確認する、Then 「offline」の文字が灰色で表示され、灰色の丸が表示される … **OK**
+  - Given フォントサイズ、When 確認する、Then 現行（10px）より拡大された text-xs（12px）で表示される … **OK**
+
+### US-169 PDF Payload のテーブル形式表示（P1）【完了】
+
+開発者として、PDF の Payload セクションを Web UI と同様の Table 形式（key / value / type / description）で出力したい。
+なぜなら JSON 生データでは構造の把握が難しく、レポートとしての可読性が低いから。
+
+- 受け入れ基準
+  - Given Payload がある Webhook の PDF をエクスポートする、When Payload セクションを確認する、Then key / value / type / description の 4 カラムテーブル形式で表示される … **OK**: _flatten_payload
+  - Given ネストされたオブジェクトがある、When テーブルを確認する、Then ドット記法（例: `data.hash`）でフラットにキーが展開される … **OK**
+  - Given AI 分析結果の field_descriptions がある、When description 列を確認する、Then 対応するフィールドの説明が表示される … **OK**
+  - Given 長い値（64 文字超）がある、When テーブルを確認する、Then 値が折り返し表示され省略されない … **OK**: 500 文字まで表示、WORDWRAP
+
+### US-170 PDF ヘッダー・フッターメタデータの追加（P1）【完了】
+
+開発者として、PDF レポートにインデックス番号・出力日時・ページ番号などのメタデータを含めたい。
+なぜなら印刷時や複数レポートの照合時に識別情報が必要だから。
+
+- 受け入れ基準
+  - Given PDF を生成する、When ヘッダーを確認する、Then 「Webhook Report #NNN」（インデックス番号）と出力日時（YYYY/MM/DD HH:MM:SS）が表示される … **OK**: NumberedCanvas
+  - Given 複数ページにわたる PDF、When フッターを確認する、Then 「Page X / Y」形式のページ番号が表示される … **OK**
+  - Given 1 ページの PDF、When フッターを確認する、Then ページ番号「Page 1 / 1」が表示される … **OK**
+
+### US-173 受信日時書式の統一（YYYY/MM/DD HH:MM:SS）（P1）【完了】
+
+開発者として、一覧ペイン・詳細ペイン・その他全画面で受信日時を `YYYY/MM/DD HH:MM:SS` 形式で統一表示したい。
+なぜなら現状の `toLocaleString()` はブラウザ依存で書式が不安定であり、ゼロパディングされないケースがあるから。
+
+- 受け入れ基準
+  - Given 一覧ペインの Webhook エントリ、When 日時を確認する、Then 「2026/03/01 16:46:49」形式（ゼロパディング済み）で表示される … **OK**: formatReceivedAt
+  - Given 詳細ペインのメタ情報、When received_at を確認する、Then 同じ書式で表示される … **OK**
+  - Given event_type 別・比較・スキーマ推定ページ、When 日時を確認する、Then 全て同一書式で表示される … **OK**
+
+### US-174 詳細ペインナビゲーションバーの位置調整（P1）【完了】
+
+開発者として、Prev / Next / Replay / Export PDF のナビゲーションバーをタブバー直下（詳細ペイン上枠すぐ下）に固定配置したい。
+なぜなら現状はスクロールでボタンが見えなくなり、長い Payload を確認中に前後遷移するためにスクロールバックが必要だから。
+
+- 受け入れ基準
+  - Given 詳細ペインを表示する、When ナビゲーションバーを確認する、Then タブバー（詳細 / event_type別 / スキーマ / 比較）の直下に固定配置されている … **OK**: DetailNavBar を TwoPanePage のタブ直下に配置
+  - Given 詳細ペインをスクロールする、When 下までスクロールする、Then ナビゲーションバーはスクロールに追従せず上部に固定されたまま … **OK**: shrink-0 でスクロール領域外
+  - Given ナビゲーションバー、When 確認する、Then Prev / Next / Replay / Export PDF / #NNN が既存と同じ機能で表示される … **OK**
