@@ -330,9 +330,9 @@ export function WebhookListPane({
                   isSelected
                     ? "bg-blue-50 dark:bg-blue-900/30 border-l-2 border-l-blue-400"
                     : isUnread
-                      ? "font-semibold border-l-2 border-l-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800/40"
+                      ? "font-semibold border-l-2 border-l-blue-400 bg-blue-50/60 dark:bg-blue-900/25 hover:bg-blue-50 dark:hover:bg-blue-900/35"
                       : "hover:bg-slate-50 dark:hover:bg-slate-800/40"
-                } ${isNew ? "bg-emerald-50 dark:bg-emerald-900/20" : ""}`}
+                } ${isNew && !isSelected ? "bg-emerald-50/80 dark:bg-emerald-900/25" : ""}`}
               >
                 <SourceIcon source={w.source} size="w-5 h-5 mt-0.5" />
                 <div className="flex-1 min-w-0">
