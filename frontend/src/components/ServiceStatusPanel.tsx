@@ -1,9 +1,9 @@
 /**
- * US-162/US-168/US-177: INBOX ヘッダーのサービス接続状況表示
- * Part/Component 2列、絵文字ステータス、text-[10px]、余白最小化
+ * US-162/US-168/US-177/US-178: INBOX ヘッダーのサービス接続状況表示
+ * Part/Component 2列、絵文字ステータス、レイテンシ、最終確認時刻、エラー表示
  */
 import { useCallback, useEffect, useState } from "react";
-import { getHealthServices, type HealthServicesResponse } from "../services/api";
+import { getHealthServices, type HealthServicesResponse, type ServiceStatus } from "../services/api";
 
 function CopyableUrl({
   url,
@@ -35,6 +35,15 @@ function CopyableUrl({
   );
 }
 
+function formatAgo(checkedAt: number): string {
+  const s = Math.floor(Date.now() / 1000 - checkedAt);
+  if (s < 60) return `${s}s前`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m前`;
+  const h = Math.floor(m / 60);
+  return `${h}h前`;
+}
+
 export function ServiceStatusPanel() {
   const [data, setData] = useState<HealthServicesResponse | null>(null);
 
@@ -64,14 +73,22 @@ export function ServiceStatusPanel() {
     part: string;
     component: string;
     url: string;
-    status: "live" | "offline";
+    status: ServiceStatus;
   }[] = [
-    { part: "Public", component: "ngrok", url: data.public_url.url, status: data.public_url.status },
-    { part: "Local", component: "Uvicorn", url: localReceiveUrl, status: data.local_api.status },
-    { part: "WEB", component: "Vite", url: data.vite.url, status: data.vite.status },
-    { part: "DB", component: "PostgreSQL", url: data.postgresql.url, status: data.postgresql.status },
-    { part: "LLM", component: "Ollama", url: data.ollama.url, status: data.ollama.status },
+    { part: "Public", component: "ngrok", url: data.public_url.url, status: data.public_url },
+    { part: "Local", component: "Uvicorn", url: localReceiveUrl, status: data.local_api },
+    { part: "WEB", component: "Vite", url: data.vite.url, status: data.vite },
+    { part: "DB", component: "PostgreSQL", url: data.postgresql.url, status: data.postgresql },
+    { part: "LLM", component: "Ollama", url: data.ollama.url, status: data.ollama },
   ];
+
+  const emojiTitle = (status: ServiceStatus): string => {
+    if (status.status === "live") {
+      const lat = status.latency_ms != null ? ` (${status.latency_ms}ms)` : "";
+      return `Live${lat}`;
+    }
+    return status.error ?? "Offline";
+  };
 
   return (
     <div className="text-[10px] text-slate-600 dark:text-slate-400 min-w-0">
@@ -81,8 +98,15 @@ export function ServiceStatusPanel() {
             <tr key={row.part}>
               <td className="py-0 pr-1 align-middle whitespace-nowrap">{row.part}</td>
               <td className="py-0 pr-1 align-middle whitespace-nowrap text-slate-500 dark:text-slate-500">{row.component}</td>
-              <td className="py-0 pr-1 align-middle whitespace-nowrap" title={row.status === "live" ? "Live" : "Offline"}>
-                {row.status === "live" ? "🟢" : "⚫"}
+              <td className="py-0 pr-1 align-middle whitespace-nowrap" title={emojiTitle(row.status)}>
+                {row.status.status === "live" ? "🟢" : "⚫"}
+              </td>
+              <td className="py-0 pr-1 align-middle whitespace-nowrap">
+                {row.status.latency_ms != null && row.status.status === "live" ? (
+                  <span className="text-slate-500">{row.status.latency_ms}ms</span>
+                ) : (
+                  "—"
+                )}
               </td>
               <td className="py-0 align-middle min-w-0 overflow-hidden">
                 <CopyableUrl url={row.url} onCopy={handleCopy} />
@@ -91,6 +115,11 @@ export function ServiceStatusPanel() {
           ))}
         </tbody>
       </table>
+      {data.checked_at != null && (
+        <div className="mt-0.5 text-slate-500 dark:text-slate-500">
+          最終確認: {formatAgo(data.checked_at)}
+        </div>
+      )}
     </div>
   );
 }
