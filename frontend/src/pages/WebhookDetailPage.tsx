@@ -230,11 +230,12 @@ export function WebhookDetailPage() {
     return () => clearInterval(iv);
   }, [analyzing]);
 
-  /** US-134/148: ページ表示時に sessionStorage から前回ログ・所要時間を復元 */
+  /** US-134/148/153: ページ表示時に sessionStorage から前回ログ・所要時間を復元（Webhook ID ごとに保存） */
   useEffect(() => {
-    if (analyzing) return;
+    if (!id || analyzing) return;
     try {
-      const raw = sessionStorage.getItem("webhook-analysis-logs");
+      const storageKey = `webhook-analysis-logs-${id}`;
+      const raw = sessionStorage.getItem(storageKey);
       if (!raw) return;
       const parsed = JSON.parse(raw);
       const arr = Array.isArray(parsed) ? parsed : parsed?.logs ?? [];
@@ -247,7 +248,15 @@ export function WebhookDetailPage() {
         if (storedElapsed != null) setStreamElapsedMs(storedElapsed);
       }
     } catch { /* ignore */ }
-  }, [analyzing]);
+  }, [id, analyzing]);
+
+  /** US-153: Webhook 切替時に分析ログをリセット */
+  useEffect(() => {
+    if (id) {
+      setAnalysisLogs([]);
+      setStreamElapsedMs(null);
+    }
+  }, [id]);
 
   useEffect(() => {
     if (!id) return;
@@ -443,13 +452,15 @@ export function WebhookDetailPage() {
           }
         }
       }
-      // US-134: 完了時にログを sessionStorage に保存（US-148: elapsed も保存）
-      try {
-        sessionStorage.setItem(
-          "webhook-analysis-logs",
-          JSON.stringify({ logs, elapsedMs: lastElapsedMs ?? undefined })
-        );
-      } catch { /* ignore */ }
+      // US-134/148/153: 完了時にログを sessionStorage に保存（Webhook ID ごと）
+      if (id) {
+        try {
+          sessionStorage.setItem(
+            `webhook-analysis-logs-${id}`,
+            JSON.stringify({ logs, elapsedMs: lastElapsedMs ?? undefined })
+          );
+        } catch { /* ignore */ }
+      }
     } catch (e) {
       setAnalyzeError(e instanceof Error ? e.message : "不明なエラー");
     } finally {

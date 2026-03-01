@@ -440,8 +440,8 @@ async def analyze_payload_with_ollama_stream(
     try:
         import ollama  # noqa: F401
     except ImportError:
-        yield {"step": "error", "message": "ollama_not_installed"}
-        yield {"step": "done", "result": {"failed": True, "error_message": "ollama_not_installed"}}
+        yield {"step": "error", "message": "ollama_not_installed", "timestamp": datetime.now().isoformat()}
+        yield {"step": "done", "result": {"failed": True, "error_message": "ollama_not_installed"}, "timestamp": datetime.now().isoformat()}
         return
 
     payload_str = json.dumps(payload, ensure_ascii=False, indent=2)
@@ -481,7 +481,7 @@ async def analyze_payload_with_ollama_stream(
     if template_section:
         evidence_section = template_section + evidence_section
     elapsed0 = (time.perf_counter() - t0) * 1000
-    yield {"step": "evidence", "message": f"Evidence 収集完了 ({len(evidence_parts)} 件)", "elapsed_ms": round(elapsed0, 1)}
+    yield {"step": "evidence", "message": f"Evidence 収集完了 ({len(evidence_parts)} 件)", "elapsed_ms": round(elapsed0, 1), "timestamp": datetime.now().isoformat()}
 
     # Step 1: Explanation
     t1 = time.perf_counter()
@@ -494,14 +494,14 @@ async def analyze_payload_with_ollama_stream(
     content1 = await _call_ollama(prompt1, model)
     elapsed1 = (time.perf_counter() - t1) * 1000
     if not content1:
-        yield {"step": "explanation", "message": "Step 1 失敗: 空レスポンス", "elapsed_ms": round(elapsed1, 1)}
-        yield {"step": "done", "result": _result_to_dict(AnalysisResult(summary="", field_descriptions={}, explanation="", failed=True, error_message="step1_empty_response"))}
+        yield {"step": "explanation", "message": "Step 1 失敗: 空レスポンス", "elapsed_ms": round(elapsed1, 1), "timestamp": datetime.now().isoformat()}
+        yield {"step": "done", "result": _result_to_dict(AnalysisResult(summary="", field_descriptions={}, explanation="", failed=True, error_message="step1_empty_response")), "timestamp": datetime.now().isoformat()}
         return
-    yield {"step": "explanation", "message": f"Step 1 完了 ({len(content1)} chars)", "response_preview": content1[:300] + "...", "response_full": content1, "elapsed_ms": round(elapsed1, 1)}
+    yield {"step": "explanation", "message": f"Step 1 完了 ({len(content1)} chars)", "response_preview": content1[:300] + "...", "response_full": content1, "elapsed_ms": round(elapsed1, 1), "timestamp": datetime.now().isoformat()}
     parsed1 = _extract_json(content1)
     if parsed1 is None or not isinstance(parsed1, dict):
-        yield {"step": "error", "message": "LLM 出力が JSON ではありません"}
-        yield {"step": "done", "result": _result_to_dict(AnalysisResult(summary="", field_descriptions={}, explanation="", failed=True, error_message="不正な応答形式"))}
+        yield {"step": "error", "message": "LLM 出力が JSON ではありません", "timestamp": datetime.now().isoformat()}
+        yield {"step": "done", "result": _result_to_dict(AnalysisResult(summary="", field_descriptions={}, explanation="", failed=True, error_message="不正な応答形式")), "timestamp": datetime.now().isoformat()}
         return
     explanation = str(parsed1.get("explanation", "")).strip()
 
@@ -514,14 +514,14 @@ async def analyze_payload_with_ollama_stream(
     content2 = await _call_ollama(prompt2, model)
     elapsed2 = (time.perf_counter() - t2) * 1000
     if not content2:
-        yield {"step": "fields", "message": "Step 2 失敗", "elapsed_ms": round(elapsed2, 1)}
-        yield {"step": "done", "result": _result_to_dict(AnalysisResult(summary="", field_descriptions={}, explanation=explanation, failed=True, error_message="step2_empty_response"))}
+        yield {"step": "fields", "message": "Step 2 失敗", "elapsed_ms": round(elapsed2, 1), "timestamp": datetime.now().isoformat()}
+        yield {"step": "done", "result": _result_to_dict(AnalysisResult(summary="", field_descriptions={}, explanation=explanation, failed=True, error_message="step2_empty_response")), "timestamp": datetime.now().isoformat()}
         return
-    yield {"step": "fields", "message": f"Step 2 完了", "response_full": content2, "elapsed_ms": round(elapsed2, 1)}
+    yield {"step": "fields", "message": f"Step 2 完了", "response_full": content2, "elapsed_ms": round(elapsed2, 1), "timestamp": datetime.now().isoformat()}
     parsed2 = _extract_json(content2)
     if not parsed2 or not isinstance(parsed2, dict):
-        yield {"step": "error", "message": "不正な応答形式"}
-        yield {"step": "done", "result": _result_to_dict(AnalysisResult(summary="", field_descriptions={}, explanation=explanation, failed=True, error_message="不正な応答形式"))}
+        yield {"step": "error", "message": "不正な応答形式", "timestamp": datetime.now().isoformat()}
+        yield {"step": "done", "result": _result_to_dict(AnalysisResult(summary="", field_descriptions={}, explanation=explanation, failed=True, error_message="不正な応答形式")), "timestamp": datetime.now().isoformat()}
         return
     field_descriptions = parsed2.get("field_descriptions", {})
     if not isinstance(field_descriptions, dict):
@@ -537,21 +537,21 @@ async def analyze_payload_with_ollama_stream(
     content3 = await _call_ollama(prompt3, model)
     elapsed3 = (time.perf_counter() - t3) * 1000
     if not content3:
-        yield {"step": "summary", "message": "Step 3 失敗", "elapsed_ms": round(elapsed3, 1)}
-        yield {"step": "done", "result": _result_to_dict(AnalysisResult(summary="", field_descriptions=field_descriptions, explanation=explanation, failed=True, error_message="step3_empty_response"))}
+        yield {"step": "summary", "message": "Step 3 失敗", "elapsed_ms": round(elapsed3, 1), "timestamp": datetime.now().isoformat()}
+        yield {"step": "done", "result": _result_to_dict(AnalysisResult(summary="", field_descriptions=field_descriptions, explanation=explanation, failed=True, error_message="step3_empty_response")), "timestamp": datetime.now().isoformat()}
         return
-    yield {"step": "summary", "message": "Step 3 完了", "response_full": content3, "elapsed_ms": round(elapsed3, 1)}
+    yield {"step": "summary", "message": "Step 3 完了", "response_full": content3, "elapsed_ms": round(elapsed3, 1), "timestamp": datetime.now().isoformat()}
     parsed3 = _extract_json(content3)
     if not parsed3 or not isinstance(parsed3, dict):
-        yield {"step": "error", "message": "不正な応答形式"}
-        yield {"step": "done", "result": _result_to_dict(AnalysisResult(summary="", field_descriptions=field_descriptions, explanation=explanation, failed=True, error_message="不正な応答形式"))}
+        yield {"step": "error", "message": "不正な応答形式", "timestamp": datetime.now().isoformat()}
+        yield {"step": "done", "result": _result_to_dict(AnalysisResult(summary="", field_descriptions=field_descriptions, explanation=explanation, failed=True, error_message="不正な応答形式")), "timestamp": datetime.now().isoformat()}
         return
     summary = str(parsed3.get("summary", "")).strip()
 
     # Sanitize
-    yield {"step": "sanitize", "message": "サニタイズ実行"}
+    yield {"step": "sanitize", "message": "サニタイズ実行", "timestamp": datetime.now().isoformat()}
     safe_summary, safe_field_descriptions = sanitize_for_yaml(payload, summary, field_descriptions)
-    yield {"step": "sanitize", "message": "サニタイズ完了"}
+    yield {"step": "sanitize", "message": "サニタイズ完了", "timestamp": datetime.now().isoformat()}
 
     result = AnalysisResult(
         summary=safe_summary,
@@ -559,7 +559,7 @@ async def analyze_payload_with_ollama_stream(
         explanation=explanation,
         failed=False,
     )
-    yield {"step": "done", "result": _result_to_dict(result)}
+    yield {"step": "done", "result": _result_to_dict(result), "timestamp": datetime.now().isoformat()}
 
 
 def _result_to_dict(r: AnalysisResult) -> dict:
