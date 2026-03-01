@@ -73,6 +73,8 @@ Webhook Analyzer を `webhook.site` のような「受信確認 + 高速調査 +
 - Phase 15（リアルタイム体験と分析ログの品質改善）: 分析ログの Webhook 切替時リセット・全タイムスタンプ付与、表示領域拡大、INBOX への受信 URL 表示、WebSocket リアルタイム更新修復、Payload 全展開の一括展開修正で日常利用の品質を底上げする
 - Phase 16（表示体験の総合改善と PDF エクスポート）: Payload のテーブル/JSON 切替、全展開デフォルト化、未読管理、500 件表示、サービス接続状況可視化、event_type プルダウン、インクリメンタルサーチ、ボタン英語統一、PDF レポート出力で日常的な調査体験を総合的に向上させる
 - Phase 17（表示品質改善・PDF 拡充・フィルタ連動）: ServiceStatusPanel の表形式化、PDF の Payload テーブル形式出力・メタデータ追加・AI 分析結果修正、未読ハイライト強化、日時書式統一、ナビバー位置調整、source/event_type フィルタ相互連動で表示品質と操作性を底上げする
+- Phase 18（INBOX ヘッダー簡素化）: INBOX ヘッダーの構成を簡素化し URL 全文表示で視認性を向上させる
+- Phase 19（サービスステータスの表示改善とヘルスチェック信頼性向上）: ServiceStatusPanel の Part/Component 2列化・絵文字ステータス・コンパクト表示と、レイテンシ計測・モデル可用性・エラー理由表示によるヘルスチェックの信頼性向上
 
 ## 完了済みストーリー一覧
 
@@ -176,10 +178,15 @@ Webhook Analyzer を `webhook.site` のような「受信確認 + 高速調査 +
 | 17 | US-174 | 詳細ペインナビゲーションバーの位置調整 | P1 |
 | 17 | US-175 | source / event_type フィルタの相互連動 | P1 |
 | 18 | US-176 | INBOX ヘッダーの簡素化と URL 全文表示 | P1 |
+| 19 | US-177 | ServiceStatusPanel の 2列ラベル化とコンパクト表示 | P1 |
 
 ## バックログ（未着手）
 
 > 受け入れ基準など詳細は [`user-stories-backlog.md`](./user-stories-backlog.md) を参照。
+
+| Phase | ID | タイトル | 優先度 |
+|-------|----|---------|--------|
+| 19 | US-178 | ヘルスチェックの信頼性向上 | P1 |
 
 > Phase 16 の全 US（US-158〜US-167）は完了済み。Phase 17 の全 US（US-168〜US-175）は完了済み。
 

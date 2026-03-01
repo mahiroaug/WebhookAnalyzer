@@ -1011,3 +1011,15 @@ URL の切り詰めは接続先の判別を困難にするから。
   - Given INBOX 一覧ペインが表示されている、When ヘッダー領域を確認する、Then Webhook 受信 URL 表示バー（コピーボタン付き）が表示されていない … **OK**: URL バー削除済み
   - Given サービス接続状況パネルが表示されている、When テーブルを確認する、Then "Label" / "URL" / "Status" のカラムヘッダー行が表示されていない … **OK**: thead 削除済み
   - Given サービス接続状況パネルが表示されている、When 各行の URL を確認する、Then パネル幅に収まる範囲で URL が全文表示されている（幅が不足する場合のみ末尾省略される）… **OK**: max-w-[140px] 制約を削除
+
+### Phase 19: サービスステータスの表示改善とヘルスチェック信頼性向上
+
+### US-177 ServiceStatusPanel の 2列ラベル化とコンパクト表示（P1）【完了】
+
+Web3 エンジニアとして、サービス接続状況パネルを一目で把握したい。
+なぜなら現状の Label 列では「どのインフラ部位の、どのコンポーネントか」が不明瞭で、Backend と Local の重複も紛らわしいから。
+
+- 受け入れ基準
+  - Given パネルが表示されている、When 各行を確認する、Then Part 列（Public/Local/WEB/DB/LLM）と Component 列（ngrok/Uvicorn/Vite/PostgreSQL/Ollama）の 2列で表示され、ステータスは絵文字（🟢/⚫）のみで表現されている … **OK**
+  - Given パネルが表示されている、When DB・LLM の URL 列を確認する、Then Docker 内部名（`db:5432`, `ollama:11434`）ではなくホストから到達可能な `http://localhost:PORT` 形式で表示されている … **OK**
+  - Given パネルが表示されている、When WEB 行を確認する、Then Vite の稼働状況が Live/Offline で表示され URL は `http://localhost:5173` である … **OK**
