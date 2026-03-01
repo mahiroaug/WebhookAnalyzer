@@ -49,25 +49,8 @@ export function WebhookListPane({
   const [availableEventTypes, setAvailableEventTypes] = useState<string[]>([]);
   const [sourceDropdownOpen, setSourceDropdownOpen] = useState(false);
   const [eventTypeDropdownOpen, setEventTypeDropdownOpen] = useState(false);
-  const [urlCopied, setUrlCopied] = useState(false);
   const [filterUnreadOnly, setFilterUnreadOnly] = useState(false);  // US-167
   const [markingAll, setMarkingAll] = useState(false);
-
-  const webhookReceiveUrl = `${window.location.origin}/api/webhooks/receive`;
-
-  const copyWebhookUrl = useCallback(async () => {
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(webhookReceiveUrl);
-        setUrlCopied(true);
-        setTimeout(() => setUrlCopied(false), 2000);
-        return true;
-      }
-    } catch {
-      /* ignore */
-    }
-    return false;
-  }, [webhookReceiveUrl]);
 
   const loadRef = useRef<(newId?: string) => void>(() => {});
 
@@ -163,33 +146,6 @@ export function WebhookListPane({
   return (
     <div className="flex flex-col h-full">
       <div className="px-3 py-2 border-b border-slate-200 dark:border-dim-border">
-        {/* US-155: Webhook 受信 URL 表示とコピー */}
-        <div
-          className="mb-2 flex items-center gap-2 rounded bg-slate-100 dark:bg-slate-800/50 px-2 py-1.5 min-w-0 cursor-pointer"
-          title="クリックでコピー"
-          onClick={copyWebhookUrl}
-          onKeyDown={(e) => e.key === "Enter" && copyWebhookUrl()}
-          role="button"
-          tabIndex={0}
-        >
-          <code className="flex-1 truncate text-[10px] text-slate-600 dark:text-slate-400">
-            {webhookReceiveUrl}
-          </code>
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); copyWebhookUrl(); }}
-            className="shrink-0 rounded p-1 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 dark:hover:text-slate-300"
-            title="コピー"
-          >
-            {urlCopied ? (
-              <span className="text-[10px] text-green-600 dark:text-green-400">✓</span>
-            ) : (
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-              </svg>
-            )}
-          </button>
-        </div>
         {/* US-162: サービス接続状況（30秒ポーリング） */}
         <div className="mb-2 rounded bg-slate-100 dark:bg-slate-800/50 px-2 py-1.5">
           <ServiceStatusPanel />
