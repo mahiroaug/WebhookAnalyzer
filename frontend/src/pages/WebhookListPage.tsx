@@ -219,7 +219,7 @@ export function WebhookListPage() {
   }
   loadRef.current = load;
 
-  const { connected, reconnect } = useWebhookWebSocket((newId) => {
+  const { connected, status, reconnect } = useWebhookWebSocket((newId) => {
     loadRef.current(newId);
   });
 
@@ -258,17 +258,19 @@ export function WebhookListPage() {
               className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
                 connected
                   ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                  : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
+                  : status === "reconnecting"
+                    ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
+                    : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
               }`}
             >
               <span
                 className={`w-1.5 h-1.5 rounded-full ${
-                  connected ? "bg-green-500 animate-pulse" : "bg-slate-500"
+                  connected ? "bg-green-500 animate-pulse" : status === "reconnecting" ? "bg-amber-500 animate-pulse" : "bg-slate-500"
                 }`}
               />
-              {connected ? "リアルタイム接続中" : "切断"}
+              {connected ? "リアルタイム接続中" : status === "connecting" ? "接続中..." : status === "reconnecting" ? "再接続中..." : "切断"}
             </span>
-            {!connected && (
+            {!connected && status !== "connecting" && status !== "reconnecting" && (
               <button
                 onClick={reconnect}
                 className="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700"

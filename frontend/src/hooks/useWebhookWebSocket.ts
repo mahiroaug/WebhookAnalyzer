@@ -2,19 +2,23 @@
  * 新規 Webhook 受信をリアルタイムで受け取り、コールバックを呼ぶフック。
  * 接続断時は自動再接続を試みる。
  * US-107: 新着 ID をコールバックに渡す（アニメーション・効果音用）
+ * US-156: 接続状態の詳細化（connecting / connected / reconnecting）
  */
 import { useEffect, useRef, useCallback, useState } from "react";
 
 const WS_PATH = "/api/webhooks/ws";
 const RECONNECT_DELAY_MS = 3000;
 
+export type WebSocketStatus = "connecting" | "connected" | "reconnecting" | "disconnected";
+
 export function useWebhookWebSocket(
   onWebhookReceived: (newId?: string) => void
 ): {
   connected: boolean;
+  status: WebSocketStatus;
   reconnect: () => void;
 } {
-  const [connected, setConnected] = useState(false);
+  const [status, setStatus] = useState<WebSocketStatus>("connecting");
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number | null>(null);
   const onReceivedRef = useRef(onWebhookReceived);
@@ -25,9 +29,10 @@ export function useWebhookWebSocket(
     const host = window.location.host;
     const url = `${protocol}//${host}${WS_PATH}`;
     const ws = new WebSocket(url);
+    setStatus("connecting");
 
     ws.onopen = () => {
-      setConnected(true);
+      setStatus("connected");
       wsRef.current = ws;
     };
 
@@ -44,8 +49,9 @@ export function useWebhookWebSocket(
 
     ws.onclose = () => {
       wsRef.current = null;
-      setConnected(false);
+      setStatus("reconnecting");
       reconnectTimeoutRef.current = window.setTimeout(() => {
+        reconnectTimeoutRef.current = null;
         connect();
       }, RECONNECT_DELAY_MS);
     };
@@ -64,7 +70,7 @@ export function useWebhookWebSocket(
       wsRef.current.close();
       wsRef.current = null;
     }
-    setConnected(false);
+    setStatus("disconnected");
   }, []);
 
   useEffect(() => {
@@ -74,8 +80,9 @@ export function useWebhookWebSocket(
 
   const reconnect = useCallback(() => {
     disconnect();
+    setStatus("connecting");
     connect();
   }, [connect, disconnect]);
 
-  return { connected, reconnect };
+  return { connected: status === "connected", status, reconnect };
 }

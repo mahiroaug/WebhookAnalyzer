@@ -64,12 +64,15 @@ export function WebhookListPane({
   async function load(newId?: string) {
     setLoading(true);
     try {
+      // US-156: 新着時は 1 ページ目を表示（新着は最新順の先頭に来る）
+      const effectivePage = newId ? 1 : page;
+      if (newId && page !== 1) setPage(1);
       const res = await listWebhooks({
         source: filterSource || undefined,
         event_type: filterEventType || undefined,
         q: searchQuery.trim() || undefined,
         limit: PAGE_SIZE,
-        offset: (page - 1) * PAGE_SIZE,
+        offset: (effectivePage - 1) * PAGE_SIZE,
       });
       setItems(res.items);
       setTotal(res.total);
@@ -88,7 +91,7 @@ export function WebhookListPane({
   }
   loadRef.current = load;
 
-  const { connected, reconnect } = useWebhookWebSocket((newId) => {
+  const { connected, status, reconnect } = useWebhookWebSocket((newId) => {
     loadRef.current(newId);
   });
 
@@ -137,11 +140,13 @@ export function WebhookListPane({
             INBOX ({total})
           </span>
           <span className={`inline-flex items-center gap-1 text-xs ${
-            connected ? "text-green-500" : "text-slate-400"
+            connected ? "text-green-500" : status === "reconnecting" ? "text-amber-500" : "text-slate-400"
           }`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-green-500" : "bg-slate-400"}`} />
-            {connected ? "Live" : "Off"}
-            {!connected && (
+            <span className={`w-1.5 h-1.5 rounded-full ${
+              connected ? "bg-green-500" : status === "reconnecting" ? "bg-amber-500 animate-pulse" : "bg-slate-400"
+            }`} />
+            {connected ? "Live" : status === "connecting" ? "接続中..." : status === "reconnecting" ? "再接続中..." : "切断"}
+            {!connected && status !== "connecting" && status !== "reconnecting" && (
               <button onClick={reconnect} className="ml-1 underline text-xs">再接続</button>
             )}
           </span>
