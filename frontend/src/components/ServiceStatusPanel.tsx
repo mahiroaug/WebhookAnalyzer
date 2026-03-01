@@ -1,8 +1,8 @@
 /**
- * US-162: INBOX ヘッダーのサービス接続状況表示
- * 公開 URL / ローカル API / PostgreSQL / Ollama を縦並びで表示、30 秒ポーリング
+ * US-162/US-168: INBOX ヘッダーのサービス接続状況表示
+ * 表形式、URL クリックでコピー、Live=緑/Offline=灰、text-xs
  */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getHealthServices, type HealthServicesResponse } from "../services/api";
 
 function StatusDot({ live }: { live: boolean }) {
@@ -13,6 +13,36 @@ function StatusDot({ live }: { live: boolean }) {
       }`}
       title={live ? "Live" : "Offline"}
     />
+  );
+}
+
+function CopyableUrl({
+  url,
+  onCopy,
+}: {
+  url: string;
+  onCopy: (url: string) => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const handleClick = useCallback(() => {
+    if (!url || url === "—") return;
+    onCopy(url);
+    setCopied(true);
+    const t = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(t);
+  }, [url, onCopy]);
+
+  if (!url || url === "—")
+    return <span className="text-slate-400">—</span>;
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="text-left truncate max-w-[140px] hover:text-blue-500 dark:hover:text-blue-400 transition-colors underline-offset-2 hover:underline"
+      title="Click to copy"
+    >
+      {copied ? "✓ Copied" : url}
+    </button>
   );
 }
 
@@ -33,32 +63,64 @@ export function ServiceStatusPanel() {
     return () => clearInterval(interval);
   }, []);
 
+  const handleCopy = useCallback((text: string) => {
+    navigator.clipboard?.writeText(text).catch(() => {});
+  }, []);
+
   if (!data) return null;
 
+  const localReceiveUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/api/webhooks/receive`
+      : "—";
+
+  const rows: { label: string; url: string; status: "live" | "offline" }[] = [
+    { label: "Public", url: data.public_url.url, status: data.public_url.status },
+    { label: "Local", url: localReceiveUrl, status: "live" },
+    { label: "Backend", url: data.local_api.url, status: data.local_api.status },
+    {
+      label: "DB",
+      url: data.postgresql.url,
+      status: data.postgresql.status,
+    },
+    { label: "LLM", url: data.ollama.url, status: data.ollama.status },
+  ];
+
   return (
-    <div className="flex flex-col gap-1 text-[10px] text-slate-600 dark:text-slate-400">
-      <div className="flex items-center gap-1.5 min-w-0">
-        <StatusDot live={data.public_url.status === "live"} />
-        <span className="truncate" title={data.public_url.url}>
-          Public: {data.public_url.url === "—" ? "—" : data.public_url.url}
-        </span>
-        <span className="shrink-0">{data.public_url.status}</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <StatusDot live={data.local_api.status === "live"} />
-        <span>API localhost:8000</span>
-        <span className="shrink-0">{data.local_api.status}</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <StatusDot live={data.postgresql.status === "live"} />
-        <span>PostgreSQL</span>
-        <span className="shrink-0">{data.postgresql.status}</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <StatusDot live={data.ollama.status === "live"} />
-        <span>Ollama</span>
-        <span className="shrink-0">{data.ollama.status}</span>
-      </div>
+    <div className="text-xs text-slate-600 dark:text-slate-400">
+      <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            <th className="text-left py-0.5 pr-2 font-medium w-16">Label</th>
+            <th className="text-left py-0.5 pr-2 font-medium min-w-0">URL</th>
+            <th className="text-left py-0.5 font-medium w-14">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.label}>
+              <td className="py-0.5 pr-2 align-middle">{row.label}</td>
+              <td className="py-0.5 pr-2 align-middle min-w-0">
+                <CopyableUrl url={row.url} onCopy={handleCopy} />
+              </td>
+              <td className="py-0.5">
+                <span className="inline-flex items-center gap-1">
+                  <StatusDot live={row.status === "live"} />
+                  <span
+                  className={
+                    row.status === "live"
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-slate-400 dark:text-slate-500"
+                  }
+                >
+                    {row.status}
+                  </span>
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

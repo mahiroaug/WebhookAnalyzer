@@ -1,5 +1,6 @@
 """US-162: サービス接続状況 API"""
 import logging
+import re
 from typing import Literal
 
 import httpx
@@ -62,6 +63,14 @@ async def get_health_services() -> dict:
     except Exception as e:
         logger.debug("Ollama check failed: %s", e)
 
+    # US-168: URL 表示用（ホスト:ポートを抽出）
+    pg_url = "localhost:5432"
+    if m := re.search(r"@([^/]+)/", settings.database_url):
+        pg_url = m.group(1)
+    ollama_url = "localhost:11434"
+    if m := re.search(r"https?://([^/]+)", settings.ollama_host):
+        ollama_url = m.group(1)
+
     return {
         "public_url": {
             "url": public_url or "—",
@@ -71,6 +80,6 @@ async def get_health_services() -> dict:
             "url": "http://localhost:8000",
             "status": local_api_status,
         },
-        "postgresql": {"status": pg_status},
-        "ollama": {"status": ollama_status},
+        "postgresql": {"url": pg_url, "status": pg_status},
+        "ollama": {"url": ollama_url, "status": ollama_status},
     }

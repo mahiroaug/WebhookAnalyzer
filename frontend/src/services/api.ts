@@ -482,12 +482,12 @@ export async function updateFieldDescription(
   if (!res.ok) throw new Error(await res.text().catch(() => `HTTP ${res.status}`));
 }
 
-/** US-162: サービス接続状況 */
+/** US-162/US-168: サービス接続状況 */
 export interface HealthServicesResponse {
   public_url: { url: string; status: "live" | "offline" };
   local_api: { url: string; status: "live" | "offline" };
-  postgresql: { status: "live" | "offline" };
-  ollama: { status: "live" | "offline" };
+  postgresql: { url: string; status: "live" | "offline" };
+  ollama: { url: string; status: "live" | "offline" };
 }
 
 export async function getHealthServices(): Promise<HealthServicesResponse> {
