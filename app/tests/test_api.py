@@ -1,10 +1,12 @@
 """Webhook API の統合テスト"""
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from app.main import app
+from app.services import field_templates
 
 
 @pytest.fixture
@@ -424,6 +426,38 @@ async def test_export_webhook_pdf(
     assert resp.headers.get("content-type", "").startswith("application/pdf")
     assert "attachment" in resp.headers.get("content-disposition", "").lower()
     assert len(resp.content) > 500
+
+
+@pytest.mark.asyncio
+async def test_export_webhook_pdf_fallback_to_definition_file(
+    bitgo_transfer_payload: dict,
+    tmp_path: Path,
+) -> None:
+    """US-171: DB に分析がなく定義ファイルがあれば PDF に反映される"""
+    (tmp_path / "bitgo").mkdir(parents=True, exist_ok=True)
+    yaml_content = """
+summary: PDF definition summary
+fields:
+  - path: hash
+    description: Transaction hash from definition
+  - path: type
+    description: Event type from definition
+"""
+    (tmp_path / "bitgo" / "transfer.yaml").write_text(yaml_content.strip())
+
+    with patch.object(field_templates, "_DEFINITIONS_DIR", tmp_path):
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            post_resp = await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+            webhook_id = post_resp.json()["id"]
+            resp = await client.get(f"/api/webhooks/{webhook_id}/export/pdf")
+
+    assert resp.status_code == 200
+    assert resp.headers.get("content-type", "").startswith("application/pdf")
+    # 定義ファイル由来の分析が含まれるため、「Not analyzed」のみの PDF より大きくなる
+    assert len(resp.content) > 2760
 
 
 @pytest.mark.asyncio

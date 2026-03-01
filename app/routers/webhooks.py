@@ -32,7 +32,7 @@ from app.schemas.webhook import (
 from app.services.alert_rules import evaluate_rules
 from app.services.pdf_export import build_webhook_pdf
 from app.services.classifier import classify_webhook
-from app.services.field_templates import get_field_template
+from app.services.field_templates import get_field_template, load_analysis_from_yaml
 from app.services.schema_drift import (
     compute_drift,
     schema_drift_to_dict,
@@ -704,6 +704,12 @@ async def export_webhook_pdf(
     summary = analysis.summary if analysis else None
     explanation = analysis.explanation if analysis else None
     field_descriptions = analysis.field_descriptions if analysis else None
+
+    # US-171: DB に分析がない場合は定義ファイルからフォールバック（US-126 と同様）
+    if not analysis:
+        cached = load_analysis_from_yaml(webhook.source, webhook.event_type)
+        if cached:
+            summary, field_descriptions = cached
 
     pdf_bytes = build_webhook_pdf(
         source=webhook.source,
