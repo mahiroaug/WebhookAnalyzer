@@ -3,9 +3,13 @@
  * フィールド辞書・AI分析結果の説明を「description」列に統合表示する。
  * US-112: Payload 表形式表示とフィールド辞書統合
  * US-130: カラムヘッダー英語化、値の全文表示（truncate 廃止）
+ * US-147: 全展開・全折りたたみボタン
  */
-import { useState, useCallback } from "react";
+import { useState, useCallback, useContext, useEffect, createContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+
+/** US-147: 全展開/全折りたたみのトリガーを配信 */
+const ExpandTriggerContext = createContext<{ expandAll: number; collapseAll: number }>({ expandAll: 0, collapseAll: 0 });
 
 /** US-141: 定義ファイル編集可能時 */
 export interface DefinitionEditable {
@@ -90,6 +94,24 @@ interface FieldRowProps {
   onDescriptionSave?: (path: string, description: string) => Promise<void>;
 }
 
+/** US-147: 全展開/折りたたみのトリガーを受け取り、expanded を更新 */
+function useExpandTrigger(isExpandable: boolean, defaultExpanded: boolean) {
+  const triggers = useContext(ExpandTriggerContext);
+  const [expanded, setExpanded] = useState(defaultExpanded);
+
+  useEffect(() => {
+    if (!isExpandable || triggers.expandAll === 0) return;
+    setExpanded(true);
+  }, [triggers.expandAll, isExpandable]);
+
+  useEffect(() => {
+    if (!isExpandable || triggers.collapseAll === 0) return;
+    setExpanded(false);
+  }, [triggers.collapseAll, isExpandable]);
+
+  return [expanded, setExpanded] as const;
+}
+
 function FieldRow({
   path,
   keyName,
@@ -102,14 +124,14 @@ function FieldRow({
   definitionEditable,
   onDescriptionSave,
 }: FieldRowProps) {
-  const [expanded, setExpanded] = useState(depth < 2);
+  const isObject = value !== null && typeof value === "object" && !Array.isArray(value);
+  const isArray = Array.isArray(value);
+  const isExpandable = isObject || isArray;
+  const [expanded, setExpanded] = useExpandTrigger(isExpandable, depth < 2);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [editingDesc, setEditingDesc] = useState(false);
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
-  const isObject = value !== null && typeof value === "object" && !Array.isArray(value);
-  const isArray = Array.isArray(value);
-  const isExpandable = isObject || isArray;
   const type = getType(value);
 
   const templateDesc = templateDescriptions?.get(path);
@@ -298,23 +320,43 @@ export function PayloadTable({
   definitionEditable,
   onDescriptionSave,
 }: PayloadTableProps) {
+  const [expandTrigger, setExpandTrigger] = useState(0);
+  const [collapseTrigger, setCollapseTrigger] = useState(0);
+
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-      <table className="w-full text-sm table-fixed">
-        <colgroup>
-          <col style={{ width: "25%" }} />
-          <col style={{ width: "33.33%" }} />
-          <col style={{ width: "4rem" }} />
-          <col />
-        </colgroup>
-        <thead>
-          <tr className="border-b border-slate-200 dark:border-slate-700 text-left">
-            <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">key</th>
-            <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">value</th>
-            <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">type</th>
-            <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">description</th>
-          </tr>
-        </thead>
+    <ExpandTriggerContext.Provider value={{ expandAll: expandTrigger, collapseAll: collapseTrigger }}>
+      <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+        <div className="flex items-center justify-end gap-1 py-1.5 px-2 border-b border-slate-200 dark:border-slate-700">
+          <button
+            type="button"
+            onClick={() => setExpandTrigger((c) => c + 1)}
+            className="text-[10px] px-2 py-0.5 rounded bg-slate-600/50 text-slate-300 hover:bg-slate-600"
+          >
+            全展開
+          </button>
+          <button
+            type="button"
+            onClick={() => setCollapseTrigger((c) => c + 1)}
+            className="text-[10px] px-2 py-0.5 rounded bg-slate-600/50 text-slate-300 hover:bg-slate-600"
+          >
+            全折りたたみ
+          </button>
+        </div>
+        <table className="w-full text-sm table-fixed">
+          <colgroup>
+            <col style={{ width: "25%" }} />
+            <col style={{ width: "33.33%" }} />
+            <col style={{ width: "4rem" }} />
+            <col />
+          </colgroup>
+          <thead>
+            <tr className="border-b border-slate-200 dark:border-slate-700 text-left">
+              <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">key</th>
+              <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">value</th>
+              <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">type</th>
+              <th className="py-2 px-2 text-xs font-medium text-slate-500 dark:text-dim-text-muted">description</th>
+            </tr>
+          </thead>
         <tbody>
           {Object.entries(data).map(([key, val]) => (
             <FieldRow
@@ -332,7 +374,8 @@ export function PayloadTable({
             />
           ))}
         </tbody>
-      </table>
-    </div>
+        </table>
+      </div>
+    </ExpandTriggerContext.Provider>
   );
 }
