@@ -723,6 +723,7 @@ async def export_webhook_pdf(
         analysis_summary=summary,
         analysis_explanation=explanation,
         analysis_field_descriptions=field_descriptions,
+        sequence_index=webhook.sequence_index,
     )
     filename = f"webhook-{webhook_id}-{webhook.source}-{webhook.event_type}.pdf".replace(" ", "_")
     return Response(
