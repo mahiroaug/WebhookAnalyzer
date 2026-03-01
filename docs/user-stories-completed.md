@@ -996,3 +996,18 @@ QA として、過去の Webhook payload を任意のエンドポイントへ再
   - Given event_type に「transfer」を選択する、When source プルダウンを開く、Then transfer イベントを持つ source のみが候補として表示される … **OK**: GET /filter-options?event_type=transfer
   - Given source も event_type もクリアする、When プルダウンを開く、Then 全候補が表示される（既存動作）… **OK**
   - Given source を選択後に event_type を選択、When source をクリアする、Then event_type 候補が全件に戻る … **OK**
+
+### Phase 18: INBOX ヘッダー簡素化
+
+### US-176 INBOX ヘッダーの簡素化と URL 全文表示（P1）【完了】
+
+Web3エンジニアとして、INBOX ヘッダー領域の不要な UI 要素を削減し、
+サービス接続状況の URL を省略なく確認したい。
+なぜなら、受信 URL のコピーボタンは利用頻度が低く画面を圧迫しており、
+テーブルヘッダーも自明な情報で冗長であり、
+URL の切り詰めは接続先の判別を困難にするから。
+
+- 受け入れ基準
+  - Given INBOX 一覧ペインが表示されている、When ヘッダー領域を確認する、Then Webhook 受信 URL 表示バー（コピーボタン付き）が表示されていない … **OK**: URL バー削除済み
+  - Given サービス接続状況パネルが表示されている、When テーブルを確認する、Then "Label" / "URL" / "Status" のカラムヘッダー行が表示されていない … **OK**: thead 削除済み
+  - Given サービス接続状況パネルが表示されている、When 各行の URL を確認する、Then パネル幅に収まる範囲で URL が全文表示されている（幅が不足する場合のみ末尾省略される）… **OK**: max-w-[140px] 制約を削除

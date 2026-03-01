@@ -175,6 +175,7 @@ Webhook Analyzer を `webhook.site` のような「受信確認 + 高速調査 +
 | 17 | US-173 | 受信日時書式の統一（YYYY/MM/DD HH:MM:SS） | P1 |
 | 17 | US-174 | 詳細ペインナビゲーションバーの位置調整 | P1 |
 | 17 | US-175 | source / event_type フィルタの相互連動 | P1 |
+| 18 | US-176 | INBOX ヘッダーの簡素化と URL 全文表示 | P1 |
 
 ## バックログ（未着手）
 

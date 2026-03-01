@@ -130,3 +130,4 @@
 | US-173 | 受信日時書式の統一（YYYY/MM/DD HH:MM:SS）               | OK           | formatReceivedAt ユーティリティ、一覧・詳細・比較・event_type別で統一               |
 | US-174 | 詳細ペインナビゲーションバーの位置調整                  | OK           | DetailNavBar をタブ直下に固定、スクロールに追従せず Prev/Next/Replay/Export PDF 常時表示 |
 | US-175 | source / event_type フィルタの相互連動                  | OK           | GET /filter-options、source 指定で event_type 絞り、event_type 指定で source 絞り、クリアで全件 |
+| US-176 | INBOX ヘッダーの簡素化と URL 全文表示                    | OK           | 受信 URL バー削除、ServiceStatusPanel の thead 削除、max-w-[140px] 制約削除で URL 全文表示 |
