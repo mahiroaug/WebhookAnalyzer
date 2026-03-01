@@ -5,6 +5,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.services.llm.ollama_analyzer import (
+    _ensure_payload_keys_in_descriptions,
     analyze_payload_with_ollama,
     sanitize_for_yaml,
 )
@@ -30,7 +31,7 @@ async def test_plain_text_response_returns_json_error() -> None:
 
 @pytest.mark.asyncio
 async def test_summary_only_response_succeeds() -> None:
-    """LLM が summary のみ（field_descriptions なし）を返すと正常処理される"""
+    """LLM が summary のみ（field_descriptions なし）を返すと正常処理される（US-151: 欠落キーは補完）"""
     mock_response = type("R", (), {
         "message": type("M", (), {
             "content": '{"summary": "トランザクションの要約です。"}',
@@ -44,7 +45,8 @@ async def test_summary_only_response_succeeds() -> None:
 
     assert result.failed is False
     assert result.summary == "トランザクションの要約です。"
-    assert result.field_descriptions == {}
+    # US-151: Step 2 で field_descriptions が空でもペイロードキーは補完される
+    assert "foo" in result.field_descriptions
     assert result.error_message is None
 
 
@@ -84,6 +86,28 @@ async def test_parsed_string_returns_invalid_format() -> None:
 
     assert result.failed is True
     assert result.error_message == "不正な応答形式"
+
+
+def test_ensure_payload_keys_complements_missing_hash() -> None:
+    """US-151: Step 2 で hash が欠落していてもフォールバックで補完される"""
+    payload = {"hash": "0xabc123", "coin": "tpolygon", "type": "transfer"}
+    explanation = "**hash**: 送金トランザクションのハッシュ値です。トランザクションを識別します。\n**coin**: トークン種別。"
+    field_descriptions = {"coin": "トークン種別", "type": "送金の種類"}  # hash が欠落
+    result = _ensure_payload_keys_in_descriptions(payload, explanation, field_descriptions)
+    assert "hash" in result
+    assert "送金トランザクション" in result["hash"] or result["hash"] == "不明"
+    assert result["coin"] == "トークン種別"
+    assert result["type"] == "送金の種類"
+
+
+def test_ensure_payload_keys_uses_fallback_when_no_extraction() -> None:
+    """US-151: explanation にキーがなければ「不明」で補完"""
+    payload = {"hash": "0x123", "foo": "bar"}
+    explanation = "他のフィールドの説明"
+    field_descriptions = {}
+    result = _ensure_payload_keys_in_descriptions(payload, explanation, field_descriptions)
+    assert result["hash"] == "不明"
+    assert result["foo"] == "不明"
 
 
 def test_sanitize_for_yaml_removes_payload_values() -> None:
