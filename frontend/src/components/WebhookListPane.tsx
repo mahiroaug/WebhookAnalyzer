@@ -42,7 +42,9 @@ export function WebhookListPane({
   const [page, setPage] = useState(1);
   const [newArrivalIds, setNewArrivalIds] = useState<Set<string>>(new Set());
   const [availableSources, setAvailableSources] = useState<string[]>([]);
+  const [availableEventTypes, setAvailableEventTypes] = useState<string[]>([]);
   const [sourceDropdownOpen, setSourceDropdownOpen] = useState(false);
+  const [eventTypeDropdownOpen, setEventTypeDropdownOpen] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
 
   const webhookReceiveUrl = `${window.location.origin}/api/webhooks/receive`;
@@ -114,8 +116,14 @@ export function WebhookListPane({
 
   useEffect(() => {
     getStats()
-      .then((s) => setAvailableSources(Object.keys(s.by_source).sort()))
-      .catch(() => setAvailableSources([]));
+      .then((s) => {
+        setAvailableSources(Object.keys(s.by_source).sort());
+        setAvailableEventTypes(Object.keys(s.by_event_type).sort());
+      })
+      .catch(() => {
+        setAvailableSources([]);
+        setAvailableEventTypes([]);
+      });
   }, []);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -205,13 +213,43 @@ export function WebhookListPane({
               </div>
             )}
           </div>
-          <input
-            type="text"
-            placeholder="event_type"
-            value={filterEventType}
-            onChange={(e) => onFilterEventTypeChange(e.target.value)}
-            className="w-full min-w-0 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/50 px-2 py-1 text-xs"
-          />
+          <div className="relative min-w-0">
+            <input
+              type="text"
+              placeholder="event_type"
+              value={filterEventType}
+              onChange={(e) => onFilterEventTypeChange(e.target.value)}
+              onFocus={() => setEventTypeDropdownOpen(true)}
+              onBlur={() => setTimeout(() => setEventTypeDropdownOpen(false), 150)}
+              className="w-full min-w-0 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/50 px-2 py-1 text-xs"
+            />
+            {eventTypeDropdownOpen && (
+              <div
+                className="absolute left-0 right-0 top-full mt-0.5 max-h-32 overflow-y-auto rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-lg z-10"
+                onMouseDown={(e) => e.preventDefault()}
+              >
+                <button
+                  type="button"
+                  onClick={() => { onFilterEventTypeChange(""); setEventTypeDropdownOpen(false); }}
+                  className="block w-full px-2 py-1 text-left text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700"
+                >
+                  （クリア）
+                </button>
+                {availableEventTypes
+                  .filter((et) => !filterEventType || et.toLowerCase().includes(filterEventType.toLowerCase()))
+                  .map((et) => (
+                    <button
+                      key={et}
+                      type="button"
+                      onClick={() => { onFilterEventTypeChange(et); setEventTypeDropdownOpen(false); }}
+                      className="block w-full px-2 py-1 text-left text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
+                    >
+                      {et}
+                    </button>
+                  ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
