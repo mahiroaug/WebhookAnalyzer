@@ -89,26 +89,25 @@ export function ServiceStatusPanel() {
   return (
     <div className="text-xs text-slate-600 dark:text-slate-400 min-w-0">
       <table className="w-full border-collapse table-fixed">
+        <colgroup>
+          <col className="w-16" />
+          <col className="w-11" />
+          <col />
+        </colgroup>
         <tbody>
           {rows.map((row) => (
             <tr key={row.label}>
-              <td className="py-0.5 pr-2 align-middle w-14 shrink-0">{row.label}</td>
-              <td className="py-0.5 pr-2 align-middle min-w-0 overflow-hidden">
-                <CopyableUrl url={row.url} onCopy={handleCopy} />
-              </td>
-              <td className="py-0.5 w-14 shrink-0">
+              <td className="py-0.5 pr-1 align-middle whitespace-nowrap">{row.label}</td>
+              <td className="py-0.5 pr-1 align-middle whitespace-nowrap">
                 <span className="inline-flex items-center gap-1">
                   <StatusDot live={row.status === "live"} />
-                  <span
-                  className={
-                    row.status === "live"
-                      ? "text-green-600 dark:text-green-400"
-                      : "text-slate-400 dark:text-slate-500"
-                  }
-                >
+                  <span className={row.status === "live" ? "text-green-600 dark:text-green-400" : "text-slate-400 dark:text-slate-500"}>
                     {row.status}
                   </span>
                 </span>
+              </td>
+              <td className="py-0.5 align-middle min-w-0 overflow-hidden">
+                <CopyableUrl url={row.url} onCopy={handleCopy} />
               </td>
             </tr>
           ))}
