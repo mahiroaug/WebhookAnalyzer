@@ -116,9 +116,10 @@ function FieldRow({
   const analysisDesc = analysisDescriptions?.[keyName] || analysisDescriptions?.[path];
   const description = templateDesc || analysisDesc || null;
 
+  /** US-149: テンプレートまたは AI 分析に説明があれば「未知」を表示しない */
   const isKnown = !knownFieldPaths || knownFieldPaths.has(path) ||
     [...(knownFieldPaths || [])].some((p) => p.startsWith(path + "."));
-  const isUnknown = knownFieldPaths && !isKnown;
+  const isUnknown = knownFieldPaths && !isKnown && !description;
 
   const handleCopy = useCallback(async (text: string, field: string) => {
     const ok = await copyToClipboard(text);

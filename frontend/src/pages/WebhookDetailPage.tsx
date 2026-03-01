@@ -546,11 +546,13 @@ export function WebhookDetailPage() {
               : undefined
           }
           analysisDescriptions={analysis?.field_descriptions}
-          knownFieldPaths={
-            fieldTemplate?.fields?.length
-              ? new Set(fieldTemplate.fields.map((f) => f.path))
-              : undefined
-          }
+          knownFieldPaths={(() => {
+            const templatePaths = fieldTemplate?.fields?.length ? fieldTemplate.fields.map((f) => f.path) : [];
+            const analysisKeys = analysis?.field_descriptions ? Object.keys(analysis.field_descriptions) : [];
+            return (templatePaths.length > 0 || analysisKeys.length > 0)
+              ? new Set([...templatePaths, ...analysisKeys])
+              : undefined;
+          })()}
           definitionEditable={
             definitionWritable ? { source: webhook.source, eventType: webhook.event_type } : undefined
           }
