@@ -550,16 +550,16 @@ export function WebhookDetailPage() {
           <div className="flex items-center gap-2 flex-wrap">
             <button type="button" onClick={goPrev} disabled={!adjacent?.prev_id}
               className="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40"
-              title="前の Webhook（←）">← 前へ</button>
+              title="Previous Webhook (←)">← Prev</button>
             <button type="button" onClick={goNext} disabled={!adjacent?.next_id}
               className="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40"
-              title="次の Webhook（→）">次へ →</button>
+              title="Next Webhook (→)">Next →</button>
             <button
               type="button"
               onClick={() => { setReplayOpen((o) => !o); setReplayResult(null); }}
               className="rounded border border-slate-400 dark:border-slate-500 bg-transparent px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50"
             >
-              再送
+              Replay
             </button>
             <button
               type="button"
@@ -595,7 +595,7 @@ export function WebhookDetailPage() {
               disabled={replaying || !replayUrl.trim()}
               className="rounded border border-slate-400 px-2 py-1 text-xs font-medium disabled:opacity-50"
             >
-              {replaying ? "送信中..." : "送信"}
+              {replaying ? "Sending..." : "Send"}
             </button>
             {replayResult && (
               <span className={`text-xs ${replayResult.error ? "text-red-400" : "text-green-400"}`}>
@@ -642,7 +642,7 @@ export function WebhookDetailPage() {
               onChange={(e) => setMaskEnabled(e.target.checked)}
               className="rounded border-slate-500"
             />
-            <span>機密情報をマスク</span>
+            <span>Mask Sensitive Data</span>
           </label>
         </div>
         <PayloadTable
@@ -804,7 +804,7 @@ export function WebhookDetailPage() {
             {analyzing && (
               <span className="inline-block w-4 h-4 border-2 border-slate-400 dark:border-slate-400 border-t-transparent rounded-full us133-spinner" aria-hidden />
             )}
-            {analyzing ? "分析中..." : analyzeError ? "再試行" : analysis ? "再分析を実行" : "AI で分析"}
+            {analyzing ? "Analyzing..." : analyzeError ? "Retry" : analysis ? "Re-analyze" : "Analyze"}
           </button>
           {streamElapsedMs != null && analyzing && (
             <span className="text-xs text-slate-500 dark:text-dim-text-muted">
@@ -866,7 +866,7 @@ export function WebhookDetailPage() {
               { key: "evidence", label: "エビデンス" },
               { key: "explanation", label: "解説" },
               { key: "fields", label: "フィールド" },
-              { key: "saved", label: "保存" },
+              { key: "saved", label: "Saved" },
             ].map(({ key, label }, i) => (
               <span key={key} className="flex items-center gap-1">
                 <span

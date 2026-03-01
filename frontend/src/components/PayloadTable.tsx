@@ -230,14 +230,14 @@ function FieldRow({
                   disabled={saving}
                   className="text-[10px] px-1.5 py-0.5 rounded bg-green-700/50 text-green-200 hover:bg-green-700 disabled:opacity-50"
                 >
-                  保存
+                  Save
                 </button>
                 <button
                   type="button"
                   onClick={() => { setEditingDesc(false); setEditValue(description || ""); }}
                   className="text-[10px] px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-300 hover:bg-slate-600"
                 >
-                  キャンセル
+                  Cancel
                 </button>
               </div>
             </div>
@@ -340,14 +340,14 @@ export function PayloadTable({
             onClick={() => setExpandTrigger((c) => c + 1)}
             className="text-[10px] px-2 py-0.5 rounded bg-slate-600/50 text-slate-300 hover:bg-slate-600"
           >
-            全展開
+            Expand All
           </button>
           <button
             type="button"
             onClick={() => setCollapseTrigger((c) => c + 1)}
             className="text-[10px] px-2 py-0.5 rounded bg-slate-600/50 text-slate-300 hover:bg-slate-600"
           >
-            全折りたたみ
+            Collapse All
           </button>
         </div>
         <table className="w-full text-sm table-fixed">

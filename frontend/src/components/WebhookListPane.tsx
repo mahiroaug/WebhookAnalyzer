@@ -265,7 +265,7 @@ export function WebhookListPane({
             onClick={() => setPage((p) => p - 1)}
             className="px-2 py-1 rounded border border-slate-300 dark:border-slate-600 disabled:opacity-40"
           >
-            前
+            Prev
           </button>
           <span className="text-slate-500">{page}/{totalPages}</span>
           <button
@@ -273,7 +273,7 @@ export function WebhookListPane({
             onClick={() => setPage((p) => p + 1)}
             className="px-2 py-1 rounded border border-slate-300 dark:border-slate-600 disabled:opacity-40"
           >
-            次
+            Next
           </button>
         </div>
       )}

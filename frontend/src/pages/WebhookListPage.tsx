@@ -588,14 +588,14 @@ export function WebhookListPage() {
               disabled={page <= 1}
               className="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              前へ
+              Prev
             </button>
             <button
               onClick={() => setPage((p) => p + 1)}
               disabled={page * PAGE_SIZE >= total}
               className="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              次へ
+              Next
             </button>
           </div>
         </div>
