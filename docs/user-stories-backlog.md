@@ -50,3 +50,7 @@
 ### Phase 13: 高度機能・開発者体験
 
 > US-146 は完了。→ [`user-stories-completed.md`](./user-stories-completed.md)
+
+### Phase 14: AI 分析 UX 改善とバグ修正
+
+> US-147〜US-152 は完了。→ [`user-stories-completed.md`](./user-stories-completed.md)

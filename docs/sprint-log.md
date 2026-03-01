@@ -101,3 +101,9 @@
 | US-142 | 定義ファイルの diff 表示                            | OK           | DefinitionDiffModal、GET/POST /definitions、マージ・スキップ・部分的適用         |
 | US-143 | LLM 比較モード                                      | OK           | provider/model オーバーライド、比較モードで並列表示（Ollama のみ対応）            |
 | US-146 | 異常検知ルール                                      | OK           | data/alert_rules.json、GET/POST/DELETE /alert-rules、一覧・詳細にバッジ表示       |
+| US-149 | AI 分析完了後の「未知」バッジ即時解除                | OK           | knownFieldPaths に分析 field_descriptions キーをマージ、description ありで isUnknown 解除 |
+| US-151 | Step 2 field_descriptions のフィールド欠落バグ修正  | OK           | プロンプトに payload_keys を明示、_ensure_payload_keys_in_descriptions で不足キー補完 |
+| US-147 | Payload テーブル全展開・全折りたたみ                | OK           | ExpandTriggerContext、全展開/全折りたたみボタン、個別トグルと共存                      |
+| US-148 | AI 分析ログの所要時間リアルタイムカウント           | OK           | setInterval(1000)、sessionStorage に elapsedMs 保存・復元                              |
+| US-150 | スキーマドリフトセクションの配置変更                | OK           | メタ→Payload→AI分析結果→スキーマドリフトの順序に変更                                   |
+| US-152 | AI 分析ログの詳細情報拡充                           | OK           | timestamp/prompt_full/response_full、CollapsibleBlock、自動スクロール・一時停止         |
