@@ -462,6 +462,20 @@ export async function updateFieldDescription(
   if (!res.ok) throw new Error(await res.text().catch(() => `HTTP ${res.status}`));
 }
 
+/** US-162: サービス接続状況 */
+export interface HealthServicesResponse {
+  public_url: { url: string; status: "live" | "offline" };
+  local_api: { url: string; status: "live" | "offline" };
+  postgresql: { status: "live" | "offline" };
+  ollama: { status: "live" | "offline" };
+}
+
+export async function getHealthServices(): Promise<HealthServicesResponse> {
+  const res = await fetch(`${BASE}/health/services`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 export async function getFieldTemplate(
   source: string,
   eventType: string

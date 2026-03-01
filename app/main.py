@@ -4,7 +4,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import alert_rules, analysis, definitions, sessions, webhooks
+from app.routers import alert_rules, analysis, definitions, health, sessions, webhooks
 
 logging.basicConfig(
     level=logging.INFO,
@@ -25,6 +25,7 @@ app.add_middleware(
 )
 
 app.include_router(webhooks.router, prefix="/api")
+app.include_router(health.router, prefix="/api/health")
 app.include_router(definitions.router, prefix="/api")
 app.include_router(alert_rules.router, prefix="/api")
 app.include_router(analysis.router, prefix="/api")

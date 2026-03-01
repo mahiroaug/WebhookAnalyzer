@@ -14,6 +14,7 @@ import {
   type WebhookListItem,
 } from "../services/api";
 import { SourceIcon } from "./SourceIcon";
+import { ServiceStatusPanel } from "./ServiceStatusPanel";
 
 /** US-161: 一覧ペインの表示件数拡大（500 件） */
 const PAGE_SIZE = 500;
@@ -166,6 +167,10 @@ export function WebhookListPane({
               </svg>
             )}
           </button>
+        </div>
+        {/* US-162: サービス接続状況（30秒ポーリング） */}
+        <div className="mb-2 rounded bg-slate-100 dark:bg-slate-800/50 px-2 py-1.5">
+          <ServiceStatusPanel />
         </div>
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-medium text-slate-500 dark:text-dim-text-muted">

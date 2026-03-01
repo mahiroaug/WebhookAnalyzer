@@ -424,3 +424,23 @@ async def test_export_webhook_pdf(
     assert resp.headers.get("content-type", "").startswith("application/pdf")
     assert "attachment" in resp.headers.get("content-disposition", "").lower()
     assert len(resp.content) > 500
+
+
+@pytest.mark.asyncio
+async def test_health_services_returns_structure() -> None:
+    """US-162: GET /api/health/services が期待構造を返す"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        resp = await client.get("/api/health/services")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "public_url" in data
+    assert data["public_url"]["status"] in ("live", "offline")
+    assert "local_api" in data
+    assert data["local_api"]["status"] == "live"
+    assert "postgresql" in data
+    assert data["postgresql"]["status"] in ("live", "offline")
+    assert "ollama" in data
+    assert data["ollama"]["status"] in ("live", "offline")

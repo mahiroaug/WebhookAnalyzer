@@ -13,6 +13,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql://webhook:webhook@db:5432/webhook_analyzer"
     ollama_host: str = "http://ollama:11434"
+    ngrok_api_url: str = "http://localhost:4040"  # US-162: ngrok ローカル API
     llm_provider: str = "ollama"
     ollama_model: str = "gemma3:4b"
 
