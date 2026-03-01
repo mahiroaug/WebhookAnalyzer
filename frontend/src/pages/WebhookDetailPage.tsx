@@ -273,7 +273,9 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
     const webhookId = id;
     let cancelled = false;
     async function load() {
-      setLoading(true);
+      if (!webhook || webhook.id !== webhookId) {
+        setLoading(true);
+      }
       try {
         const [detailRes, analysisRes, adjacentRes] = await Promise.all([
           getWebhook(webhookId),
@@ -301,7 +303,7 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
     }
     load();
     return () => { cancelled = true; };
-  }, [id]);
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps -- webhook used only for stale check
 
   /** US-141: 定義ファイルが存在し編集可能な場合に getDefinitionStatus で確認 */
   useEffect(() => {

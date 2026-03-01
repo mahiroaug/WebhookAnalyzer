@@ -64,7 +64,16 @@ export function DetailNavBar({ data, searchQuery = "", onNavigate }: DetailNavBa
     }
   }, [data?.webhook?.id, replayUrl]);
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <div className="shrink-0 border-b border-slate-200 dark:border-dim-border bg-white dark:bg-dim-card px-4 py-2">
+        <div className="flex items-center gap-2">
+          <button type="button" disabled className="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-medium opacity-40">← Prev</button>
+          <button type="button" disabled className="rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-medium opacity-40">Next →</button>
+        </div>
+      </div>
+    );
+  }
 
   const { webhook, adjacent } = data;
 

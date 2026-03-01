@@ -159,7 +159,7 @@ export function TwoPanePage() {
 
         <div className="flex-1 overflow-y-auto p-4">
           {rightPane === "detail" && selectedId ? (
-            <WebhookDetailPage key={selectedId} webhookId={selectedId} onNavigate={handleNavigate} onNavBarData={(d) => selectedId && d.webhook.id === selectedId && setNavBarData(d)} />
+            <WebhookDetailPage webhookId={selectedId} onNavigate={handleNavigate} onNavBarData={(d) => selectedId && d.webhook.id === selectedId && setNavBarData(d)} />
           ) : rightPane === "detail" && !selectedId ? (
             <div className="flex items-center justify-center h-full text-slate-400 dark:text-dim-text-muted">
               左のリストから Webhook を選択してください
