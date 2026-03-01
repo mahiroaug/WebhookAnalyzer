@@ -57,19 +57,8 @@
 
 ### Phase 17: 表示品質改善・PDF 拡充・フィルタ連動
 
+> US-168〜US-175 は完了。→ [`user-stories-completed.md`](./user-stories-completed.md)
 
 
 
-
-
-#### US-175 source / event_type フィルタの相互連動（P1）【未着手】
-
-開発者として、source を選択したら event_type の候補がそのソースに存在するものに絞られ、逆に event_type を選択したら source 候補も絞られてほしい。
-なぜなら現状は全候補が常に表示されるため、存在しない組み合わせを選んでしまい空結果になることがあるから。
-
-- 受け入れ基準
-  - Given source に「bitgo」を選択する、When event_type プルダウンを開く、Then bitgo の Webhook に存在する event_type のみが候補として表示される
-  - Given event_type に「transfer」を選択する、When source プルダウンを開く、Then transfer イベントを持つ source のみが候補として表示される
-  - Given source も event_type もクリアする、When プルダウンを開く、Then 全候補が表示される（既存動作）
-  - Given source を選択後に event_type を選択、When source をクリアする、Then event_type 候補が全件に戻る
 

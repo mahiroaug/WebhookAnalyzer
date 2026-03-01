@@ -168,6 +168,49 @@ async def test_stats_reflects_received_webhooks(
 
 
 @pytest.mark.asyncio
+async def test_filter_options_mutual_constraint(
+    bitgo_transfer_payload: dict,
+    fireblocks_tx_payload: dict,
+) -> None:
+    """US-175: source/event_type でフィルタ候補が相互連動する"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+        await client.post("/api/webhooks/receive", json=fireblocks_tx_payload)
+
+        # 両方未指定 → 全候補
+        r0 = await client.get("/api/webhooks/filter-options")
+    assert r0.status_code == 200
+    d0 = r0.json()
+    assert "bitgo" in d0["sources"]
+    assert "fireblocks" in d0["sources"]
+    assert "transfer" in d0["event_types"]
+    assert "transaction.created" in d0["event_types"]
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        # source=bitgo → event_types は bitgo に存在するもののみ
+        r1 = await client.get("/api/webhooks/filter-options", params={"source": "bitgo"})
+    assert r1.status_code == 200
+    assert "transfer" in r1.json()["event_types"]
+    assert "transaction.created" not in r1.json()["event_types"]
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        # event_type=transfer → sources は transfer を持つもののみ
+        r2 = await client.get("/api/webhooks/filter-options", params={"event_type": "transfer"})
+    assert r2.status_code == 200
+    assert "bitgo" in r2.json()["sources"]
+    assert "fireblocks" not in r2.json()["sources"]
+
+
+@pytest.mark.asyncio
 async def test_field_templates_fireblocks_returns_template() -> None:
     """Fireblocks transaction.created のフィールド辞書テンプレートが取得できる"""
     async with AsyncClient(

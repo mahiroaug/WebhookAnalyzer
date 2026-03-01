@@ -16,6 +16,7 @@ from app.schemas.webhook import (
     AdjacentResponse,
     EventTypeGroup,
     EventTypeGroupResponse,
+    FilterOptionsResponse,
     FieldTemplateItem,
     FieldTemplateResponse,
     MatchedRule,
@@ -334,6 +335,42 @@ async def get_stats(db: AsyncSession = Depends(get_db)) -> StatsResponse:
     by_event_type = {row[0]: row[1] for row in by_event_result.all()}
 
     return StatsResponse(by_source=by_source, by_event_type=by_event_type)
+
+
+@router.get("/filter-options", response_model=FilterOptionsResponse)
+async def get_filter_options(
+    source: str | None = None,
+    event_type: str | None = None,
+    db: AsyncSession = Depends(get_db),
+) -> FilterOptionsResponse:
+    """US-175: source/event_type に応じてフィルタ候補を相互連動させる。
+    - source 指定時: その source に存在する event_type のみ
+    - event_type 指定時: その event_type を持つ source のみ
+    - 両方未指定: 全候補
+    """
+    if event_type:
+        # event_type が指定されている → その event_type を持つ source 一覧
+        stmt = select(Webhook.source).where(Webhook.event_type == event_type).distinct().order_by(Webhook.source)
+        result = await db.execute(stmt)
+        sources = [r[0] for r in result.all()]
+    else:
+        # 全 source
+        stmt = select(Webhook.source).distinct().order_by(Webhook.source)
+        result = await db.execute(stmt)
+        sources = [r[0] for r in result.all()]
+
+    if source:
+        # source が指定されている → その source に存在する event_type 一覧
+        stmt = select(Webhook.event_type).where(Webhook.source == source).distinct().order_by(Webhook.event_type)
+        result = await db.execute(stmt)
+        event_types = [r[0] for r in result.all()]
+    else:
+        # 全 event_type
+        stmt = select(Webhook.event_type).distinct().order_by(Webhook.event_type)
+        result = await db.execute(stmt)
+        event_types = [r[0] for r in result.all()]
+
+    return FilterOptionsResponse(sources=sources, event_types=event_types)
 
 
 @router.get("/field-templates", response_model=FieldTemplateResponse)

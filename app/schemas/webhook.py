@@ -100,6 +100,13 @@ class StatsResponse(BaseModel):
     by_event_type: dict[str, int]
 
 
+class FilterOptionsResponse(BaseModel):
+    """US-175: source/event_type フィルタ候補の相互連動用"""
+
+    sources: list[str]
+    event_types: list[str]
+
+
 class EventTypeGroup(BaseModel):
     """event_type 別グルーピングの1件"""
 

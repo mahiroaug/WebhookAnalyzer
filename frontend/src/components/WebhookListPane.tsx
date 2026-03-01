@@ -9,7 +9,7 @@ import { useWebhookWebSocket } from "../hooks/useWebhookWebSocket";
 import { useDebounce } from "../hooks/useDebounce";
 import {
   listWebhooks,
-  getStats,
+  getFilterOptions,
   markWebhookRead,
   markAllWebhooksRead,
   type WebhookListItem,
@@ -143,17 +143,20 @@ export function WebhookListPane({
   });
 
 
+  /** US-175: source/event_type に応じてフィルタ候補を相互連動 */
   useEffect(() => {
-    getStats()
-      .then((s) => {
-        setAvailableSources(Object.keys(s.by_source).sort());
-        setAvailableEventTypes(Object.keys(s.by_event_type).sort());
+    const src = filterSource.trim() || undefined;
+    const evt = filterEventType.trim() || undefined;
+    getFilterOptions({ source: src ?? null, event_type: evt ?? null })
+      .then((opts) => {
+        setAvailableSources(opts.sources);
+        setAvailableEventTypes(opts.event_types);
       })
       .catch(() => {
         setAvailableSources([]);
         setAvailableEventTypes([]);
       });
-  }, []);
+  }, [filterSource, filterEventType]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 

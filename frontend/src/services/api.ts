@@ -283,6 +283,25 @@ export async function getStats(): Promise<StatsResponse> {
   return res.json();
 }
 
+/** US-175: source/event_type に応じたフィルタ候補の相互連動 */
+export interface FilterOptionsResponse {
+  sources: string[];
+  event_types: string[];
+}
+
+export async function getFilterOptions(params?: {
+  source?: string | null;
+  event_type?: string | null;
+}): Promise<FilterOptionsResponse> {
+  const search = new URLSearchParams();
+  if (params?.source?.trim()) search.set("source", params.source.trim());
+  if (params?.event_type?.trim()) search.set("event_type", params.event_type.trim());
+  const qs = search.toString();
+  const res = await fetch(`${BASE}/webhooks/filter-options${qs ? `?${qs}` : ""}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 export async function batchAnalyze(
   webhookIds: string[]
 ): Promise<{ total: number; completed: number; failed: number }> {

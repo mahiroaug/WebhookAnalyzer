@@ -985,3 +985,14 @@ QA として、過去の Webhook payload を任意のエンドポイントへ再
   - Given 詳細ペインを表示する、When ナビゲーションバーを確認する、Then タブバー（詳細 / event_type別 / スキーマ / 比較）の直下に固定配置されている … **OK**: DetailNavBar を TwoPanePage のタブ直下に配置
   - Given 詳細ペインをスクロールする、When 下までスクロールする、Then ナビゲーションバーはスクロールに追従せず上部に固定されたまま … **OK**: shrink-0 でスクロール領域外
   - Given ナビゲーションバー、When 確認する、Then Prev / Next / Replay / Export PDF / #NNN が既存と同じ機能で表示される … **OK**
+
+### US-175 source / event_type フィルタの相互連動（P1）【完了】
+
+開発者として、source を選択したら event_type の候補がそのソースに存在するものに絞られ、逆に event_type を選択したら source 候補も絞られてほしい。
+なぜなら現状は全候補が常に表示されるため、存在しない組み合わせを選んでしまい空結果になることがあるから。
+
+- 受け入れ基準
+  - Given source に「bitgo」を選択する、When event_type プルダウンを開く、Then bitgo の Webhook に存在する event_type のみが候補として表示される … **OK**: GET /filter-options?source=bitgo
+  - Given event_type に「transfer」を選択する、When source プルダウンを開く、Then transfer イベントを持つ source のみが候補として表示される … **OK**: GET /filter-options?event_type=transfer
+  - Given source も event_type もクリアする、When プルダウンを開く、Then 全候補が表示される（既存動作）… **OK**
+  - Given source を選択後に event_type を選択、When source をクリアする、Then event_type 候補が全件に戻る … **OK**

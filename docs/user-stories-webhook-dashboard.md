@@ -174,16 +174,13 @@ Webhook Analyzer を `webhook.site` のような「受信確認 + 高速調査 +
 | 17 | US-170 | PDF ヘッダー・フッターメタデータの追加 | P1 |
 | 17 | US-173 | 受信日時書式の統一（YYYY/MM/DD HH:MM:SS） | P1 |
 | 17 | US-174 | 詳細ペインナビゲーションバーの位置調整 | P1 |
+| 17 | US-175 | source / event_type フィルタの相互連動 | P1 |
 
 ## バックログ（未着手）
 
 > 受け入れ基準など詳細は [`user-stories-backlog.md`](./user-stories-backlog.md) を参照。
 
-> Phase 16 の全 US（US-158〜US-167）は完了済み。
-
-| Phase | ID | タイトル | 優先度 |
-|-------|----|---------|--------|
-| 17 | US-175 | source / event_type フィルタの相互連動 | P1 |
+> Phase 16 の全 US（US-158〜US-167）は完了済み。Phase 17 の全 US（US-168〜US-175）は完了済み。
 
 ## バックログ・ストーリー候補
 
