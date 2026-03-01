@@ -94,14 +94,14 @@ interface FieldRowProps {
   onDescriptionSave?: (path: string, description: string) => Promise<void>;
 }
 
-/** US-147/157: 全展開/折りたたみのトリガーを受け取り、expanded を更新。
- * US-157: 初期化時に expandAll > 0 をチェックし、子ノードがマウント時から即展開されるようにする。 */
+/** US-147/157/159: 全展開/折りたたみのトリガーを受け取り、expanded を更新。
+ * US-159: デフォルト全展開のため expandAll 初期値を 1 にし、全 depth で defaultExpanded=true。 */
 function useExpandTrigger(isExpandable: boolean, defaultExpanded: boolean) {
   const triggers = useContext(ExpandTriggerContext);
   const [expanded, setExpanded] = useState(() => {
     if (!isExpandable) return false;
-    if (triggers.expandAll > 0) return true;
     if (triggers.collapseAll > 0) return false;
+    if (triggers.expandAll > 0) return true;
     return defaultExpanded;
   });
 
@@ -133,7 +133,8 @@ function FieldRow({
   const isObject = value !== null && typeof value === "object" && !Array.isArray(value);
   const isArray = Array.isArray(value);
   const isExpandable = isObject || isArray;
-  const [expanded, setExpanded] = useExpandTrigger(isExpandable, depth < 2);
+  /** US-159: デフォルト全展開のため depth に関わらず true */
+  const [expanded, setExpanded] = useExpandTrigger(isExpandable, true);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [editingDesc, setEditingDesc] = useState(false);
   const [editValue, setEditValue] = useState("");
@@ -326,7 +327,8 @@ export function PayloadTable({
   definitionEditable,
   onDescriptionSave,
 }: PayloadTableProps) {
-  const [expandTrigger, setExpandTrigger] = useState(0);
+  /** US-159: 初期表示で全階層を展開するため 1 で初期化 */
+  const [expandTrigger, setExpandTrigger] = useState(1);
   const [collapseTrigger, setCollapseTrigger] = useState(0);
 
   return (
