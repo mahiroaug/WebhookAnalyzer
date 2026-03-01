@@ -1023,3 +1023,14 @@ Web3 エンジニアとして、サービス接続状況パネルを一目で把
   - Given パネルが表示されている、When 各行を確認する、Then Part 列（Public/Local/WEB/DB/LLM）と Component 列（ngrok/Uvicorn/Vite/PostgreSQL/Ollama）の 2列で表示され、ステータスは絵文字（🟢/⚫）のみで表現されている … **OK**
   - Given パネルが表示されている、When DB・LLM の URL 列を確認する、Then Docker 内部名（`db:5432`, `ollama:11434`）ではなくホストから到達可能な `http://localhost:PORT` 形式で表示されている … **OK**
   - Given パネルが表示されている、When WEB 行を確認する、Then Vite の稼働状況が Live/Offline で表示され URL は `http://localhost:5173` である … **OK**
+
+### US-178 ヘルスチェックの信頼性向上（P1）【完了】
+
+Web3 エンジニアとして、各サービスの稼働状況をより正確に把握したい。
+なぜなら現状は「API が応答するか」の表面的なチェックのみで、モデル未ロードやトンネル不通といった実運用上の障害を検知できないから。
+
+- 受け入れ基準
+  - Given Ollama API は起動しているがモデル `gemma3:4b` が未ロードである、When パネルを確認する、Then LLM 行のステータスが Offline（⚫）で表示され、ホバー時に「model not loaded」等の理由が表示される … **OK**: /api/tags の models にモデルが含まれるか確認
+  - Given 各サービスがすべて Live である、When パネルを確認する、Then 各行にレイテンシ（例: `12ms`）が表示され、パネル下部に「最終確認: Xs前」が表示される … **OK**
+  - Given ngrok トンネルは存在するが公開 URL への外部到達が不可能である、When パネルを確認する、Then Public 行のステータスが Offline（⚫）で表示される … **OK**: 公開 URL への HEAD リクエストで E2E 疎通確認
+  - Given いずれかのサービスが Offline である、When 絵文字にホバーする、Then エラー理由（接続拒否/タイムアウト等）がツールチップで表示される … **OK**

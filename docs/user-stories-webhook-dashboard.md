@@ -179,14 +179,13 @@ Webhook Analyzer を `webhook.site` のような「受信確認 + 高速調査 +
 | 17 | US-175 | source / event_type フィルタの相互連動 | P1 |
 | 18 | US-176 | INBOX ヘッダーの簡素化と URL 全文表示 | P1 |
 | 19 | US-177 | ServiceStatusPanel の 2列ラベル化とコンパクト表示 | P1 |
+| 19 | US-178 | ヘルスチェックの信頼性向上 | P1 |
 
 ## バックログ（未着手）
 
 > 受け入れ基準など詳細は [`user-stories-backlog.md`](./user-stories-backlog.md) を参照。
 
-| Phase | ID | タイトル | 優先度 |
-|-------|----|---------|--------|
-| 19 | US-178 | ヘルスチェックの信頼性向上 | P1 |
+> Phase 19 の全 US（US-177〜US-178）は完了済み。
 
 > Phase 16 の全 US（US-158〜US-167）は完了済み。Phase 17 の全 US（US-168〜US-175）は完了済み。
 
