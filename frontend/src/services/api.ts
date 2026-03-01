@@ -148,6 +148,23 @@ export async function getAdjacentWebhooks(
   return res.json();
 }
 
+/** US-166: Webhook PDF レポートをダウンロード */
+export async function exportWebhookPdf(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/webhooks/${id}/export/pdf`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const blob = await res.blob();
+  const disposition = res.headers.get("Content-Disposition");
+  const filename = disposition?.match(/filename="?([^";]+)"?/)?.[1] ?? `webhook-${id}.pdf`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export interface EventTypeGroup {
   event_type: string;
   count: number;

@@ -7,6 +7,7 @@ import {
   getAdjacentWebhooks,
   triggerAnalyzeStream,
   replayWebhook,
+  exportWebhookPdf,
   getDefinitionStatus,
   getDefinitionContent,
   updateFieldDescription,
@@ -559,6 +560,13 @@ export function WebhookDetailPage() {
               className="rounded border border-slate-400 dark:border-slate-500 bg-transparent px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50"
             >
               再送
+            </button>
+            <button
+              type="button"
+              onClick={() => exportWebhookPdf(webhook.id).catch((e) => alert(e?.message ?? "Export failed"))}
+              className="rounded border border-slate-400 dark:border-slate-500 bg-transparent px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50"
+            >
+              Export PDF
             </button>
           </div>
           <span className="flex items-center gap-2">

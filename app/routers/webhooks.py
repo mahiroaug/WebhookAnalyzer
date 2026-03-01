@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, Response
 from sqlalchemy import Text, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,6 +30,7 @@ from app.schemas.webhook import (
     WebhookReceiveResponse,
 )
 from app.services.alert_rules import evaluate_rules
+from app.services.pdf_export import build_webhook_pdf
 from app.services.classifier import classify_webhook
 from app.services.field_templates import get_field_template
 from app.services.schema_drift import (
@@ -630,6 +631,47 @@ async def get_webhook(
         matched_rules=[
             MatchedRule(id=r["id"], name=r["name"]) for r in evaluate_rules(webhook.payload or {})
         ],
+    )
+
+
+@router.get("/{webhook_id}/export/pdf")
+async def export_webhook_pdf(
+    webhook_id: UUID,
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    """US-166: 個別 Webhook を PDF レポートとしてダウンロード"""
+    wh_stmt = select(Webhook).where(Webhook.id == webhook_id)
+    wh_result = await db.execute(wh_stmt)
+    webhook = wh_result.scalar_one_or_none()
+    if not webhook:
+        raise HTTPException(status_code=404, detail="Webhook not found")
+
+    anal_stmt = select(WebhookAnalysis).where(WebhookAnalysis.webhook_id == webhook_id)
+    anal_result = await db.execute(anal_stmt)
+    analysis = anal_result.scalar_one_or_none()
+
+    summary = analysis.summary if analysis else None
+    explanation = analysis.explanation if analysis else None
+    field_descriptions = analysis.field_descriptions if analysis else None
+
+    pdf_bytes = build_webhook_pdf(
+        source=webhook.source,
+        event_type=webhook.event_type,
+        group_key=webhook.group_key,
+        received_at=webhook.received_at,
+        http_method=webhook.http_method,
+        remote_ip=webhook.remote_ip,
+        request_headers=webhook.request_headers,
+        payload=webhook.payload or {},
+        analysis_summary=summary,
+        analysis_explanation=explanation,
+        analysis_field_descriptions=field_descriptions,
+    )
+    filename = f"webhook-{webhook_id}-{webhook.source}-{webhook.event_type}.pdf".replace(" ", "_")
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

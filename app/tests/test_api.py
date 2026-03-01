@@ -379,3 +379,21 @@ async def test_replay_webhook_success(
     assert data["success"] is True
     assert data["status_code"] == 200
     assert "elapsed_ms" in data
+
+
+@pytest.mark.asyncio
+async def test_export_webhook_pdf(
+    bitgo_transfer_payload: dict,
+) -> None:
+    """US-166: PDF エクスポート API が PDF を返す"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        post_resp = await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+        webhook_id = post_resp.json()["id"]
+        resp = await client.get(f"/api/webhooks/{webhook_id}/export/pdf")
+    assert resp.status_code == 200
+    assert resp.headers.get("content-type", "").startswith("application/pdf")
+    assert "attachment" in resp.headers.get("content-disposition", "").lower()
+    assert len(resp.content) > 500
