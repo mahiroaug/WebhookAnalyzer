@@ -209,16 +209,16 @@ export function WebhookListPane({
             />
             Unread Only
           </label>
-          {items.some((w) => !w.is_read) && (
-            <button
-              type="button"
-              onClick={handleMarkAllRead}
-              disabled={markingAll}
-              className="text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
-            >
-              {markingAll ? "..." : "Mark All Read"}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={handleMarkAllRead}
+            disabled={markingAll || !items.some((w) => !w.is_read)}
+            className={`text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 ${
+              items.some((w) => !w.is_read) ? "" : "invisible"
+            }`}
+          >
+            {markingAll ? "..." : "Mark All Read"}
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -391,9 +391,9 @@ export function WebhookListPane({
                   isSelected
                     ? "text-xs bg-blue-50 dark:bg-blue-900/30 border-l-2 border-l-blue-400"
                     : isUnread
-                      ? "text-sm font-semibold border-l-2 border-l-pink-400 bg-pink-50/80 dark:bg-pink-900/25 hover:bg-pink-100/80 dark:hover:bg-pink-900/35"
+                      ? "text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800/40"
                       : "text-xs hover:bg-slate-50 dark:hover:bg-slate-800/40"
-                }`}
+                } ${isNew ? "new-arrival-glow" : isUnread ? "unread-glow" : ""}`}
               >
                 <SourceIcon source={w.source} size="w-5 h-5 mt-0.5" />
                 <div className="flex-1 min-w-0">
