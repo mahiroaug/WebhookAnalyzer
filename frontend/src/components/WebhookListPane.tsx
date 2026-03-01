@@ -6,6 +6,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useWebhookWebSocket } from "../hooks/useWebhookWebSocket";
+import { useDebounce } from "../hooks/useDebounce";
 import {
   listWebhooks,
   getStats,
@@ -65,6 +66,10 @@ export function WebhookListPane({
 
   const loadRef = useRef<(newId?: string) => void>(() => {});
 
+  /** US-164: 300ms デバウンスで API 呼び出しを抑制 */
+  const debouncedSource = useDebounce(filterSource, 300);
+  const debouncedEventType = useDebounce(filterEventType, 300);
+
   const handleItemClick = useCallback(
     (item: WebhookListItem) => {
       if (!item.is_read) {
@@ -85,8 +90,8 @@ export function WebhookListPane({
       const effectivePage = newId ? 1 : page;
       if (newId && page !== 1) setPage(1);
       const res = await listWebhooks({
-        source: filterSource || undefined,
-        event_type: filterEventType || undefined,
+        source: debouncedSource || undefined,
+        event_type: debouncedEventType || undefined,
         q: searchQuery.trim() || undefined,
         limit: PAGE_SIZE,
         offset: (effectivePage - 1) * PAGE_SIZE,
@@ -108,11 +113,15 @@ export function WebhookListPane({
   }
   loadRef.current = load;
 
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load uses debouncedSource, debouncedEventType, searchQuery, page from closure
+  }, [debouncedSource, debouncedEventType, searchQuery, page]);
+
   const { connected, status, reconnect } = useWebhookWebSocket((newId) => {
     loadRef.current(newId);
   });
 
-  useEffect(() => { load(); }, [filterSource, filterEventType, searchQuery, page]);
 
   useEffect(() => {
     getStats()
