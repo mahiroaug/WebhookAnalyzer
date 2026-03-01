@@ -87,7 +87,7 @@ function AnalysisLogViewer({ logs, totalElapsedMs }: { logs: AnalysisLogEntry[];
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="mt-1 p-2 rounded border border-slate-600 dark:border-slate-600 bg-slate-900/50 text-xs font-mono text-slate-400 max-h-60 overflow-y-auto"
+          className="mt-1 p-2 rounded border border-slate-600 dark:border-slate-600 bg-slate-900/50 text-xs font-mono text-slate-400 max-h-[960px] overflow-y-auto"
         >
           {logs.map((entry, i) => (
             <div key={i} className="mb-2">
@@ -110,7 +110,7 @@ function AnalysisLogViewer({ logs, totalElapsedMs }: { logs: AnalysisLogEntry[];
 }
 
 function CollapsibleBlock({ label, content }: { label: string; content: string }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   return (
     <div className="mt-1 ml-2">
       <button
@@ -121,7 +121,7 @@ function CollapsibleBlock({ label, content }: { label: string; content: string }
         {open ? "▼" : "▶"} {label}
       </button>
       {open && (
-        <pre className="mt-0.5 p-2 rounded bg-slate-950/80 text-[10px] overflow-x-auto whitespace-pre-wrap break-words max-h-32 overflow-y-auto">
+        <pre className="mt-0.5 p-2 rounded bg-slate-950/80 text-[10px] overflow-x-auto whitespace-pre-wrap break-words max-h-[512px] overflow-y-auto">
           {content}
         </pre>
       )}
