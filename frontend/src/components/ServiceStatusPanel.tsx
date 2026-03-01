@@ -54,7 +54,7 @@ export function ServiceStatusPanel() {
       }
     };
     fetchServices();
-    const interval = setInterval(fetchServices, 30_000);
+    const interval = setInterval(fetchServices, 15 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
