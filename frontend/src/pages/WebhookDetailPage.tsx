@@ -10,6 +10,7 @@ import {
   getDefinitionContent,
   updateFieldDescription,
   mergeDefinition,
+  markWebhookRead,
   type WebhookDetail,
   type WebhookAnalysisResponse,
   type FieldTemplateResponse,
@@ -37,7 +38,13 @@ interface AnalysisLogEntry {
 }
 
 /** US-134/152: 分析ログビューア（時刻・折りたたみプロンプト/回答・自動スクロール） */
-function AnalysisLogViewer({ logs, totalElapsedMs }: { logs: AnalysisLogEntry[]; totalElapsedMs?: number | null }) {
+function AnalysisLogViewer({
+  logs,
+  totalElapsedMs,
+}: {
+  logs: AnalysisLogEntry[];
+  totalElapsedMs?: number | null;
+}) {
   const [open, setOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [userScrolledUp, setUserScrolledUp] = useState(false);
@@ -66,7 +73,12 @@ function AnalysisLogViewer({ logs, totalElapsedMs }: { logs: AnalysisLogEntry[];
     if (!ts) return "";
     try {
       const d = new Date(ts);
-      return d.toLocaleTimeString("ja-JP", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      return d.toLocaleTimeString("ja-JP", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
     } catch {
       return "";
     }
@@ -81,7 +93,9 @@ function AnalysisLogViewer({ logs, totalElapsedMs }: { logs: AnalysisLogEntry[];
       >
         {open ? "▼" : "▶"} 分析ログ ({logs.length})
         {totalElapsedMs != null && (
-          <span className="text-slate-500 dark:text-dim-text-muted">・{Math.round(totalElapsedMs / 1000)}s</span>
+          <span className="text-slate-500 dark:text-dim-text-muted">
+            ・{Math.round(totalElapsedMs / 1000)}s
+          </span>
         )}
       </button>
       {open && (
@@ -130,7 +144,13 @@ function CollapsibleBlock({ label, content }: { label: string; content: string }
   );
 }
 
-function RequestHeadersDetails({ headers, count }: { headers: Record<string, string>; count: number }) {
+function RequestHeadersDetails({
+  headers,
+  count,
+}: {
+  headers: Record<string, string>;
+  count: number;
+}) {
   const [open, setOpen] = useState(() => {
     try {
       return localStorage.getItem(REQUEST_HEADERS_STORAGE_KEY) === "1";
@@ -141,7 +161,9 @@ function RequestHeadersDetails({ headers, count }: { headers: Record<string, str
   useEffect(() => {
     try {
       localStorage.setItem(REQUEST_HEADERS_STORAGE_KEY, open ? "1" : "0");
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, [open]);
   return (
     <div className="mt-3">
@@ -201,9 +223,16 @@ interface WebhookDetailPageProps {
   webhookId?: string;
   onNavBarData?: (data: DetailNavBarData) => void;
   onNavigate?: (id: string) => void;
+  /** 詳細ペインに表示されたとき（既読化時）に親へ通知 */
+  onMarkedRead?: (id: string) => void;
 }
 
-export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNavigate }: WebhookDetailPageProps) {
+export function WebhookDetailPage({
+  webhookId: webhookIdProp,
+  onNavBarData,
+  onNavigate,
+  onMarkedRead,
+}: WebhookDetailPageProps) {
   const { id: idFromParams } = useParams<{ id: string }>();
   const id = webhookIdProp ?? idFromParams ?? undefined;
   const navigate = useNavigate();
@@ -212,7 +241,10 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
   const [webhook, setWebhook] = useState<WebhookDetail | null>(null);
   const [analysis, setAnalysis] = useState<WebhookAnalysisResponse | null>(null);
   const [fieldTemplate, setFieldTemplate] = useState<FieldTemplateResponse | null>(null);
-  const [adjacent, setAdjacent] = useState<{ prev_id: string | null; next_id: string | null } | null>(null);
+  const [adjacent, setAdjacent] = useState<{
+    prev_id: string | null;
+    next_id: string | null;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
@@ -248,16 +280,21 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
       const raw = sessionStorage.getItem(storageKey);
       if (!raw) return;
       const parsed = JSON.parse(raw);
-      const arr = Array.isArray(parsed) ? parsed : parsed?.logs ?? [];
+      const arr = Array.isArray(parsed) ? parsed : (parsed?.logs ?? []);
       const storedLogs: AnalysisLogEntry[] = arr.map((e: unknown) =>
-        typeof e === "string" ? { message: e } : (e as AnalysisLogEntry)
+        typeof e === "string" ? { message: e } : (e as AnalysisLogEntry),
       );
-      const storedElapsed = !Array.isArray(parsed) && typeof parsed?.elapsedMs === "number" ? parsed.elapsedMs : undefined;
+      const storedElapsed =
+        !Array.isArray(parsed) && typeof parsed?.elapsedMs === "number"
+          ? parsed.elapsedMs
+          : undefined;
       if (storedLogs.length) {
         setAnalysisLogs(storedLogs);
         if (storedElapsed != null) setStreamElapsedMs(storedElapsed);
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, [id, analyzing]);
 
   /** US-153: Webhook 切替時に分析ログをリセット */
@@ -286,10 +323,9 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
           setWebhook(detailRes);
           setAnalysis(analysisRes ?? null);
           setAdjacent(adjacentRes);
-          const templateRes = await getFieldTemplate(
-            detailRes.source,
-            detailRes.event_type
-          );
+          markWebhookRead(webhookId).catch(() => {});
+          onMarkedRead?.(webhookId);
+          const templateRes = await getFieldTemplate(detailRes.source, detailRes.event_type);
           if (!cancelled) setFieldTemplate(templateRes ?? null);
         }
       } catch {
@@ -302,7 +338,9 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
       }
     }
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps -- webhook used only for stale check
 
   /** US-141: 定義ファイルが存在し編集可能な場合に getDefinitionStatus で確認 */
@@ -313,9 +351,15 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
     }
     let cancelled = false;
     getDefinitionStatus(webhook.source, webhook.event_type)
-      .then((s) => { if (!cancelled) setDefinitionWritable(s.exists && s.writable); })
-      .catch(() => { if (!cancelled) setDefinitionWritable(false); });
-    return () => { cancelled = true; };
+      .then((s) => {
+        if (!cancelled) setDefinitionWritable(s.exists && s.writable);
+      })
+      .catch(() => {
+        if (!cancelled) setDefinitionWritable(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [webhook?.id, webhook?.source, webhook?.event_type]);
 
   const goPrev = useCallback(() => {
@@ -360,7 +404,9 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
   const [llmProvider, setLlmProvider] = useState("ollama");
   const [llmModel, setLlmModel] = useState("");
   const [compareMode, setCompareMode] = useState(false);
-  const [compareResults, setCompareResults] = useState<Array<{ provider: string; model: string; result: WebhookAnalysisResponse }>>([]);
+  const [compareResults, setCompareResults] = useState<
+    Array<{ provider: string; model: string; result: WebhookAnalysisResponse }>
+  >([]);
 
   /** US-141: 定義ファイル編集可否 */
   const [definitionWritable, setDefinitionWritable] = useState(false);
@@ -377,25 +423,32 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
   const [maskEnabled, setMaskEnabled] = useState(() => {
     try {
       return localStorage.getItem("webhook-mask-enabled") !== "0";
-    } catch { return true; }
+    } catch {
+      return true;
+    }
   });
   useEffect(() => {
     try {
       localStorage.setItem("webhook-mask-enabled", maskEnabled ? "1" : "0");
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, [maskEnabled]);
 
   /** US-141: 定義ファイルの description を保存して再取得 */
-  const handleDescriptionSave = useCallback(async (path: string, description: string) => {
-    if (!webhook) return;
-    await updateFieldDescription(webhook.source, webhook.event_type, path, description);
-    const [analysisRes, templateRes] = await Promise.all([
-      getAnalysis(webhook.id),
-      getFieldTemplate(webhook.source, webhook.event_type),
-    ]);
-    setAnalysis(analysisRes ?? null);
-    setFieldTemplate(templateRes ?? null);
-  }, [webhook]);
+  const handleDescriptionSave = useCallback(
+    async (path: string, description: string) => {
+      if (!webhook) return;
+      await updateFieldDescription(webhook.source, webhook.event_type, path, description);
+      const [analysisRes, templateRes] = await Promise.all([
+        getAnalysis(webhook.id),
+        getFieldTemplate(webhook.source, webhook.event_type),
+      ]);
+      setAnalysis(analysisRes ?? null);
+      setFieldTemplate(templateRes ?? null);
+    },
+    [webhook],
+  );
 
   /** US-174: 親にナビゲーションデータを渡す（タブ直下の DetailNavBar 用） */
   useEffect(() => {
@@ -437,9 +490,10 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
             if (step && step in p) return { ...p, [step]: true };
             return p;
           });
-          if (ev.step === "saved" && ev.analysis) setAnalysis(ev.analysis as WebhookAnalysisResponse);
+          if (ev.step === "saved" && ev.analysis)
+            setAnalysis(ev.analysis as WebhookAnalysisResponse);
         },
-        { provider: llmProvider, model: llmModel || undefined }
+        { provider: llmProvider, model: llmModel || undefined },
       );
       if (res) {
         if (compareMode) {
@@ -453,12 +507,15 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
         if (webhook && !res.summary?.startsWith("[分析失敗]")) {
           try {
             const existing = await getDefinitionContent(webhook.source, webhook.event_type);
-            const diff = computeDiff(
-              existing,
-              { summary: res.summary, field_descriptions: res.field_descriptions || {} }
-            );
+            const diff = computeDiff(existing, {
+              summary: res.summary,
+              field_descriptions: res.field_descriptions || {},
+            });
             const hasChanges =
-              diff.added.length > 0 || diff.removed.length > 0 || diff.changed.length > 0 || diff.summaryChanged;
+              diff.added.length > 0 ||
+              diff.removed.length > 0 ||
+              diff.changed.length > 0 ||
+              diff.summaryChanged;
             if (hasChanges) {
               setDiffModal({ diff, newResult: res });
             }
@@ -472,9 +529,11 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
         try {
           sessionStorage.setItem(
             `webhook-analysis-logs-${id}`,
-            JSON.stringify({ logs, elapsedMs: lastElapsedMs ?? undefined })
+            JSON.stringify({ logs, elapsedMs: lastElapsedMs ?? undefined }),
           );
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
     } catch (e) {
       setAnalyzeError(e instanceof Error ? e.message : "不明なエラー");
@@ -512,19 +571,14 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
       setDiffModal(null);
       await refetchAfterMerge();
     },
-    [webhook, diffModal, refetchAfterMerge]
+    [webhook, diffModal, refetchAfterMerge],
   );
 
-  const analysisFailed =
-    analysis?.summary?.startsWith("[分析失敗]") ?? false;
+  const analysisFailed = analysis?.summary?.startsWith("[分析失敗]") ?? false;
 
   // US-132: 初回アクセス時はスケルトン、遷移時は前コンテンツを表示し続ける
   if (!loading && !webhook) {
-    return (
-      <div className="text-slate-500 dark:text-dim-text-muted">
-        Webhook が見つかりません
-      </div>
-    );
+    return <div className="text-slate-500 dark:text-dim-text-muted">Webhook が見つかりません</div>;
   }
 
   if (loading && !webhook) {
@@ -570,14 +624,18 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
           <dd className="font-mono">{webhook.group_key}</dd>
           <dt className="text-slate-500 dark:text-slate-400">received_at</dt>
           <dd className="font-mono">{formatReceivedAt(webhook.received_at)}</dd>
-          {webhook.http_method && <>
-            <dt className="text-slate-500 dark:text-slate-400">HTTP メソッド</dt>
-            <dd className="font-mono">{webhook.http_method}</dd>
-          </>}
-          {webhook.remote_ip && <>
-            <dt className="text-slate-500 dark:text-slate-400">送信元 IP</dt>
-            <dd className="font-mono">{webhook.remote_ip}</dd>
-          </>}
+          {webhook.http_method && (
+            <>
+              <dt className="text-slate-500 dark:text-slate-400">HTTP メソッド</dt>
+              <dd className="font-mono">{webhook.http_method}</dd>
+            </>
+          )}
+          {webhook.remote_ip && (
+            <>
+              <dt className="text-slate-500 dark:text-slate-400">送信元 IP</dt>
+              <dd className="font-mono">{webhook.remote_ip}</dd>
+            </>
+          )}
         </dl>
         {webhook.request_headers && Object.keys(webhook.request_headers).length > 0 && (
           <RequestHeadersDetails
@@ -630,7 +688,9 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
                     document.execCommand("copy", false, text);
                     setJsonCopyFeedback(true);
                     setTimeout(() => setJsonCopyFeedback(false), 1000);
-                  } catch { /* ignore */ }
+                  } catch {
+                    /* ignore */
+                  }
                 }
               }}
               className="flex items-center gap-1 text-xs px-2 py-1 rounded border border-slate-600 text-slate-300 hover:bg-slate-700"
@@ -639,27 +699,35 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
             </button>
           )}
         </div>
-        {payloadViewMode === "table" && <PayloadTable
-          data={webhook.payload}
-          maskEnabled={maskEnabled}
-          templateDescriptions={
-            fieldTemplate?.fields?.length
-              ? new Map(fieldTemplate.fields.map((f) => [f.path, f.description]))
-              : undefined
-          }
-          analysisDescriptions={analysis?.field_descriptions}
-          knownFieldPaths={(() => {
-            const templatePaths = fieldTemplate?.fields?.length ? fieldTemplate.fields.map((f) => f.path) : [];
-            const analysisKeys = analysis?.field_descriptions ? Object.keys(analysis.field_descriptions) : [];
-            return (templatePaths.length > 0 || analysisKeys.length > 0)
-              ? new Set([...templatePaths, ...analysisKeys])
-              : undefined;
-          })()}
-          definitionEditable={
-            definitionWritable ? { source: webhook.source, eventType: webhook.event_type } : undefined
-          }
-          onDescriptionSave={definitionWritable ? handleDescriptionSave : undefined}
-        />}
+        {payloadViewMode === "table" && (
+          <PayloadTable
+            data={webhook.payload}
+            maskEnabled={maskEnabled}
+            templateDescriptions={
+              fieldTemplate?.fields?.length
+                ? new Map(fieldTemplate.fields.map((f) => [f.path, f.description]))
+                : undefined
+            }
+            analysisDescriptions={analysis?.field_descriptions}
+            knownFieldPaths={(() => {
+              const templatePaths = fieldTemplate?.fields?.length
+                ? fieldTemplate.fields.map((f) => f.path)
+                : [];
+              const analysisKeys = analysis?.field_descriptions
+                ? Object.keys(analysis.field_descriptions)
+                : [];
+              return templatePaths.length > 0 || analysisKeys.length > 0
+                ? new Set([...templatePaths, ...analysisKeys])
+                : undefined;
+            })()}
+            definitionEditable={
+              definitionWritable
+                ? { source: webhook.source, eventType: webhook.event_type }
+                : undefined
+            }
+            onDescriptionSave={definitionWritable ? handleDescriptionSave : undefined}
+          />
+        )}
         {payloadViewMode === "json" && (
           <pre className="rounded-lg border border-slate-600 bg-slate-900/50 p-4 text-xs font-mono text-slate-300 overflow-x-auto overflow-y-auto max-h-[480px] whitespace-pre-wrap break-words">
             {JSON.stringify(webhook.payload ?? {}, null, 2)}
@@ -673,29 +741,43 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
           title="AI 分析結果"
           defaultOpen={false}
           badge={
-            analysisFailed
-              ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-900/30 text-red-300">失敗</span>
-              : analysis.from_definition_file
-                ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-300">定義ファイルから読み込み</span>
-                : undefined
+            analysisFailed ? (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-900/30 text-red-300">
+                失敗
+              </span>
+            ) : analysis.from_definition_file ? (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-600/50 text-slate-300">
+                定義ファイルから読み込み
+              </span>
+            ) : undefined
           }
         >
           {/* US-127: 3 層表示（概要・個別解説・Key 説明） */}
           {analysis.summary && (
             <div className="mb-4">
-              <h4 className="text-xs font-medium text-slate-500 dark:text-dim-text-muted mb-1">概要</h4>
-              <p className={`text-sm whitespace-pre-wrap ${analysisFailed ? "text-red-400" : "text-slate-300"}`}>{analysis.summary}</p>
+              <h4 className="text-xs font-medium text-slate-500 dark:text-dim-text-muted mb-1">
+                概要
+              </h4>
+              <p
+                className={`text-sm whitespace-pre-wrap ${analysisFailed ? "text-red-400" : "text-slate-300"}`}
+              >
+                {analysis.summary}
+              </p>
             </div>
           )}
           {analysis.explanation && !analysis.from_definition_file && (
             <div className="mb-4">
-              <h4 className="text-xs font-medium text-slate-500 dark:text-dim-text-muted mb-1">個別解説</h4>
+              <h4 className="text-xs font-medium text-slate-500 dark:text-dim-text-muted mb-1">
+                個別解説
+              </h4>
               <p className="text-sm text-slate-300 whitespace-pre-wrap">{analysis.explanation}</p>
             </div>
           )}
           {analysis.field_descriptions && Object.keys(analysis.field_descriptions).length > 0 && (
             <div>
-              <h4 className="text-xs font-medium text-slate-500 dark:text-dim-text-muted mb-2">Key 説明</h4>
+              <h4 className="text-xs font-medium text-slate-500 dark:text-dim-text-muted mb-2">
+                Key 説明
+              </h4>
               <dl className="space-y-2">
                 {Object.entries(analysis.field_descriptions).map(([key, desc]) => (
                   <div key={key} className="flex gap-2">
@@ -716,24 +798,39 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
           id="drift"
           title="スキーマドリフト"
           defaultOpen={false}
-          badge={webhook.schema_drift.risk_level === "high"
-            ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-900/30 text-red-300">高リスク</span>
-            : <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/30 text-amber-300">検知</span>
+          badge={
+            webhook.schema_drift.risk_level === "high" ? (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-900/30 text-red-300">
+                高リスク
+              </span>
+            ) : (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/30 text-amber-300">
+                検知
+              </span>
+            )
           }
         >
           <div className="space-y-2 text-sm">
             {webhook.schema_drift.added && webhook.schema_drift.added.length > 0 && (
-              <div><span className="font-medium text-green-400">追加:</span> <span className="font-mono">{webhook.schema_drift.added.join(", ")}</span></div>
+              <div>
+                <span className="font-medium text-green-400">追加:</span>{" "}
+                <span className="font-mono">{webhook.schema_drift.added.join(", ")}</span>
+              </div>
             )}
             {webhook.schema_drift.removed && webhook.schema_drift.removed.length > 0 && (
-              <div><span className="font-medium text-red-400">削除:</span> <span className="font-mono">{webhook.schema_drift.removed.join(", ")}</span></div>
+              <div>
+                <span className="font-medium text-red-400">削除:</span>{" "}
+                <span className="font-mono">{webhook.schema_drift.removed.join(", ")}</span>
+              </div>
             )}
             {webhook.schema_drift.type_changed && webhook.schema_drift.type_changed.length > 0 && (
               <div>
                 <span className="font-medium text-amber-400">型変更:</span>
                 <ul className="mt-1 list-disc list-inside space-y-0.5">
                   {webhook.schema_drift.type_changed.map((tc, i) => (
-                    <li key={i} className="font-mono text-xs">{tc.path}: {tc.expected_type} → {tc.actual_type}</li>
+                    <li key={i} className="font-mono text-xs">
+                      {tc.path}: {tc.expected_type} → {tc.actual_type}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -756,29 +853,31 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {compareResults.map((cr, i) => (
-              <div
-                key={i}
-                className="rounded border border-slate-600 bg-slate-800/50 p-3 text-sm"
-              >
+              <div key={i} className="rounded border border-slate-600 bg-slate-800/50 p-3 text-sm">
                 <div className="text-xs font-medium text-slate-400 mb-2">
                   {cr.provider} / {cr.model}
                 </div>
                 {cr.result.summary && (
                   <p className="text-slate-300 text-xs mb-2 line-clamp-3">{cr.result.summary}</p>
                 )}
-                {cr.result.field_descriptions && Object.keys(cr.result.field_descriptions).length > 0 && (
-                  <dl className="space-y-1 text-xs">
-                    {Object.entries(cr.result.field_descriptions).slice(0, 3).map(([k, v]) => (
-                      <div key={k} className="flex gap-1">
-                        <dt className="font-mono text-[#D4A574] shrink-0">{k}:</dt>
-                        <dd className="text-slate-400 truncate">{v}</dd>
-                      </div>
-                    ))}
-                    {Object.keys(cr.result.field_descriptions).length > 3 && (
-                      <span className="text-slate-500">…他 {Object.keys(cr.result.field_descriptions).length - 3} 件</span>
-                    )}
-                  </dl>
-                )}
+                {cr.result.field_descriptions &&
+                  Object.keys(cr.result.field_descriptions).length > 0 && (
+                    <dl className="space-y-1 text-xs">
+                      {Object.entries(cr.result.field_descriptions)
+                        .slice(0, 3)
+                        .map(([k, v]) => (
+                          <div key={k} className="flex gap-1">
+                            <dt className="font-mono text-[#D4A574] shrink-0">{k}:</dt>
+                            <dd className="text-slate-400 truncate">{v}</dd>
+                          </div>
+                        ))}
+                      {Object.keys(cr.result.field_descriptions).length > 3 && (
+                        <span className="text-slate-500">
+                          …他 {Object.keys(cr.result.field_descriptions).length - 3} 件
+                        </span>
+                      )}
+                    </dl>
+                  )}
               </div>
             ))}
           </div>
@@ -801,9 +900,18 @@ export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData, onNa
             className="rounded border border-slate-400 dark:border-slate-500 bg-transparent px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
           >
             {analyzing && (
-              <span className="inline-block w-4 h-4 border-2 border-slate-400 dark:border-slate-400 border-t-transparent rounded-full us133-spinner" aria-hidden />
+              <span
+                className="inline-block w-4 h-4 border-2 border-slate-400 dark:border-slate-400 border-t-transparent rounded-full us133-spinner"
+                aria-hidden
+              />
             )}
-            {analyzing ? "Analyzing..." : analyzeError ? "Retry" : analysis ? "Re-analyze" : "Analyze"}
+            {analyzing
+              ? "Analyzing..."
+              : analyzeError
+                ? "Retry"
+                : analysis
+                  ? "Re-analyze"
+                  : "Analyze"}
           </button>
           {streamElapsedMs != null && analyzing && (
             <span className="text-xs text-slate-500 dark:text-dim-text-muted">

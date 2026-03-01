@@ -3,15 +3,13 @@
  * Part/Component 2列、絵文字ステータス、レイテンシ、最終確認時刻、エラー表示
  */
 import { useCallback, useEffect, useState } from "react";
-import { getHealthServices, type HealthServicesResponse, type ServiceStatus } from "../services/api";
+import {
+  getHealthServices,
+  type HealthServicesResponse,
+  type ServiceStatus,
+} from "../services/api";
 
-function CopyableUrl({
-  url,
-  onCopy,
-}: {
-  url: string;
-  onCopy: (url: string) => void;
-}) {
+function CopyableUrl({ url, onCopy }: { url: string; onCopy: (url: string) => void }) {
   const [copied, setCopied] = useState(false);
   const handleClick = useCallback(() => {
     if (!url || url === "—") return;
@@ -21,13 +19,12 @@ function CopyableUrl({
     return () => clearTimeout(t);
   }, [url, onCopy]);
 
-  if (!url || url === "—")
-    return <span className="text-slate-400">—</span>;
+  if (!url || url === "—") return <span className="text-slate-400">—</span>;
   return (
     <button
       type="button"
       onClick={handleClick}
-      className="block w-full min-w-0 text-left truncate hover:text-blue-500 dark:hover:text-blue-400 transition-colors underline-offset-2 hover:underline"
+      className="block w-full min-w-0 text-left truncate text-slate-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors underline-offset-2 hover:underline"
       title="Click to copy"
     >
       {copied ? "✓ Copied" : url}
@@ -91,24 +88,36 @@ export function ServiceStatusPanel() {
   };
 
   return (
-    <div className="text-[10px] text-slate-600 dark:text-slate-400 min-w-0">
-      <table className="w-full border-collapse table-auto">
+    <div className="text-[10px] min-w-0 overflow-hidden">
+      <table className="w-full table-fixed border-collapse">
+        <colgroup>
+          <col className="w-11" />
+          <col className="w-13" />
+          <col className="w-3" />
+          <col className="w-9" />
+          <col />
+        </colgroup>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.part}>
-              <td className="py-0 pr-1 align-middle whitespace-nowrap">{row.part}</td>
-              <td className="py-0 pr-1 align-middle whitespace-nowrap text-slate-500 dark:text-slate-500">{row.component}</td>
-              <td className="py-0 pr-1 align-middle whitespace-nowrap" title={emojiTitle(row.status)}>
+            <tr
+              key={row.part}
+              className="border-b border-slate-100 dark:border-slate-700/30 hover:bg-slate-50 dark:hover:bg-slate-700/30"
+            >
+              <td className="py-0.5 pl-2 pr-0.5 font-mono text-[#D4A574] whitespace-nowrap">
+                {row.part}
+              </td>
+              <td className="py-0.5 pr-0.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                {row.component}
+              </td>
+              <td className="py-0.5 pr-0.5 whitespace-nowrap" title={emojiTitle(row.status)}>
                 {row.status.status === "live" ? "🟢" : "⚫"}
               </td>
-              <td className="py-0 pr-1 align-middle whitespace-nowrap">
-                {row.status.latency_ms != null && row.status.status === "live" ? (
-                  <span className="text-slate-500">{row.status.latency_ms}ms</span>
-                ) : (
-                  "—"
-                )}
+              <td className="py-0.5 pr-0.5 text-slate-500 dark:text-dim-text-muted whitespace-nowrap text-right">
+                {row.status.latency_ms != null && row.status.status === "live"
+                  ? `${row.status.latency_ms}ms`
+                  : "—"}
               </td>
-              <td className="py-0 align-middle min-w-0 overflow-hidden">
+              <td className="py-0.5 pr-1.5 pl-0 min-w-0 overflow-hidden">
                 <CopyableUrl url={row.url} onCopy={handleCopy} />
               </td>
             </tr>
@@ -116,8 +125,8 @@ export function ServiceStatusPanel() {
         </tbody>
       </table>
       {data.checked_at != null && (
-        <div className="mt-0.5 text-slate-500 dark:text-slate-500">
-          最終確認: {formatAgo(data.checked_at)}
+        <div className="pl-2 pr-1.5 py-0.5 text-slate-500 dark:text-dim-text-muted border-t border-slate-100 dark:border-slate-700/30">
+          Last checked: {formatAgo(data.checked_at)}
         </div>
       )}
     </div>

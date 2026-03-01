@@ -26,6 +26,7 @@ export function TwoPanePage() {
   const [selectedId, setSelectedId] = useState<string | null>(idFromParams || null);
   const [rightPane, setRightPane] = useState<RightPane>("detail");
   const [navBarData, setNavBarData] = useState<DetailNavBarData | null>(null);
+  const [markedReadFromDetail, setMarkedReadFromDetail] = useState<string | null>(null);
   const [filterSource, setFilterSource] = useState("");
   const [filterEventType, setFilterEventType] = useState("");
   const [paneWidth, setPaneWidth] = useState(() => {
@@ -116,6 +117,7 @@ export function TwoPanePage() {
           onFilterSourceChange={setFilterSource}
           onFilterEventTypeChange={setFilterEventType}
           searchQuery={searchQuery}
+          markedReadFromDetail={markedReadFromDetail}
         />
       </div>
 
@@ -159,7 +161,12 @@ export function TwoPanePage() {
 
         <div className="flex-1 overflow-y-auto p-4">
           {rightPane === "detail" && selectedId ? (
-            <WebhookDetailPage webhookId={selectedId} onNavigate={handleNavigate} onNavBarData={(d) => selectedId && d.webhook.id === selectedId && setNavBarData(d)} />
+            <WebhookDetailPage
+              webhookId={selectedId}
+              onNavigate={handleNavigate}
+              onNavBarData={(d) => selectedId && d.webhook.id === selectedId && setNavBarData(d)}
+              onMarkedRead={(id) => setMarkedReadFromDetail(id)}
+            />
           ) : rightPane === "detail" && !selectedId ? (
             <div className="flex items-center justify-center h-full text-slate-400 dark:text-dim-text-muted">
               左のリストから Webhook を選択してください

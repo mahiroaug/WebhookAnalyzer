@@ -18,6 +18,33 @@ import { SourceIcon } from "./SourceIcon";
 import { ServiceStatusPanel } from "./ServiceStatusPanel";
 import { formatReceivedAt } from "../utils/formatDate";
 
+/** 新着 Webhook の通知音（即時再生、同一 ID と連続到着を抑制） */
+let _seCooldown = 0;
+let _seLastId = "";
+function playNewArrivalSound(id: string) {
+  const now = Date.now();
+  if (id === _seLastId || now - _seCooldown < 2000) return;
+  _seCooldown = now;
+  _seLastId = id;
+  try {
+    const ctx = new AudioContext();
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = 520;
+    gain.gain.setValueAtTime(0.09, t);
+    gain.gain.linearRampToValueAtTime(0.07, t + 0.3);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.7);
+    osc.onended = () => ctx.close();
+  } catch {
+    /* autoplay policy でブロックされた場合は無視 */
+  }
+}
+
 /** US-161: 一覧ペインの表示件数拡大（500 件） */
 const PAGE_SIZE = 500;
 
@@ -29,6 +56,8 @@ interface WebhookListPaneProps {
   onFilterSourceChange: (v: string) => void;
   onFilterEventTypeChange: (v: string) => void;
   searchQuery?: string;
+  /** 詳細ペインで既読にされた ID（リストの表示を同期するため） */
+  markedReadFromDetail?: string | null;
 }
 
 export function WebhookListPane({
@@ -39,6 +68,7 @@ export function WebhookListPane({
   onFilterSourceChange,
   onFilterEventTypeChange,
   searchQuery = "",
+  markedReadFromDetail = null,
 }: WebhookListPaneProps) {
   const [items, setItems] = useState<WebhookListItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -49,10 +79,15 @@ export function WebhookListPane({
   const [availableEventTypes, setAvailableEventTypes] = useState<string[]>([]);
   const [sourceDropdownOpen, setSourceDropdownOpen] = useState(false);
   const [eventTypeDropdownOpen, setEventTypeDropdownOpen] = useState(false);
-  const [filterUnreadOnly, setFilterUnreadOnly] = useState(false);  // US-167
+  const [filterUnreadOnly, setFilterUnreadOnly] = useState(false); // US-167
   const [markingAll, setMarkingAll] = useState(false);
+  const [muted, setMuted] = useState(() => {
+    try { return localStorage.getItem("webhook-se-muted") === "1"; } catch { return false; }
+  });
 
   const loadRef = useRef<(newId?: string) => void>(() => {});
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
 
   /** US-164: 300ms デバウンスで API 呼び出しを抑制 */
   const debouncedSource = useDebounce(filterSource, 300);
@@ -62,13 +97,11 @@ export function WebhookListPane({
     (item: WebhookListItem) => {
       if (!item.is_read) {
         markWebhookRead(item.id).catch(() => {});
-        setItems((prev) =>
-          prev.map((w) => (w.id === item.id ? { ...w, is_read: true } : w))
-        );
+        setItems((prev) => prev.map((w) => (w.id === item.id ? { ...w, is_read: true } : w)));
       }
       onSelect(item.id);
     },
-    [onSelect]
+    [onSelect],
   );
 
   async function load(newId?: string) {
@@ -88,9 +121,14 @@ export function WebhookListPane({
       setItems(res.items);
       setTotal(res.total);
       if (newId && res.items.some((w) => w.id === newId)) {
+        if (!mutedRef.current) playNewArrivalSound(newId);
         setNewArrivalIds((prev) => new Set(prev).add(newId));
         setTimeout(() => {
-          setNewArrivalIds((p) => { const n = new Set(p); n.delete(newId); return n; });
+          setNewArrivalIds((p) => {
+            const n = new Set(p);
+            n.delete(newId);
+            return n;
+          });
         }, 3000);
       }
     } catch {
@@ -125,7 +163,6 @@ export function WebhookListPane({
     loadRef.current(newId);
   });
 
-
   /** US-175: source/event_type に応じてフィルタ候補を相互連動 */
   useEffect(() => {
     const src = filterSource.trim() || undefined;
@@ -141,16 +178,27 @@ export function WebhookListPane({
       });
   }, [filterSource, filterEventType]);
 
+  /** 詳細ペインで既読にされたらリストの表示を更新 */
+  useEffect(() => {
+    if (markedReadFromDetail) {
+      setItems((prev) =>
+        prev.map((w) =>
+          w.id === markedReadFromDetail ? { ...w, is_read: true } : w,
+        ),
+      );
+    }
+  }, [markedReadFromDetail]);
+
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
     <div className="flex flex-col h-full">
       <div className="px-3 py-2 border-b border-slate-200 dark:border-dim-border min-w-0">
-        {/* US-162: サービス接続状況（30秒ポーリング） */}
-        <div className="mb-2 rounded bg-slate-100 dark:bg-slate-800/50 px-2 py-1.5 min-w-0 overflow-hidden">
+        {/* 情報部: 詳細ペインとデザイン言語を統一 */}
+        <div className="mb-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden min-w-0">
           <ServiceStatusPanel />
         </div>
-        {/* US-167: Unread Only フィルタと Mark All Read */}
+        {/* US-167: Unread Only フィルタ / Mark All Read / ミュート */}
         <div className="flex flex-wrap items-center gap-2 mb-2">
           <label className="flex items-center gap-1 text-xs cursor-pointer">
             <input
@@ -171,20 +219,52 @@ export function WebhookListPane({
               {markingAll ? "..." : "Mark All Read"}
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => {
+              const next = !muted;
+              setMuted(next);
+              try { localStorage.setItem("webhook-se-muted", next ? "1" : "0"); } catch {}
+            }}
+            className="ml-auto text-xs text-slate-400 hover:text-slate-200 transition-colors"
+            title={muted ? "通知音オン" : "通知音オフ"}
+          >
+            {muted ? "🔇" : "🔔"}
+          </button>
         </div>
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-medium text-slate-500 dark:text-dim-text-muted">
             INBOX ({total})
           </span>
-          <span className={`inline-flex items-center gap-1 text-xs ${
-            connected ? "text-green-500" : status === "reconnecting" ? "text-amber-500" : "text-slate-400"
-          }`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${
-              connected ? "bg-green-500" : status === "reconnecting" ? "bg-amber-500 animate-pulse" : "bg-slate-400"
-            }`} />
-            {connected ? "Live" : status === "connecting" ? "接続中..." : status === "reconnecting" ? "再接続中..." : "切断"}
+          <span
+            className={`inline-flex items-center gap-1 text-xs ${
+              connected
+                ? "text-green-500"
+                : status === "reconnecting"
+                  ? "text-amber-500"
+                  : "text-slate-400"
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                connected
+                  ? "bg-green-500"
+                  : status === "reconnecting"
+                    ? "bg-amber-500 animate-pulse"
+                    : "bg-slate-400"
+              }`}
+            />
+            {connected
+              ? "Live"
+              : status === "connecting"
+                ? "接続中..."
+                : status === "reconnecting"
+                  ? "再接続中..."
+                  : "切断"}
             {!connected && status !== "connecting" && status !== "reconnecting" && (
-              <button onClick={reconnect} className="ml-1 underline text-xs">再接続</button>
+              <button onClick={reconnect} className="ml-1 underline text-xs">
+                再接続
+              </button>
             )}
           </span>
         </div>
@@ -207,18 +287,26 @@ export function WebhookListPane({
               >
                 <button
                   type="button"
-                  onClick={() => { onFilterSourceChange(""); setSourceDropdownOpen(false); }}
+                  onClick={() => {
+                    onFilterSourceChange("");
+                    setSourceDropdownOpen(false);
+                  }}
                   className="block w-full px-2 py-1 text-left text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700"
                 >
                   （クリア）
                 </button>
                 {availableSources
-                  .filter((s) => !filterSource || s.toLowerCase().includes(filterSource.toLowerCase()))
+                  .filter(
+                    (s) => !filterSource || s.toLowerCase().includes(filterSource.toLowerCase()),
+                  )
                   .map((s) => (
                     <button
                       key={s}
                       type="button"
-                      onClick={() => { onFilterSourceChange(s); setSourceDropdownOpen(false); }}
+                      onClick={() => {
+                        onFilterSourceChange(s);
+                        setSourceDropdownOpen(false);
+                      }}
                       className="block w-full px-2 py-1 text-left text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
                     >
                       {s}
@@ -244,18 +332,27 @@ export function WebhookListPane({
               >
                 <button
                   type="button"
-                  onClick={() => { onFilterEventTypeChange(""); setEventTypeDropdownOpen(false); }}
+                  onClick={() => {
+                    onFilterEventTypeChange("");
+                    setEventTypeDropdownOpen(false);
+                  }}
                   className="block w-full px-2 py-1 text-left text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700"
                 >
                   （クリア）
                 </button>
                 {availableEventTypes
-                  .filter((et) => !filterEventType || et.toLowerCase().includes(filterEventType.toLowerCase()))
+                  .filter(
+                    (et) =>
+                      !filterEventType || et.toLowerCase().includes(filterEventType.toLowerCase()),
+                  )
                   .map((et) => (
                     <button
                       key={et}
                       type="button"
-                      onClick={() => { onFilterEventTypeChange(et); setEventTypeDropdownOpen(false); }}
+                      onClick={() => {
+                        onFilterEventTypeChange(et);
+                        setEventTypeDropdownOpen(false);
+                      }}
                       className="block w-full px-2 py-1 text-left text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
                     >
                       {et}
@@ -282,24 +379,30 @@ export function WebhookListPane({
             return (
               <motion.div
                 key={w.id}
-                initial={isNew ? { opacity: 0, x: -16 } : false}
+                initial={isNew ? { opacity: 0, x: -80 } : false}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={
+                  isNew
+                    ? { duration: 0.25, ease: [0.22, 1, 0.36, 1] }
+                    : { duration: 0.15 }
+                }
                 onClick={() => handleItemClick(w)}
-                className={`px-3 py-1.5 border-b border-slate-100 dark:border-slate-700/40 cursor-pointer transition-colors text-xs flex items-start gap-2 ${
+                className={`px-3 py-1.5 border-b border-slate-100 dark:border-slate-700/40 cursor-pointer transition-colors flex items-start gap-2 ${
                   isSelected
-                    ? "bg-blue-50 dark:bg-blue-900/30 border-l-2 border-l-blue-400"
+                    ? "text-xs bg-blue-50 dark:bg-blue-900/30 border-l-2 border-l-blue-400"
                     : isUnread
-                      ? "font-semibold border-l-2 border-l-blue-400 bg-blue-50/60 dark:bg-blue-900/25 hover:bg-blue-50 dark:hover:bg-blue-900/35"
-                      : "hover:bg-slate-50 dark:hover:bg-slate-800/40"
-                } ${isNew && !isSelected ? "bg-emerald-50/80 dark:bg-emerald-900/25" : ""}`}
+                      ? "text-sm font-semibold border-l-2 border-l-pink-400 bg-pink-50/80 dark:bg-pink-900/25 hover:bg-pink-100/80 dark:hover:bg-pink-900/35"
+                      : "text-xs hover:bg-slate-50 dark:hover:bg-slate-800/40"
+                }`}
               >
                 <SourceIcon source={w.source} size="w-5 h-5 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <span className="flex items-center gap-1">
                       <span className="font-mono font-medium text-blue-500 dark:text-blue-400">
-                        {w.sequence_index != null ? `#${w.sequence_index}` : `#${String(w.id).slice(0, 6)}`}
+                        {w.sequence_index != null
+                          ? `#${w.sequence_index}`
+                          : `#${String(w.id).slice(0, 6)}`}
                       </span>
                       {w.matched_rules && w.matched_rules.length > 0 && (
                         <span
@@ -336,7 +439,9 @@ export function WebhookListPane({
           >
             Prev
           </button>
-          <span className="text-slate-500">{page}/{totalPages}</span>
+          <span className="text-slate-500">
+            {page}/{totalPages}
+          </span>
           <button
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
