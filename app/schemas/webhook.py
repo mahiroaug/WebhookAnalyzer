@@ -44,6 +44,7 @@ class WebhookListItem(BaseModel):
     http_method: str | None = None
     remote_ip: str | None = None
     matched_rules: list[MatchedRule] = []  # US-146
+    is_read: bool = False  # US-160
 
 
 class WebhookListResponse(BaseModel):

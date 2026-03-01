@@ -19,6 +19,7 @@ export interface WebhookListItem {
   http_method?: string | null;
   remote_ip?: string | null;
   matched_rules?: MatchedRule[];
+  is_read?: boolean;
 }
 
 export interface WebhookDetail {
@@ -146,6 +147,12 @@ export async function getAdjacentWebhooks(
   const res = await fetch(`${BASE}/webhooks/${id}/adjacent`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
+}
+
+/** US-160: Webhook を既読にする */
+export async function markWebhookRead(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/webhooks/${id}/read`, { method: "PATCH" });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
 /** US-166: Webhook PDF レポートをダウンロード */

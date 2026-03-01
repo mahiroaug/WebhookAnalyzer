@@ -9,6 +9,7 @@ import { useWebhookWebSocket } from "../hooks/useWebhookWebSocket";
 import {
   listWebhooks,
   getStats,
+  markWebhookRead,
   type WebhookListItem,
 } from "../services/api";
 import { SourceIcon } from "./SourceIcon";
@@ -61,6 +62,19 @@ export function WebhookListPane({
   }, [webhookReceiveUrl]);
 
   const loadRef = useRef<(newId?: string) => void>(() => {});
+
+  const handleItemClick = useCallback(
+    (item: WebhookListItem) => {
+      if (!item.is_read) {
+        markWebhookRead(item.id).catch(() => {});
+        setItems((prev) =>
+          prev.map((w) => (w.id === item.id ? { ...w, is_read: true } : w))
+        );
+      }
+      onSelect(item.id);
+    },
+    [onSelect]
+  );
 
   async function load(newId?: string) {
     setLoading(true);
@@ -212,17 +226,20 @@ export function WebhookListPane({
           items.map((w) => {
             const isNew = newArrivalIds.has(w.id);
             const isSelected = w.id === selectedId;
+            const isUnread = !w.is_read;
             return (
               <motion.div
                 key={w.id}
                 initial={isNew ? { opacity: 0, x: -16 } : false}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.2 }}
-                onClick={() => onSelect(w.id)}
+                onClick={() => handleItemClick(w)}
                 className={`px-3 py-1.5 border-b border-slate-100 dark:border-slate-700/40 cursor-pointer transition-colors text-xs flex items-start gap-2 ${
                   isSelected
                     ? "bg-blue-50 dark:bg-blue-900/30 border-l-2 border-l-blue-400"
-                    : "hover:bg-slate-50 dark:hover:bg-slate-800/40"
+                    : isUnread
+                      ? "font-semibold border-l-2 border-l-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800/40"
+                      : "hover:bg-slate-50 dark:hover:bg-slate-800/40"
                 } ${isNew ? "bg-emerald-50 dark:bg-emerald-900/20" : ""}`}
               >
                 <SourceIcon source={w.source} size="w-5 h-5 mt-0.5" />

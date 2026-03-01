@@ -179,6 +179,7 @@ async def list_webhooks(
     event_type: str | None = None,
     analyzed: bool | None = None,
     has_drift: bool | None = None,
+    is_read: bool | None = None,  # US-160
     session_id: UUID | None = None,
     q: str | None = None,
     limit: int = 20,
@@ -228,6 +229,8 @@ async def list_webhooks(
                     Webhook.schema_drift["has_drift"].astext != "true",
                 )
             )
+    if is_read is not None:
+        base_stmt = base_stmt.where(Webhook.is_read == is_read)
 
     # 総件数を取得
     count_stmt = select(func.count(Webhook.id))
@@ -268,6 +271,8 @@ async def list_webhooks(
                     Webhook.schema_drift["has_drift"].astext != "true",
                 )
             )
+    if is_read is not None:
+        count_stmt = count_stmt.where(Webhook.is_read == is_read)
     total_result = await db.execute(count_stmt)
     total = total_result.scalar_one() or 0
 
@@ -306,6 +311,7 @@ async def list_webhooks(
             matched_rules=[
                 MatchedRule(id=r["id"], name=r["name"]) for r in evaluate_rules(w.payload or {})
             ],
+            is_read=w.is_read,
         )
         for w in rows
     ]
@@ -632,6 +638,21 @@ async def get_webhook(
             MatchedRule(id=r["id"], name=r["name"]) for r in evaluate_rules(webhook.payload or {})
         ],
     )
+
+
+@router.patch("/{webhook_id}/read", status_code=204)
+async def mark_webhook_read(
+    webhook_id: UUID,
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """US-160: Webhook を既読にする"""
+    stmt = select(Webhook).where(Webhook.id == webhook_id)
+    result = await db.execute(stmt)
+    webhook = result.scalar_one_or_none()
+    if not webhook:
+        raise HTTPException(status_code=404, detail="Webhook not found")
+    webhook.is_read = True
+    await db.commit()
 
 
 @router.get("/{webhook_id}/export/pdf")

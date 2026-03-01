@@ -382,6 +382,33 @@ async def test_replay_webhook_success(
 
 
 @pytest.mark.asyncio
+async def test_mark_webhook_read(
+    bitgo_transfer_payload: dict,
+) -> None:
+    """US-160: PATCH /read で既読にできる"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        post_resp = await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+        webhook_id = post_resp.json()["id"]
+        list_resp = await client.get("/api/webhooks")
+        items = list_resp.json()["items"]
+        before = next((i for i in items if i["id"] == webhook_id), {})
+        assert before.get("is_read") is False
+        patch_resp = await client.patch(f"/api/webhooks/{webhook_id}/read")
+    assert patch_resp.status_code == 204
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        list_resp = await client.get("/api/webhooks")
+        items = list_resp.json()["items"]
+        after = next((i for i in items if i["id"] == webhook_id), {})
+    assert after.get("is_read") is True
+
+
+@pytest.mark.asyncio
 async def test_export_webhook_pdf(
     bitgo_transfer_payload: dict,
 ) -> None:
