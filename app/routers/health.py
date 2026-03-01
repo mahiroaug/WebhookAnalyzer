@@ -35,7 +35,7 @@ async def get_health_services() -> dict:
                 for t in tunnels:
                     public = t.get("public_url") or ""
                     if public and public.startswith("http"):
-                        public_url = public
+                        public_url = f"{public.rstrip('/')}/api/webhooks/receive"
                         public_status = "live"
                         break
     except Exception as e:
