@@ -749,3 +749,55 @@ QA として、過去の Webhook payload を任意のエンドポイントへ再
   - Given Payload に hash フィールドがある Webhook で AI 分析を実行、When 分析完了、Then field_descriptions に hash の説明が含まれている … **OK**: プロンプト明確化 + フォールバック補完
   - Given Payload の全フィールドに対して、When Step 2 完了後の field_descriptions を確認、Then Payload のトップレベルキーがすべて含まれている … **OK**
   - Given Step 2 の結果にフィールドが不足していた場合、When フォールバック処理、Then 不足キーに対してデフォルト説明（Step 1 からの抽出または「不明」）が補完される … **OK**: _ensure_payload_keys_in_descriptions
+
+## Phase 15: リアルタイム体験と分析ログの品質改善
+
+### US-153 分析ログの Webhook 切替時リセットと全タイムスタンプ付与（P0）【完了】
+
+開発者として、別の Webhook に切り替えたとき前の分析ログが残らず、全ログエントリにタイムスタンプが表示されてほしい。
+なぜなら前の Webhook のログが混在すると調査の正確性を損ない、時刻がないログエントリは分析の進行状況を把握できないから。
+
+- 受け入れ基準
+  - Given Webhook A の分析ログが表示されている、When 左ペインで Webhook B を選択する、Then 分析ログがクリアされ Webhook B の状態のみが表示される … **OK**: id 変化時に setAnalysisLogs([])
+  - Given AI 分析をストリーミング実行中、When 全ステップ（Evidence 完了、Step 1 完了/失敗、Step 2 完了/失敗、Step 3 完了/失敗、サニタイズ）のログが表示される、Then 全てのエントリに HH:mm:ss 形式のタイムスタンプが表示される … **OK**: ollama_analyzer の全 yield に timestamp 追加
+  - Given sessionStorage に保存された分析ログがある、When 別の Webhook 詳細を開く、Then 前の Webhook のログが復元されない … **OK**: キーを webhook-analysis-logs-{id} に変更
+
+### US-154 分析ログの表示領域拡大とプロンプト/回答デフォルト展開（P1）【完了】
+
+開発者として、分析ログの表示領域がもっと広く、プロンプト全文と AI 回答全文がデフォルトで展開されていてほしい。
+なぜなら現状の高さ制約（240px）では長い分析結果を確認しづらく、毎回手動で展開する操作が煩わしいから。
+
+- 受け入れ基準
+  - Given 分析ログが展開されている、When ログ本体を確認する、Then 最大高さが約 960px（現行の約 4 倍）でスクロール可能に表示される … **OK**: max-h-[960px]
+  - Given 分析ログにプロンプト全文・AI 回答全文がある、When ログを開く、Then プロンプト全文・AI 回答全文がデフォルトで展開状態になっている … **OK**: CollapsibleBlock useState(true)
+  - Given CollapsibleBlock（プロンプト/回答）が展開されている、When 長いテキストが含まれる、Then 最大高さ 512px 程度でスクロール可能に表示される … **OK**: max-h-[512px]
+
+### US-155 INBOX ヘッダーの Webhook 受信 URL 表示（P1）【完了】
+
+開発者として、INBOX パネルの上部に Webhook 受信エンドポイント URL が常に表示され、ワンクリックでコピーできてほしい。
+なぜなら外部サービスの Webhook 送信先設定時に毎回 URL を覚えたり手入力したりするのが面倒だから。
+
+- 受け入れ基準
+  - Given INBOX パネルを表示している、When 上部の情報エリアを確認する、Then Webhook 受信 URL（例: `http://localhost:8000/api/webhooks/receive`）が表示されている … **OK**: window.location.origin + /api/webhooks/receive
+  - Given Webhook 受信 URL が表示されている、When URL またはコピーアイコンをクリックする、Then クリップボードに URL がコピーされ、コピー完了のフィードバック（✓ 表示）が表示される … **OK**
+  - Given 環境変数や設定で外部 URL（ngrok 等）が未設定の場合、When INBOX を表示する、Then ローカルの URL がデフォルトで表示される … **OK**: 同上
+
+### US-156 WebSocket リアルタイム更新の修復と接続状態改善（P0）【完了】
+
+開発者として、Webhook が着弾したら INBOX リストが自動で更新され、WebSocket 接続状態が正確に表示されてほしい。
+なぜなら現状 Webhook が着弾しても一覧が更新されず、手動リロードが必要で調査効率が大幅に低下するから。
+
+- 受け入れ基準
+  - Given 2 ペイン画面を表示中、When 外部から Webhook が送信される、Then INBOX リストに新着 Webhook が自動で追加される（手動リロード不要） … **OK**: Vite proxy ws:true、新着時に page 1 に切り替え
+  - Given WebSocket が切断された場合、When 自動再接続が行われる、Then 接続状態表示が「再接続中...」→「Live」に遷移し、再接続後も新着通知が正常に機能する … **OK**: status の reconnecting → connected
+  - Given WebSocket が接続済み、When INBOX ヘッダーの接続状態を確認する、Then 「Live」と緑ドットが表示され、「Off」表示にはならない … **OK**: 接続中/再接続中/切断の状態を区別
+
+### US-157 Payload テーブル「全展開」の全階層一括展開修正（P0）【完了】
+
+開発者として、「全展開」ボタンを 1 回クリックしたら全階層が即座に展開されてほしい。
+なぜなら現状は 1 階層ずつしか展開されず、深いネスト構造の Payload を確認するのに何度もクリックが必要で非効率だから。
+
+- 受け入れ基準
+  - Given 3 階層以上ネストした Payload がある、When 「全展開」ボタンをクリックする、Then 全階層が 1 回のクリックで同時に展開される … **OK**: useState 初期化子で triggers.expandAll をチェック
+  - Given 全展開状態、When 「全折りたたみ」ボタンをクリックする、Then 全階層が即座に折りたたまれる … **OK**: 既存の collapseAll で対応
+  - Given 全展開後に一部を手動で折りたたんだ状態、When 再度「全展開」をクリックする、Then 折りたたんだ部分も含めて全階層が展開される … **OK**: expandTrigger インクリメントで全ノードに useEffect 発火

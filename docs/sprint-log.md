@@ -107,3 +107,8 @@
 | US-148 | AI 分析ログの所要時間リアルタイムカウント           | OK           | setInterval(1000)、sessionStorage に elapsedMs 保存・復元                              |
 | US-150 | スキーマドリフトセクションの配置変更                | OK           | メタ→Payload→AI分析結果→スキーマドリフトの順序に変更                                   |
 | US-152 | AI 分析ログの詳細情報拡充                           | OK           | timestamp/prompt_full/response_full、CollapsibleBlock、自動スクロール・一時停止         |
+| US-153 | 分析ログの Webhook 切替時リセットと全タイムスタンプ付与 | OK           | ollama_analyzer 全 yield に timestamp、id 変化でログリセット、sessionStorage キーを ID ごとに |
+| US-154 | 分析ログの表示領域拡大とプロンプト/回答デフォルト展開   | OK           | max-h-[960px]、CollapsibleBlock max-h-[512px]、デフォルト展開 useState(true)                 |
+| US-155 | INBOX ヘッダーの Webhook 受信 URL 表示                  | OK           | URL 表示、クリック/アイコンでコピー、2秒間 ✓ フィードバック                                |
+| US-156 | WebSocket リアルタイム更新の修復と接続状態改善          | OK           | Vite ws:true、status connecting/reconnecting/connected、新着時 page 1 表示               |
+| US-157 | Payload テーブル「全展開」の全階層一括展開修正          | OK           | useExpandTrigger の useState 初期化子で expandAll > 0 をチェック、子マウント時から展開  |

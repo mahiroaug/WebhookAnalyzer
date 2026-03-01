@@ -54,3 +54,8 @@
 ### Phase 14: AI 分析 UX 改善とバグ修正
 
 > US-147〜US-152 は完了。→ [`user-stories-completed.md`](./user-stories-completed.md)
+
+### Phase 15: リアルタイム体験と分析ログの品質改善
+
+> US-153〜US-157 は完了。→ [`user-stories-completed.md`](./user-stories-completed.md)
+
