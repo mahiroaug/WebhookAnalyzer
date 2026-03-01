@@ -1,6 +1,5 @@
-"""US-162: サービス接続状況 API"""
+"""US-162/US-177: サービス接続状況 API"""
 import logging
-import re
 from typing import Literal
 
 import httpx
@@ -18,8 +17,8 @@ router = APIRouter(tags=["health"])
 @router.get("/services")
 async def get_health_services() -> dict:
     """
-    US-162: 各サービスの接続状況を返す。
-    (1) 公開 URL（ngrok 等）、(2) ローカル API、(3) PostgreSQL、(4) Ollama
+    US-162/US-177: 各サービスの接続状況を返す。
+    (1) 公開 URL（ngrok 等）、(2) ローカル API、(3) Vite、(4) PostgreSQL、(5) Ollama
     """
     ngrok_url = settings.ngrok_api_url
 
@@ -44,7 +43,17 @@ async def get_health_services() -> dict:
     # (2) ローカル API（このエンドポイントに到達している時点で Live）
     local_api_status: Literal["live", "offline"] = "live"
 
-    # (3) PostgreSQL
+    # (3) Vite（US-177: フロントエンド dev server）
+    vite_status: Literal["live", "offline"] = "offline"
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            r = await client.get("http://localhost:5173")
+            if r.status_code == 200:
+                vite_status = "live"
+    except Exception as e:
+        logger.debug("Vite check failed: %s", e)
+
+    # (4) PostgreSQL
     pg_status: Literal["live", "offline"] = "offline"
     try:
         async with engine.connect() as conn:
@@ -53,7 +62,7 @@ async def get_health_services() -> dict:
     except Exception as e:
         logger.debug("PostgreSQL check failed: %s", e)
 
-    # (4) Ollama
+    # (5) Ollama
     ollama_status: Literal["live", "offline"] = "offline"
     try:
         async with httpx.AsyncClient(timeout=2.0) as client:
@@ -63,14 +72,7 @@ async def get_health_services() -> dict:
     except Exception as e:
         logger.debug("Ollama check failed: %s", e)
 
-    # US-168: URL 表示用（ホスト:ポートを抽出）
-    pg_url = "localhost:5432"
-    if m := re.search(r"@([^/]+)/", settings.database_url):
-        pg_url = m.group(1)
-    ollama_url = "localhost:11434"
-    if m := re.search(r"https?://([^/]+)", settings.ollama_host):
-        ollama_url = m.group(1)
-
+    # US-177: URL はホスト到達可能な localhost 形式に統一
     return {
         "public_url": {
             "url": public_url or "—",
@@ -80,6 +82,10 @@ async def get_health_services() -> dict:
             "url": "http://localhost:8000",
             "status": local_api_status,
         },
-        "postgresql": {"url": pg_url, "status": pg_status},
-        "ollama": {"url": ollama_url, "status": ollama_status},
+        "vite": {
+            "url": "http://localhost:5173",
+            "status": vite_status,
+        },
+        "postgresql": {"url": "http://localhost:5432", "status": pg_status},
+        "ollama": {"url": "http://localhost:11434", "status": ollama_status},
     }

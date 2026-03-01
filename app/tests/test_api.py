@@ -522,7 +522,7 @@ async def test_mark_all_webhooks_read(
 
 @pytest.mark.asyncio
 async def test_health_services_returns_structure() -> None:
-    """US-162: GET /api/health/services が期待構造を返す"""
+    """US-162/US-177: GET /api/health/services が期待構造を返す"""
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
@@ -534,7 +534,12 @@ async def test_health_services_returns_structure() -> None:
     assert data["public_url"]["status"] in ("live", "offline")
     assert "local_api" in data
     assert data["local_api"]["status"] == "live"
+    assert "vite" in data
+    assert data["vite"]["status"] in ("live", "offline")
+    assert data["vite"]["url"] == "http://localhost:5173"
     assert "postgresql" in data
     assert data["postgresql"]["status"] in ("live", "offline")
+    assert data["postgresql"]["url"] == "http://localhost:5432"
     assert "ollama" in data
     assert data["ollama"]["status"] in ("live", "offline")
+    assert data["ollama"]["url"] == "http://localhost:11434"

@@ -1,20 +1,9 @@
 /**
- * US-162/US-168: INBOX ヘッダーのサービス接続状況表示
- * 表形式、URL クリックでコピー、Live=緑/Offline=灰、text-xs
+ * US-162/US-168/US-177: INBOX ヘッダーのサービス接続状況表示
+ * Part/Component 2列、絵文字ステータス、text-[10px]、余白最小化
  */
 import { useCallback, useEffect, useState } from "react";
 import { getHealthServices, type HealthServicesResponse } from "../services/api";
-
-function StatusDot({ live }: { live: boolean }) {
-  return (
-    <span
-      className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${
-        live ? "bg-green-500" : "bg-slate-400"
-      }`}
-      title={live ? "Live" : "Offline"}
-    />
-  );
-}
 
 function CopyableUrl({
   url,
@@ -69,44 +58,33 @@ export function ServiceStatusPanel() {
 
   if (!data) return null;
 
-  const localReceiveUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/api/webhooks/receive`
-      : "—";
+  const localReceiveUrl = `${data.local_api.url}/api/webhooks/receive`;
 
-  const rows: { label: string; url: string; status: "live" | "offline" }[] = [
-    { label: "Public", url: data.public_url.url, status: data.public_url.status },
-    { label: "Local", url: localReceiveUrl, status: "live" },
-    { label: "Backend", url: data.local_api.url, status: data.local_api.status },
-    {
-      label: "DB",
-      url: data.postgresql.url,
-      status: data.postgresql.status,
-    },
-    { label: "LLM", url: data.ollama.url, status: data.ollama.status },
+  const rows: {
+    part: string;
+    component: string;
+    url: string;
+    status: "live" | "offline";
+  }[] = [
+    { part: "Public", component: "ngrok", url: data.public_url.url, status: data.public_url.status },
+    { part: "Local", component: "Uvicorn", url: localReceiveUrl, status: data.local_api.status },
+    { part: "WEB", component: "Vite", url: data.vite.url, status: data.vite.status },
+    { part: "DB", component: "PostgreSQL", url: data.postgresql.url, status: data.postgresql.status },
+    { part: "LLM", component: "Ollama", url: data.ollama.url, status: data.ollama.status },
   ];
 
   return (
-    <div className="text-xs text-slate-600 dark:text-slate-400 min-w-0">
-      <table className="w-full border-collapse table-fixed">
-        <colgroup>
-          <col className="w-16" />
-          <col className="w-11" />
-          <col />
-        </colgroup>
+    <div className="text-[10px] text-slate-600 dark:text-slate-400 min-w-0">
+      <table className="w-full border-collapse table-auto">
         <tbody>
           {rows.map((row) => (
-            <tr key={row.label}>
-              <td className="py-0.5 pr-1 align-middle whitespace-nowrap">{row.label}</td>
-              <td className="py-0.5 pr-1 align-middle whitespace-nowrap">
-                <span className="inline-flex items-center gap-1">
-                  <StatusDot live={row.status === "live"} />
-                  <span className={row.status === "live" ? "text-green-600 dark:text-green-400" : "text-slate-400 dark:text-slate-500"}>
-                    {row.status}
-                  </span>
-                </span>
+            <tr key={row.part}>
+              <td className="py-0 pr-1 align-middle whitespace-nowrap">{row.part}</td>
+              <td className="py-0 pr-1 align-middle whitespace-nowrap text-slate-500 dark:text-slate-500">{row.component}</td>
+              <td className="py-0 pr-1 align-middle whitespace-nowrap" title={row.status === "live" ? "Live" : "Offline"}>
+                {row.status === "live" ? "🟢" : "⚫"}
               </td>
-              <td className="py-0.5 align-middle min-w-0 overflow-hidden">
+              <td className="py-0 align-middle min-w-0 overflow-hidden">
                 <CopyableUrl url={row.url} onCopy={handleCopy} />
               </td>
             </tr>
