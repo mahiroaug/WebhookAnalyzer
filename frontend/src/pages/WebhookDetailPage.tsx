@@ -24,6 +24,7 @@ import {
   type DefinitionDiff,
   type PartialApplyPayload,
 } from "../components/DefinitionDiffModal";
+import { formatReceivedAt } from "../utils/formatDate";
 
 /** US-120: Webhook 遷移時も開閉状態を維持するリクエストヘッダー details */
 const REQUEST_HEADERS_STORAGE_KEY = "webhook-detail-request-headers-open";
@@ -617,7 +618,7 @@ export function WebhookDetailPage() {
           <dt className="text-slate-500 dark:text-slate-400">group_key</dt>
           <dd className="font-mono">{webhook.group_key}</dd>
           <dt className="text-slate-500 dark:text-slate-400">received_at</dt>
-          <dd className="font-mono">{new Date(webhook.received_at).toLocaleString()}</dd>
+          <dd className="font-mono">{formatReceivedAt(webhook.received_at)}</dd>
           {webhook.http_method && <>
             <dt className="text-slate-500 dark:text-slate-400">HTTP メソッド</dt>
             <dd className="font-mono">{webhook.http_method}</dd>

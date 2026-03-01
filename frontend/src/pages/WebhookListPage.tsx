@@ -14,6 +14,7 @@ import {
   type WebhookListItem,
   type Session,
 } from "../services/api";
+import { formatReceivedAt } from "../utils/formatDate";
 
 const PAGE_SIZE = 20;
 
@@ -539,7 +540,7 @@ export function WebhookListPage() {
                     )}
                   </td>
                   <td className="p-3 text-slate-600 dark:text-slate-400">
-                    {new Date(w.received_at).toLocaleString()}
+                    {formatReceivedAt(w.received_at)}
                   </td>
                 </motion.tr>
               );

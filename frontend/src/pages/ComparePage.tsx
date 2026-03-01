@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { getWebhook, type WebhookDetail } from "../services/api";
+import { formatReceivedAt } from "../utils/formatDate";
 
 function flattenPayload(
   obj: Record<string, unknown>,
@@ -110,7 +111,7 @@ export function ComparePage() {
                   </Link>
                   <br />
                   <span className="text-xs text-slate-500 font-normal">
-                    {new Date(w.received_at).toLocaleString()}
+                    {formatReceivedAt(w.received_at)}
                   </span>
                 </th>
               ))}

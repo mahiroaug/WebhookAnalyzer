@@ -16,6 +16,7 @@ import {
 } from "../services/api";
 import { SourceIcon } from "./SourceIcon";
 import { ServiceStatusPanel } from "./ServiceStatusPanel";
+import { formatReceivedAt } from "../utils/formatDate";
 
 /** US-161: 一覧ペインの表示件数拡大（500 件） */
 const PAGE_SIZE = 500;
@@ -358,7 +359,7 @@ export function WebhookListPane({
                     {w.source} / {w.event_type}
                   </div>
                   <div className="mt-0.5 text-slate-400 dark:text-dim-text-muted">
-                    {new Date(w.received_at).toLocaleString()}
+                    {formatReceivedAt(w.received_at)}
                   </div>
                 </div>
               </motion.div>

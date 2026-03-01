@@ -4,6 +4,7 @@ import {
   getGroupedByEventType,
   type EventTypeGroup,
 } from "../services/api";
+import { formatReceivedAt } from "../utils/formatDate";
 
 export function EventTypeGroupPage() {
   const navigate = useNavigate();
@@ -114,7 +115,7 @@ export function EventTypeGroupPage() {
                   </span>
                   <span>{g.sample.source}</span>
                   <span className="text-slate-500">
-                    {new Date(g.sample.received_at).toLocaleString()}
+                    {formatReceivedAt(g.sample.received_at)}
                   </span>
                   <span
                     className={`px-2 py-0.5 rounded text-xs ${
