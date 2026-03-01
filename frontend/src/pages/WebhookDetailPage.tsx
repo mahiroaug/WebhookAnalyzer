@@ -353,6 +353,8 @@ export function WebhookDetailPage() {
   } | null>(null);
 
   /** US-144: マスキング ON/OFF（localStorage で永続化、デフォルト ON） */
+  const [payloadViewMode, setPayloadViewMode] = useState<"table" | "json">("table");
+  const [jsonCopyFeedback, setJsonCopyFeedback] = useState(false);
   const [maskEnabled, setMaskEnabled] = useState(() => {
     try {
       return localStorage.getItem("webhook-mask-enabled") !== "0";
@@ -634,18 +636,58 @@ export function WebhookDetailPage() {
       </AccordionSection>
 
       <AccordionSection id="payload" title="Payload" defaultOpen={true}>
-        <div className="flex items-center gap-2 mb-2">
-          <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={maskEnabled}
-              onChange={(e) => setMaskEnabled(e.target.checked)}
-              className="rounded border-slate-500"
-            />
-            <span>Mask Sensitive Data</span>
-          </label>
+        <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+          <div className="flex items-center gap-4">
+            <div className="flex gap-0.5 rounded border border-slate-600 p-0.5">
+              <button
+                type="button"
+                onClick={() => setPayloadViewMode("table")}
+                className={`px-2 py-0.5 text-xs rounded ${payloadViewMode === "table" ? "bg-slate-600 text-white" : "text-slate-400 hover:text-slate-200"}`}
+              >
+                Table
+              </button>
+              <button
+                type="button"
+                onClick={() => setPayloadViewMode("json")}
+                className={`px-2 py-0.5 text-xs rounded ${payloadViewMode === "json" ? "bg-slate-600 text-white" : "text-slate-400 hover:text-slate-200"}`}
+              >
+                JSON
+              </button>
+            </div>
+            <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={maskEnabled}
+                onChange={(e) => setMaskEnabled(e.target.checked)}
+                className="rounded border-slate-500"
+              />
+              <span>Mask Sensitive Data</span>
+            </label>
+          </div>
+          {payloadViewMode === "json" && (
+            <button
+              type="button"
+              onClick={async () => {
+                const text = JSON.stringify(webhook.payload ?? {}, null, 2);
+                try {
+                  await navigator.clipboard?.writeText(text);
+                  setJsonCopyFeedback(true);
+                  setTimeout(() => setJsonCopyFeedback(false), 1000);
+                } catch {
+                  try {
+                    document.execCommand("copy", false, text);
+                    setJsonCopyFeedback(true);
+                    setTimeout(() => setJsonCopyFeedback(false), 1000);
+                  } catch { /* ignore */ }
+                }
+              }}
+              className="flex items-center gap-1 text-xs px-2 py-1 rounded border border-slate-600 text-slate-300 hover:bg-slate-700"
+            >
+              {jsonCopyFeedback ? "✓ Copied" : "Copy"}
+            </button>
+          )}
         </div>
-        <PayloadTable
+        {payloadViewMode === "table" && <PayloadTable
           data={webhook.payload}
           maskEnabled={maskEnabled}
           templateDescriptions={
@@ -665,7 +707,12 @@ export function WebhookDetailPage() {
             definitionWritable ? { source: webhook.source, eventType: webhook.event_type } : undefined
           }
           onDescriptionSave={definitionWritable ? handleDescriptionSave : undefined}
-        />
+        />}
+        {payloadViewMode === "json" && (
+          <pre className="rounded-lg border border-slate-600 bg-slate-900/50 p-4 text-xs font-mono text-slate-300 overflow-x-auto overflow-y-auto max-h-[480px] whitespace-pre-wrap break-words">
+            {JSON.stringify(webhook.payload ?? {}, null, 2)}
+          </pre>
+        )}
       </AccordionSection>
 
       {analysis && (
