@@ -38,7 +38,7 @@ function CopyableUrl({
     <button
       type="button"
       onClick={handleClick}
-      className="text-left truncate hover:text-blue-500 dark:hover:text-blue-400 transition-colors underline-offset-2 hover:underline"
+      className="block w-full min-w-0 text-left truncate hover:text-blue-500 dark:hover:text-blue-400 transition-colors underline-offset-2 hover:underline"
       title="Click to copy"
     >
       {copied ? "✓ Copied" : url}
@@ -87,16 +87,16 @@ export function ServiceStatusPanel() {
   ];
 
   return (
-    <div className="text-xs text-slate-600 dark:text-slate-400">
-      <table className="w-full border-collapse">
+    <div className="text-xs text-slate-600 dark:text-slate-400 min-w-0">
+      <table className="w-full border-collapse table-fixed">
         <tbody>
           {rows.map((row) => (
             <tr key={row.label}>
-              <td className="py-0.5 pr-2 align-middle">{row.label}</td>
-              <td className="py-0.5 pr-2 align-middle min-w-0">
+              <td className="py-0.5 pr-2 align-middle w-14 shrink-0">{row.label}</td>
+              <td className="py-0.5 pr-2 align-middle min-w-0 overflow-hidden">
                 <CopyableUrl url={row.url} onCopy={handleCopy} />
               </td>
-              <td className="py-0.5">
+              <td className="py-0.5 w-14 shrink-0">
                 <span className="inline-flex items-center gap-1">
                   <StatusDot live={row.status === "live"} />
                   <span

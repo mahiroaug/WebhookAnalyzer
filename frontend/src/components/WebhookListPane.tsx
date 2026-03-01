@@ -145,9 +145,9 @@ export function WebhookListPane({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-3 py-2 border-b border-slate-200 dark:border-dim-border">
+      <div className="px-3 py-2 border-b border-slate-200 dark:border-dim-border min-w-0">
         {/* US-162: サービス接続状況（30秒ポーリング） */}
-        <div className="mb-2 rounded bg-slate-100 dark:bg-slate-800/50 px-2 py-1.5">
+        <div className="mb-2 rounded bg-slate-100 dark:bg-slate-800/50 px-2 py-1.5 min-w-0 overflow-hidden">
           <ServiceStatusPanel />
         </div>
         {/* US-167: Unread Only フィルタと Mark All Read */}

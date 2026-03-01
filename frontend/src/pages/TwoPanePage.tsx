@@ -3,7 +3,7 @@
  * US-117: ペインリサイズ対応
  */
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { WebhookListPane } from "../components/WebhookListPane";
 import { DetailNavBar, type DetailNavBarData } from "../components/DetailNavBar";
 import { WebhookDetailPage } from "./WebhookDetailPage";
@@ -19,10 +19,11 @@ const MIN_WIDTH = 200;
 const MAX_WIDTH = 600;
 
 export function TwoPanePage() {
-  const { id } = useParams<{ id: string }>();
+  const { id: idFromParams } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get("q") ?? "";
+  const [selectedId, setSelectedId] = useState<string | null>(idFromParams || null);
   const [rightPane, setRightPane] = useState<RightPane>("detail");
   const [navBarData, setNavBarData] = useState<DetailNavBarData | null>(null);
   const [filterSource, setFilterSource] = useState("");
@@ -33,8 +34,6 @@ export function TwoPanePage() {
   });
   const draggingRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const selectedId = id || null;
 
   /** US-174: Webhook 切替時にナビバーデータをクリア（ロード中は空表示） */
   useEffect(() => {
@@ -70,11 +69,20 @@ export function TwoPanePage() {
     };
   }, [paneWidth]);
 
+  /** ブラウザの戻る/進むで URL が変わったときに state を同期 */
+  const location = useLocation();
+  useEffect(() => {
+    const m = location.pathname.match(/^\/webhooks\/([^/]+)/);
+    const urlId = m ? m[1] : null;
+    setSelectedId((prev) => (prev !== urlId ? urlId : prev));
+  }, [location.pathname]);
+
   const handleSelect = useCallback(
     (webhookId: string) => {
+      setSelectedId(webhookId);
       setRightPane("detail");
       const search = searchParams.toString();
-      navigate({ pathname: `/webhooks/${webhookId}`, search: search ? `?${search}` : "" }, { replace: false });
+      navigate({ pathname: `/webhooks/${webhookId}`, search: search ? `?${search}` : "" }, { replace: true });
     },
     [navigate, searchParams]
   );
@@ -143,7 +151,7 @@ export function TwoPanePage() {
 
         <div className="flex-1 overflow-y-auto p-4">
           {rightPane === "detail" && selectedId ? (
-            <WebhookDetailPage onNavBarData={(d) => selectedId && d.webhook.id === selectedId && setNavBarData(d)} />
+            <WebhookDetailPage key={selectedId} webhookId={selectedId} onNavBarData={(d) => selectedId && d.webhook.id === selectedId && setNavBarData(d)} />
           ) : rightPane === "detail" && !selectedId ? (
             <div className="flex items-center justify-center h-full text-slate-400 dark:text-dim-text-muted">
               左のリストから Webhook を選択してください

@@ -198,11 +198,13 @@ function DetailSkeleton() {
 }
 
 interface WebhookDetailPageProps {
+  webhookId?: string;
   onNavBarData?: (data: DetailNavBarData) => void;
 }
 
-export function WebhookDetailPage({ onNavBarData }: WebhookDetailPageProps) {
-  const { id } = useParams<{ id: string }>();
+export function WebhookDetailPage({ webhookId: webhookIdProp, onNavBarData }: WebhookDetailPageProps) {
+  const { id: idFromParams } = useParams<{ id: string }>();
+  const id = webhookIdProp ?? idFromParams ?? undefined;
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get("q") ?? "";
