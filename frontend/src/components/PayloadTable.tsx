@@ -94,10 +94,16 @@ interface FieldRowProps {
   onDescriptionSave?: (path: string, description: string) => Promise<void>;
 }
 
-/** US-147: 全展開/折りたたみのトリガーを受け取り、expanded を更新 */
+/** US-147/157: 全展開/折りたたみのトリガーを受け取り、expanded を更新。
+ * US-157: 初期化時に expandAll > 0 をチェックし、子ノードがマウント時から即展開されるようにする。 */
 function useExpandTrigger(isExpandable: boolean, defaultExpanded: boolean) {
   const triggers = useContext(ExpandTriggerContext);
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  const [expanded, setExpanded] = useState(() => {
+    if (!isExpandable) return false;
+    if (triggers.expandAll > 0) return true;
+    if (triggers.collapseAll > 0) return false;
+    return defaultExpanded;
+  });
 
   useEffect(() => {
     if (!isExpandable || triggers.expandAll === 0) return;
