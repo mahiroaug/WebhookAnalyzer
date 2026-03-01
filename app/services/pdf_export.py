@@ -1,6 +1,8 @@
 """US-166: 個別 Webhook の PDF レポート生成"""
+
 import io
 import json
+import os
 from datetime import datetime, timezone
 from typing import Any
 
@@ -16,13 +18,69 @@ TEXT_LIGHT = "#E4E6EA"
 ACCENT = "#60A5FA"
 MUTED = "#94A3B8"
 
+# 日本語・英語共通フォント名（_register_pdf_font で Meiryo または HeiseiMin-W3 に設定）
+_CJK_FONT = "HeiseiMin-W3"
+
+# Meiryo を探すパス（環境変数 PDF_MEIRYO_FONT_PATH で上書き可能）
+_MEIRYO_PATHS = [
+    os.environ.get("PDF_MEIRYO_FONT_PATH"),
+    "/mnt/c/Windows/Fonts/meiryo.ttc",  # WSL から Windows フォント
+    "C:\\Windows\\Fonts\\meiryo.ttc",   # Windows ネイティブ
+    os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "fonts", "meiryo.ttc")
+    ),  # プロジェクトルートの fonts/
+]
+
+
+def _register_pdf_font() -> None:
+    """日本語・英語とも Meiryo 系で揃える。Meiryo が無い場合は HeiseiMin-W3 にフォールバック。"""
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+    from reportlab.pdfbase.ttfonts import TTFont
+
+    global _CJK_FONT
+
+    # 既に Meiryo が登録済みならそのまま
+    if "Meiryo" in pdfmetrics.getRegisteredFontNames():
+        _CJK_FONT = "Meiryo"
+        return
+
+    # Meiryo.ttc を探して登録
+    for path in _MEIRYO_PATHS:
+        if not path or not os.path.isfile(path):
+            continue
+        try:
+            pdfmetrics.registerFont(TTFont("Meiryo", path))
+            _CJK_FONT = "Meiryo"
+            return
+        except Exception:
+            continue
+
+    # フォールバック: CID フォント（Adobe Asian Language Pack 依存）
+    if _CJK_FONT not in pdfmetrics.getRegisteredFontNames():
+        pdfmetrics.registerFont(UnicodeCIDFont("HeiseiMin-W3"))
+    _CJK_FONT = "HeiseiMin-W3"
+
+
+def _escape_paragraph(text: str) -> str:
+    """Paragraph 用に XML 特殊文字をエスケープする。"""
+    if not text:
+        return ""
+    return (
+        str(text)
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )
+
 
 def _header_style() -> ParagraphStyle:
-    """セクション見出しスタイル"""
+    """セクション見出しスタイル（日本語対応フォント）"""
     styles = getSampleStyleSheet()
     return ParagraphStyle(
         name="SectionHeader",
         parent=styles["Heading2"],
+        fontName=_CJK_FONT,
         fontSize=14,
         textColor=colors.HexColor("#1E293B"),
         spaceAfter=6,
@@ -70,20 +128,32 @@ def _flatten_payload(
 
     def _walk(o: Any, path: str) -> None:
         if o is None or (not isinstance(o, (dict, list))):
-            rows.append((
-                path or "—",
-                _format_value(o),
-                _type_name(o),
-                (descriptions.get(path) or descriptions.get(path.split(".")[-1]) or "")[:300],
-            ))
+            rows.append(
+                (
+                    path or "—",
+                    _format_value(o),
+                    _type_name(o),
+                    (
+                        descriptions.get(path)
+                        or descriptions.get(path.split(".")[-1])
+                        or ""
+                    )[:300],
+                )
+            )
             return
         if isinstance(o, list):
-            rows.append((
-                path,
-                f"[{len(o)} items]",
-                "array",
-                (descriptions.get(path) or descriptions.get(path.split(".")[-1]) or "")[:300],
-            ))
+            rows.append(
+                (
+                    path,
+                    f"[{len(o)} items]",
+                    "array",
+                    (
+                        descriptions.get(path)
+                        or descriptions.get(path.split(".")[-1])
+                        or ""
+                    )[:300],
+                )
+            )
             for i, item in enumerate(o):
                 _walk(item, f"{path}.{i}")
             return
@@ -93,12 +163,18 @@ def _flatten_payload(
                 if v is not None and isinstance(v, (dict, list)):
                     _walk(v, child_path)
                 else:
-                    rows.append((
-                        child_path,
-                        _format_value(v),
-                        _type_name(v),
-                        (descriptions.get(child_path) or descriptions.get(child_path.split(".")[-1]) or "")[:300],
-                    ))
+                    rows.append(
+                        (
+                            child_path,
+                            _format_value(v),
+                            _type_name(v),
+                            (
+                                descriptions.get(child_path)
+                                or descriptions.get(child_path.split(".")[-1])
+                                or ""
+                            )[:300],
+                        )
+                    )
 
     if isinstance(obj, dict):
         for k, v in obj.items():
@@ -110,19 +186,36 @@ def _flatten_payload(
 
 
 def _body_style() -> ParagraphStyle:
-    """本文スタイル"""
+    """本文スタイル（日本語対応フォント）"""
     styles = getSampleStyleSheet()
     return ParagraphStyle(
         name="BodyMono",
         parent=styles["Normal"],
+        fontName=_CJK_FONT,
         fontSize=9,
-        fontName="Courier",
         textColor=colors.HexColor("#334155"),
         leading=12,
     )
 
 
-def _make_numbered_canvas(sequence_index: int | None, output_time: datetime) -> type:
+def _table_cell_style(font_size: int = 8) -> ParagraphStyle:
+    """テーブルセル用スタイル。改行・日本語対応。"""
+    styles = getSampleStyleSheet()
+    return ParagraphStyle(
+        name="TableCell",
+        parent=styles["Normal"],
+        fontName=_CJK_FONT,
+        fontSize=font_size,
+        textColor=colors.HexColor("#334155"),
+        leading=font_size + 2,
+        wordWrap="CJK",  # 日本語の折り返し
+        splitLongWords=True,
+    )
+
+
+def _make_numbered_canvas(
+    sequence_index: int | None, output_time: datetime, group_key: str
+) -> type:
     """US-170: ヘッダー・フッター付きカンバスクラスを生成"""
     from reportlab.pdfgen import canvas as pdf_canvas
 
@@ -132,28 +225,26 @@ def _make_numbered_canvas(sequence_index: int | None, output_time: datetime) -> 
             self._saved_states: list[dict[str, Any]] = []
             self._seq = sequence_index
             self._out_time = output_time
+            self._group_key = group_key
 
         def showPage(self) -> None:
-            state = {k: v for k, v in self.__dict__.items() if k != "_saved_states"}
-            self._saved_states.append(state)
+            # 現在ページにヘッダ・フッターを描いてから出力（全ページ同じ様式にする）
+            self._saved_states.append(None)  # ページ数カウント用
+            num_pages = len(self._saved_states)
+            self.saveState()
+            date_str = self._out_time.strftime("%Y/%m/%d")
+            index_part = f" (#{self._seq})" if self._seq is not None else ""
+            header_text = (
+                f"Webhook Report - {self._group_key} on {date_str}{index_part}"
+            )
+            self.setFont("Helvetica-Bold", 10)
+            self.drawString(56, 800, header_text)
+            self.setFont("Helvetica", 8)
+            self.drawRightString(550, 30, f"Page {num_pages}")
+            self.restoreState()
             super().showPage()
 
         def save(self) -> None:
-            num_pages = len(self._saved_states)
-            for i, state in enumerate(self._saved_states):
-                for k, v in state.items():
-                    setattr(self, k, v)
-                self.saveState()
-                header_text = f"Webhook Report #{self._seq}" if self._seq else "Webhook Report"
-                header_date = self._out_time.strftime("%Y/%m/%d %H:%M:%S")
-                self.setFont("Helvetica-Bold", 10)
-                self.drawString(56, 800, header_text)
-                self.setFont("Helvetica", 9)
-                self.drawString(400, 800, header_date)
-                self.setFont("Helvetica", 8)
-                self.drawRightString(550, 30, f"Page {i + 1} / {num_pages}")
-                self.restoreState()
-                super().showPage()
             super().save()
 
     return NumberedCanvas
@@ -177,6 +268,8 @@ def build_webhook_pdf(
     Webhook 詳細の PDF レポートを生成する。
     リクエスト情報・Payload・AI 分析結果を含む。
     """
+    _register_pdf_font()
+
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -190,13 +283,16 @@ def build_webhook_pdf(
 
     header_style = _header_style()
     body_style = _body_style()
+    cell_style = _table_cell_style(font_size=8)
+    cell_style_header = _table_cell_style(font_size=9)
 
-    # タイトル
+    # 冒頭タイトル（例: "Webhook Report - bitgo:transfer"）
     story.append(
         Paragraph(
-            f"Webhook Report: {source} / {event_type}",
+            _escape_paragraph(f"Webhook Report - {group_key}"),
             ParagraphStyle(
                 name="Title",
+                fontName=_CJK_FONT,
                 fontSize=18,
                 textColor=colors.HexColor("#0F172A"),
                 spaceAfter=12,
@@ -204,20 +300,58 @@ def build_webhook_pdf(
         )
     )
 
-    # 1. リクエスト情報
+    # 1. リクエスト情報（セルを Paragraph でラップして改行・日本語対応）
     story.append(Paragraph("Request Information", header_style))
     req_data = [
-        ["source", source],
-        ["event_type", event_type],
-        ["group_key", group_key],
-        ["received_at", received_at.strftime("%Y-%m-%d %H:%M:%S UTC") if received_at else "-"],
-        ["HTTP method", http_method or "-"],
-        ["Remote IP", remote_ip or "-"],
+        [
+            Paragraph(_escape_paragraph("source"), cell_style),
+            Paragraph(_escape_paragraph(source), cell_style),
+        ],
+        [
+            Paragraph(_escape_paragraph("event_type"), cell_style),
+            Paragraph(_escape_paragraph(event_type), cell_style),
+        ],
+        [
+            Paragraph(_escape_paragraph("group_key"), cell_style),
+            Paragraph(_escape_paragraph(group_key), cell_style),
+        ],
+        [
+            Paragraph(_escape_paragraph("received_at"), cell_style),
+            Paragraph(
+                _escape_paragraph(
+                    received_at.strftime("%Y-%m-%d %H:%M:%S UTC") if received_at else "-"
+                ),
+                cell_style,
+            ),
+        ],
+        [
+            Paragraph(_escape_paragraph("HTTP method"), cell_style),
+            Paragraph(_escape_paragraph(http_method or "-"), cell_style),
+        ],
+        [
+            Paragraph(_escape_paragraph("Remote IP"), cell_style),
+            Paragraph(_escape_paragraph(remote_ip or "-"), cell_style),
+        ],
     ]
     if request_headers:
-        req_data.append(["Headers", json.dumps(request_headers, indent=2, ensure_ascii=False)])
+        req_data.append(
+            [
+                Paragraph(_escape_paragraph("Headers"), cell_style),
+                Paragraph(
+                    _escape_paragraph(
+                        json.dumps(request_headers, indent=2, ensure_ascii=False)
+                    ),
+                    cell_style,
+                ),
+            ]
+        )
     else:
-        req_data.append(["Headers", "-"])
+        req_data.append(
+            [
+                Paragraph(_escape_paragraph("Headers"), cell_style),
+                Paragraph(_escape_paragraph("-"), cell_style),
+            ]
+        )
 
     req_table = Table(req_data, colWidths=[100, 350])
     req_table.setStyle(
@@ -239,33 +373,53 @@ def build_webhook_pdf(
     story.append(req_table)
     story.append(Spacer(1, 12))
 
-    # 2. Payload（US-169: key/value/type/description テーブル形式）
+    # 2. Payload（US-169: key/value/type/description テーブル形式・セルは Paragraph で改行）
     story.append(Paragraph("Payload", header_style))
     flat_rows = _flatten_payload(
         payload or {},
         descriptions=analysis_field_descriptions or {},
     )
-    payload_data = [["key", "value", "type", "description"]]
+    payload_data = [
+        [
+            Paragraph(_escape_paragraph("key"), cell_style_header),
+            Paragraph(_escape_paragraph("value"), cell_style_header),
+            Paragraph(_escape_paragraph("type"), cell_style_header),
+            Paragraph(_escape_paragraph("description"), cell_style_header),
+        ]
+    ]
     for path, val, typ, desc in flat_rows[:200]:  # 最大 200 行
-        payload_data.append([path, str(val)[:500], typ, desc])
+        payload_data.append(
+            [
+                Paragraph(_escape_paragraph(path), cell_style),
+                Paragraph(_escape_paragraph(str(val)[:500]), cell_style),
+                Paragraph(_escape_paragraph(typ), cell_style),
+                Paragraph(_escape_paragraph(desc), cell_style),
+            ]
+        )
     if len(flat_rows) > 200:
-        payload_data.append(["...", f"({len(flat_rows) - 200} more rows)", "", ""])
+        payload_data.append(
+            [
+                Paragraph(_escape_paragraph("..."), cell_style),
+                Paragraph(
+                    _escape_paragraph(f"({len(flat_rows) - 200} more rows)"),
+                    cell_style,
+                ),
+                Paragraph(_escape_paragraph(""), cell_style),
+                Paragraph(_escape_paragraph(""), cell_style),
+            ]
+        )
     payload_table = Table(payload_data, colWidths=[100, 180, 50, 170])
     payload_table.setStyle(
         TableStyle(
             [
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F1F5F9")),
                 ("TEXTCOLOR", (0, 0), (-1, -1), colors.HexColor("#334155")),
-                ("FONT", (0, 0), (-1, 0), "Helvetica-Bold", 9),
-                ("FONT", (0, 1), (-1, -1), "Courier", 8),
                 ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
                 ("LEFTPADDING", (0, 0), (-1, -1), 6),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 6),
                 ("TOPPADDING", (0, 0), (-1, -1), 4),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-                ("WORDWRAP", (1, 0), (1, -1), True),
-                ("WORDWRAP", (3, 0), (3, -1), True),
             ]
         )
     )
@@ -277,27 +431,47 @@ def build_webhook_pdf(
     if analysis_summary or analysis_field_descriptions or analysis_explanation:
         if analysis_summary:
             story.append(Paragraph("<b>Summary</b>", body_style))
-            story.append(Paragraph(analysis_summary.replace("<", "&lt;").replace(">", "&gt;"), body_style))
+            story.append(
+                Paragraph(
+                    analysis_summary.replace("<", "&lt;").replace(">", "&gt;"),
+                    body_style,
+                )
+            )
             story.append(Spacer(1, 6))
         if analysis_explanation:
             story.append(Paragraph("<b>Explanation</b>", body_style))
-            story.append(Paragraph(analysis_explanation[:3000].replace("<", "&lt;").replace(">", "&gt;"), body_style))
+            story.append(
+                Paragraph(
+                    analysis_explanation[:3000]
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;"),
+                    body_style,
+                )
+            )
             if len(analysis_explanation) > 3000:
                 story.append(Paragraph("... (truncated)", body_style))
             story.append(Spacer(1, 6))
         if analysis_field_descriptions:
             story.append(Paragraph("<b>Field Descriptions</b>", body_style))
-            fd_data = [["Key", "Description"]]
+            fd_data = [
+                [
+                    Paragraph(_escape_paragraph("Key"), cell_style_header),
+                    Paragraph(_escape_paragraph("Description"), cell_style_header),
+                ]
+            ]
             for k, v in list(analysis_field_descriptions.items())[:50]:
-                fd_data.append([k, str(v)[:200]])
+                fd_data.append(
+                    [
+                        Paragraph(_escape_paragraph(k), cell_style),
+                        Paragraph(_escape_paragraph(str(v)[:200]), cell_style),
+                    ]
+                )
             fd_table = Table(fd_data, colWidths=[120, 330])
             fd_table.setStyle(
                 TableStyle(
                     [
                         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F1F5F9")),
                         ("TEXTCOLOR", (0, 0), (-1, -1), colors.HexColor("#334155")),
-                        ("FONT", (0, 0), (-1, 0), "Helvetica-Bold", 9),
-                        ("FONT", (0, 1), (-1, -1), "Courier", 8),
                         ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
                         ("VALIGN", (0, 0), (-1, -1), "TOP"),
                         ("LEFTPADDING", (0, 0), (-1, -1), 6),
@@ -312,6 +486,6 @@ def build_webhook_pdf(
         story.append(Paragraph("Not analyzed", body_style))
 
     output_time = datetime.now(timezone.utc)
-    canvas_cls = _make_numbered_canvas(sequence_index, output_time)
+    canvas_cls = _make_numbered_canvas(sequence_index, output_time, group_key)
     doc.build(story, canvasmaker=canvas_cls)
     return buffer.getvalue()

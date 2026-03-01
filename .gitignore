@@ -18,3 +18,8 @@ dist/
 # Environment
 .env
 .env.local
+
+# Optional PDF fonts (license may prohibit committing)
+fonts/*.ttc
+fonts/*.ttf
+fonts/*.otf

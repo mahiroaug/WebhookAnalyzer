@@ -762,7 +762,10 @@ async def export_webhook_pdf(
         analysis_field_descriptions=field_descriptions,
         sequence_index=webhook.sequence_index,
     )
-    filename = f"webhook-{webhook_id}-{webhook.source}-{webhook.event_type}.pdf".replace(" ", "_")
+    gen_date = datetime.now(timezone.utc).strftime("%Y%m%d")
+    index = webhook.sequence_index if webhook.sequence_index is not None else 0
+    safe_group = (webhook.group_key or "unknown").replace(" ", "_").replace(":", "-")
+    filename = f"Webhook-Report-{safe_group}-{gen_date}-{index}.pdf"
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
