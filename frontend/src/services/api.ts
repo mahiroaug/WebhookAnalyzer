@@ -108,6 +108,7 @@ export async function listWebhooks(
     event_type?: string;
     analyzed?: boolean;
     has_drift?: boolean;
+    is_read?: boolean;  // US-167
     session_id?: string;
     q?: string;
     limit?: number;
@@ -119,6 +120,7 @@ export async function listWebhooks(
   if (params?.event_type) cleanParams.event_type = params.event_type;
   if (params?.analyzed !== undefined) cleanParams.analyzed = String(params.analyzed);
   if (params?.has_drift !== undefined) cleanParams.has_drift = String(params.has_drift);
+  if (params?.is_read !== undefined) cleanParams.is_read = String(params.is_read);
   if (params?.session_id) cleanParams.session_id = params.session_id;
   if (params?.q) cleanParams.q = params.q;
   if (params?.limit != null) cleanParams.limit = String(params.limit);
@@ -153,6 +155,24 @@ export async function getAdjacentWebhooks(
 export async function markWebhookRead(id: string): Promise<void> {
   const res = await fetch(`${BASE}/webhooks/${id}/read`, { method: "PATCH" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
+/** US-167: フィルタ条件に一致する全 Webhook を既読にする */
+export async function markAllWebhooksRead(params?: {
+  source?: string;
+  event_type?: string;
+  q?: string;
+}): Promise<{ marked_count: number }> {
+  const sp = new URLSearchParams();
+  if (params?.source) sp.set("source", params.source);
+  if (params?.event_type) sp.set("event_type", params.event_type);
+  if (params?.q) sp.set("q", params.q);
+  const query = sp.toString();
+  const res = await fetch(`${BASE}/webhooks/mark-all-read${query ? `?${query}` : ""}`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
 }
 
 /** US-166: Webhook PDF レポートをダウンロード */

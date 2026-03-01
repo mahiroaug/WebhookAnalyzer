@@ -524,6 +524,36 @@ async def estimate_schema(
     )
 
 
+@router.post("/mark-all-read", status_code=200)
+async def mark_all_webhooks_read(
+    source: str | None = None,
+    event_type: str | None = None,
+    q: str | None = None,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """US-167: フィルタ条件に一致する全 Webhook を既読にする"""
+    base_stmt = select(Webhook)
+    q_stripped = (q or "").strip()
+    if q_stripped:
+        pattern = f"%{_escape_like_pattern(q_stripped)}%"
+        payload_text = cast(Webhook.payload, Text)
+        base_stmt = base_stmt.where(payload_text.ilike(pattern, escape="\\"))
+    if source:
+        base_stmt = base_stmt.where(Webhook.source == source)
+    if event_type:
+        base_stmt = base_stmt.where(Webhook.event_type == event_type)
+
+    result = await db.execute(base_stmt)
+    rows = result.scalars().all()
+    count = 0
+    for w in rows:
+        if not w.is_read:
+            w.is_read = True
+            count += 1
+    await db.commit()
+    return {"marked_count": count}
+
+
 @router.get("/report/markdown", response_class=PlainTextResponse)
 async def export_report_markdown(
     db: AsyncSession = Depends(get_db),

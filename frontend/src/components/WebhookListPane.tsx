@@ -11,6 +11,7 @@ import {
   listWebhooks,
   getStats,
   markWebhookRead,
+  markAllWebhooksRead,
   type WebhookListItem,
 } from "../services/api";
 import { SourceIcon } from "./SourceIcon";
@@ -48,6 +49,8 @@ export function WebhookListPane({
   const [sourceDropdownOpen, setSourceDropdownOpen] = useState(false);
   const [eventTypeDropdownOpen, setEventTypeDropdownOpen] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
+  const [filterUnreadOnly, setFilterUnreadOnly] = useState(false);  // US-167
+  const [markingAll, setMarkingAll] = useState(false);
 
   const webhookReceiveUrl = `${window.location.origin}/api/webhooks/receive`;
 
@@ -94,6 +97,7 @@ export function WebhookListPane({
         source: debouncedSource || undefined,
         event_type: debouncedEventType || undefined,
         q: searchQuery.trim() || undefined,
+        is_read: filterUnreadOnly ? false : undefined,
         limit: PAGE_SIZE,
         offset: (effectivePage - 1) * PAGE_SIZE,
       });
@@ -114,10 +118,24 @@ export function WebhookListPane({
   }
   loadRef.current = load;
 
+  const handleMarkAllRead = useCallback(async () => {
+    setMarkingAll(true);
+    try {
+      await markAllWebhooksRead({
+        source: debouncedSource || undefined,
+        event_type: debouncedEventType || undefined,
+        q: searchQuery.trim() || undefined,
+      });
+      load();
+    } finally {
+      setMarkingAll(false);
+    }
+  }, [debouncedSource, debouncedEventType, searchQuery]);
+
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- load uses debouncedSource, debouncedEventType, searchQuery, page from closure
-  }, [debouncedSource, debouncedEventType, searchQuery, page]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load uses debouncedSource, debouncedEventType, searchQuery, page, filterUnreadOnly from closure
+  }, [debouncedSource, debouncedEventType, searchQuery, page, filterUnreadOnly]);
 
   const { connected, status, reconnect } = useWebhookWebSocket((newId) => {
     loadRef.current(newId);
@@ -171,6 +189,28 @@ export function WebhookListPane({
         {/* US-162: サービス接続状況（30秒ポーリング） */}
         <div className="mb-2 rounded bg-slate-100 dark:bg-slate-800/50 px-2 py-1.5">
           <ServiceStatusPanel />
+        </div>
+        {/* US-167: Unread Only フィルタと Mark All Read */}
+        <div className="flex flex-wrap items-center gap-2 mb-2">
+          <label className="flex items-center gap-1 text-xs cursor-pointer">
+            <input
+              type="checkbox"
+              checked={filterUnreadOnly}
+              onChange={(e) => setFilterUnreadOnly(e.target.checked)}
+              className="rounded border-slate-400"
+            />
+            Unread Only
+          </label>
+          {items.some((w) => !w.is_read) && (
+            <button
+              type="button"
+              onClick={handleMarkAllRead}
+              disabled={markingAll}
+              className="text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
+            >
+              {markingAll ? "..." : "Mark All Read"}
+            </button>
+          )}
         </div>
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-medium text-slate-500 dark:text-dim-text-muted">

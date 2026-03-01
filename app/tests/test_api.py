@@ -427,6 +427,23 @@ async def test_export_webhook_pdf(
 
 
 @pytest.mark.asyncio
+async def test_mark_all_webhooks_read(
+    bitgo_transfer_payload: dict,
+) -> None:
+    """US-167: POST /api/webhooks/mark-all-read でフィルタ一致分を既読にする"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+        resp = await client.post("/api/webhooks/mark-all-read")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "marked_count" in data
+    assert isinstance(data["marked_count"], int)
+
+
+@pytest.mark.asyncio
 async def test_health_services_returns_structure() -> None:
     """US-162: GET /api/health/services が期待構造を返す"""
     async with AsyncClient(
