@@ -27,13 +27,50 @@ import {
 /** US-120: Webhook 遷移時も開閉状態を維持するリクエストヘッダー details */
 const REQUEST_HEADERS_STORAGE_KEY = "webhook-detail-request-headers-open";
 
-/** US-134: 分析ログビューア（展開可能・自動展開・総所要時間表示） */
-function AnalysisLogViewer({ logs, totalElapsedMs }: { logs: string[]; totalElapsedMs?: number | null }) {
+/** US-152: 構造化ログエントリ（時刻・プロンプト・回答） */
+interface AnalysisLogEntry {
+  message: string;
+  timestamp?: string;
+  prompt_full?: string;
+  response_full?: string;
+}
+
+/** US-134/152: 分析ログビューア（時刻・折りたたみプロンプト/回答・自動スクロール） */
+function AnalysisLogViewer({ logs, totalElapsedMs }: { logs: AnalysisLogEntry[]; totalElapsedMs?: number | null }) {
   const [open, setOpen] = useState(false);
-  // 初回ログ到達時に自動展開
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [userScrolledUp, setUserScrolledUp] = useState(false);
+
   useEffect(() => {
     if (logs.length > 0 && !open) setOpen(true);
-  }, [logs.length]); // eslint-disable-line react-hooks/exhaustive-deps -- open を deps に含めると展開後に閉じられなくなる
+  }, [logs.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!open || logs.length === 0) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    if (!userScrolledUp) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [logs.length, open, userScrolledUp]);
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 50;
+    setUserScrolledUp((u) => (nearBottom ? false : u || true));
+  };
+
+  const fmtTime = (ts: string | undefined) => {
+    if (!ts) return "";
+    try {
+      const d = new Date(ts);
+      return d.toLocaleTimeString("ja-JP", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    } catch {
+      return "";
+    }
+  };
+
   return (
     <div className="mt-2">
       <button
@@ -47,8 +84,45 @@ function AnalysisLogViewer({ logs, totalElapsedMs }: { logs: string[]; totalElap
         )}
       </button>
       {open && (
-        <pre className="mt-1 p-2 rounded border border-slate-600 dark:border-slate-600 bg-slate-900/50 text-xs font-mono text-slate-400 max-h-40 overflow-y-auto">
-          {logs.join("\n")}
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="mt-1 p-2 rounded border border-slate-600 dark:border-slate-600 bg-slate-900/50 text-xs font-mono text-slate-400 max-h-60 overflow-y-auto"
+        >
+          {logs.map((entry, i) => (
+            <div key={i} className="mb-2">
+              {entry.timestamp && (
+                <span className="text-slate-500 mr-2">{fmtTime(entry.timestamp)}</span>
+              )}
+              <span>{entry.message}</span>
+              {entry.prompt_full && (
+                <CollapsibleBlock label="プロンプト全文" content={entry.prompt_full} />
+              )}
+              {entry.response_full && (
+                <CollapsibleBlock label="AI回答全文" content={entry.response_full} />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CollapsibleBlock({ label, content }: { label: string; content: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-1 ml-2">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="text-slate-500 hover:text-slate-400 text-[10px]"
+      >
+        {open ? "▼" : "▶"} {label}
+      </button>
+      {open && (
+        <pre className="mt-0.5 p-2 rounded bg-slate-950/80 text-[10px] overflow-x-auto whitespace-pre-wrap break-words max-h-32 overflow-y-auto">
+          {content}
         </pre>
       )}
     </div>
@@ -132,8 +206,8 @@ export function WebhookDetailPage() {
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
-  /** US-134/135: ストリーミング分析ログとプログレス */
-  const [analysisLogs, setAnalysisLogs] = useState<string[]>([]);
+  /** US-134/135/152: ストリーミング分析ログ（構造化） */
+  const [analysisLogs, setAnalysisLogs] = useState<AnalysisLogEntry[]>([]);
   const [analysisProgress, setAnalysisProgress] = useState<{
     evidence: boolean;
     explanation: boolean;
@@ -163,9 +237,12 @@ export function WebhookDetailPage() {
       const raw = sessionStorage.getItem("webhook-analysis-logs");
       if (!raw) return;
       const parsed = JSON.parse(raw);
-      const storedLogs = Array.isArray(parsed) ? parsed : parsed?.logs;
+      const arr = Array.isArray(parsed) ? parsed : parsed?.logs ?? [];
+      const storedLogs: AnalysisLogEntry[] = arr.map((e: unknown) =>
+        typeof e === "string" ? { message: e } : (e as AnalysisLogEntry)
+      );
       const storedElapsed = !Array.isArray(parsed) && typeof parsed?.elapsedMs === "number" ? parsed.elapsedMs : undefined;
-      if (storedLogs?.length) {
+      if (storedLogs.length) {
         setAnalysisLogs(storedLogs);
         if (storedElapsed != null) setStreamElapsedMs(storedElapsed);
       }
@@ -310,7 +387,7 @@ export function WebhookDetailPage() {
     setAnalysisLogs([]);
     setAnalysisProgress({ evidence: false, explanation: false, fields: false, saved: false });
     setStreamElapsedMs(null);
-    const logs: string[] = [];
+    const logs: AnalysisLogEntry[] = [];
     let lastElapsedMs: number | null = null;
     try {
       const res = await triggerAnalyzeStream(
@@ -319,8 +396,14 @@ export function WebhookDetailPage() {
         (ev) => {
           const step = ev.step as "evidence" | "explanation" | "fields" | "saved";
           if (ev.message) {
-            logs.push(ev.message);
-            setAnalysisLogs((prev) => [...prev, ev.message!]);
+            const entry: AnalysisLogEntry = {
+              message: ev.message,
+              timestamp: ev.timestamp,
+              prompt_full: ev.prompt_full,
+              response_full: ev.response_full,
+            };
+            logs.push(entry);
+            setAnalysisLogs((prev) => [...prev, entry]);
           }
           if (ev.total_elapsed_ms != null) {
             lastElapsedMs = ev.total_elapsed_ms;

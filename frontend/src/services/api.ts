@@ -268,7 +268,7 @@ export async function triggerAnalyze(
   return res.json();
 }
 
-/** US-134: 分析ストリーミング。onEvent で各イベントを受け取り、完了時に analysis を返す */
+/** US-134: 分析ストリーミング。onEvent で各イベントを受け取り、完了時に analysis を返す。US-152: prompt_full, response_full, timestamp */
 export interface AnalyzeStreamEvent {
   step: string;
   message?: string;
@@ -276,6 +276,9 @@ export interface AnalyzeStreamEvent {
   total_elapsed_ms?: number;
   prompt_preview?: string;
   response_preview?: string;
+  prompt_full?: string;
+  response_full?: string;
+  timestamp?: string;
   result?: Record<string, unknown>;
   analysis?: WebhookAnalysisResponse;
 }

@@ -9,6 +9,7 @@ import json
 import logging
 import re
 import time
+from datetime import datetime
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from typing import Any
@@ -454,7 +455,7 @@ async def analyze_payload_with_ollama_stream(
 
     # Step 0: Evidence
     t0 = time.perf_counter()
-    yield {"step": "evidence", "message": "Evidence 収集中..."}
+    yield {"step": "evidence", "message": "Evidence 収集中...", "timestamp": datetime.now().isoformat()}
     evidence_parts: list[str] = []
     has_reference_urls = False
     if template_context:
@@ -489,14 +490,14 @@ async def analyze_payload_with_ollama_stream(
         evidence_section=evidence_section or "（参照ドキュメントなし）",
         payload_json=payload_str,
     )
-    yield {"step": "explanation", "message": "Step 1: Explanation 開始", "prompt_preview": prompt1[:200] + "..."}
+    yield {"step": "explanation", "message": "Step 1: Explanation 開始", "prompt_preview": prompt1[:200] + "...", "prompt_full": prompt1, "timestamp": datetime.now().isoformat()}
     content1 = await _call_ollama(prompt1, model)
     elapsed1 = (time.perf_counter() - t1) * 1000
     if not content1:
         yield {"step": "explanation", "message": "Step 1 失敗: 空レスポンス", "elapsed_ms": round(elapsed1, 1)}
         yield {"step": "done", "result": _result_to_dict(AnalysisResult(summary="", field_descriptions={}, explanation="", failed=True, error_message="step1_empty_response"))}
         return
-    yield {"step": "explanation", "message": f"Step 1 完了 ({len(content1)} chars)", "response_preview": content1[:300] + "...", "elapsed_ms": round(elapsed1, 1)}
+    yield {"step": "explanation", "message": f"Step 1 完了 ({len(content1)} chars)", "response_preview": content1[:300] + "...", "response_full": content1, "elapsed_ms": round(elapsed1, 1)}
     parsed1 = _extract_json(content1)
     if parsed1 is None or not isinstance(parsed1, dict):
         yield {"step": "error", "message": "LLM 出力が JSON ではありません"}
@@ -509,14 +510,14 @@ async def analyze_payload_with_ollama_stream(
     payload_keys = list(payload.keys()) if isinstance(payload, dict) else []
     payload_keys_str = ", ".join(f'"{k}"' for k in payload_keys) if payload_keys else "（なし）"
     prompt2 = _PROMPT_STEP2.format(explanation=explanation, payload_keys=payload_keys_str)
-    yield {"step": "fields", "message": "Step 2: Field Descriptions 開始"}
+    yield {"step": "fields", "message": "Step 2: Field Descriptions 開始", "prompt_full": prompt2, "timestamp": datetime.now().isoformat()}
     content2 = await _call_ollama(prompt2, model)
     elapsed2 = (time.perf_counter() - t2) * 1000
     if not content2:
         yield {"step": "fields", "message": "Step 2 失敗", "elapsed_ms": round(elapsed2, 1)}
         yield {"step": "done", "result": _result_to_dict(AnalysisResult(summary="", field_descriptions={}, explanation=explanation, failed=True, error_message="step2_empty_response"))}
         return
-    yield {"step": "fields", "message": f"Step 2 完了", "elapsed_ms": round(elapsed2, 1)}
+    yield {"step": "fields", "message": f"Step 2 完了", "response_full": content2, "elapsed_ms": round(elapsed2, 1)}
     parsed2 = _extract_json(content2)
     if not parsed2 or not isinstance(parsed2, dict):
         yield {"step": "error", "message": "不正な応答形式"}
@@ -532,14 +533,14 @@ async def analyze_payload_with_ollama_stream(
     prompt3 = _PROMPT_STEP3.format(
         field_descriptions_json=json.dumps(field_descriptions, ensure_ascii=False, indent=2),
     )
-    yield {"step": "summary", "message": "Step 3: Summary 開始"}
+    yield {"step": "summary", "message": "Step 3: Summary 開始", "prompt_full": prompt3, "timestamp": datetime.now().isoformat()}
     content3 = await _call_ollama(prompt3, model)
     elapsed3 = (time.perf_counter() - t3) * 1000
     if not content3:
         yield {"step": "summary", "message": "Step 3 失敗", "elapsed_ms": round(elapsed3, 1)}
         yield {"step": "done", "result": _result_to_dict(AnalysisResult(summary="", field_descriptions=field_descriptions, explanation=explanation, failed=True, error_message="step3_empty_response"))}
         return
-    yield {"step": "summary", "message": "Step 3 完了", "elapsed_ms": round(elapsed3, 1)}
+    yield {"step": "summary", "message": "Step 3 完了", "response_full": content3, "elapsed_ms": round(elapsed3, 1)}
     parsed3 = _extract_json(content3)
     if not parsed3 or not isinstance(parsed3, dict):
         yield {"step": "error", "message": "不正な応答形式"}
