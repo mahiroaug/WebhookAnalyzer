@@ -801,3 +801,113 @@ QA として、過去の Webhook payload を任意のエンドポイントへ再
   - Given 3 階層以上ネストした Payload がある、When 「全展開」ボタンをクリックする、Then 全階層が 1 回のクリックで同時に展開される … **OK**: useState 初期化子で triggers.expandAll をチェック
   - Given 全展開状態、When 「全折りたたみ」ボタンをクリックする、Then 全階層が即座に折りたたまれる … **OK**: 既存の collapseAll で対応
   - Given 全展開後に一部を手動で折りたたんだ状態、When 再度「全展開」をクリックする、Then 折りたたんだ部分も含めて全階層が展開される … **OK**: expandTrigger インクリメントで全ノードに useEffect 発火
+
+### US-159 Payload テーブル全展開の再修正とデフォルト全展開（P0）【完了】
+
+開発者として、Payload テーブルの「全展開」が全階層を確実に一括展開し、初期表示時にもデフォルトで全展開されてほしい。
+なぜなら現状の US-157 修正では一部の階層が展開されないケースがあり、毎回手動で全展開ボタンを押す手間が発生するから。
+
+- 受け入れ基準
+  - Given 4 階層以上ネストした Payload がある、When 詳細画面を初回表示する、Then 全階層がデフォルトで展開された状態で表示される … **OK**: expandTrigger 初期値 1、defaultExpanded true
+  - Given 全折りたたみ状態、When 「Expand All」ボタンをクリックする、Then 全階層（depth に関わらず）が 1 回のクリックで確実に展開される … **OK**
+  - Given 全展開状態、When 「Collapse All」をクリックする、Then depth 0 のみ表示され、全階層が折りたたまれる … **OK**
+  - Given 配列内にネストしたオブジェクトがある、When 全展開する、Then 配列の子要素内のネストも含めて全て展開される … **OK**
+
+### US-166 個別 Webhook の PDF レポートエクスポート（P0）【完了】
+
+開発者として、詳細ペインに表示中の Webhook を PDF レポートとしてエクスポートしたい。
+なぜなら調査結果を社内共有やドキュメント化する際に、印刷可能な形式で出力したいから。
+
+- 受け入れ基準
+  - Given 詳細ペインで Webhook を表示中、When 「Export PDF」ボタンをクリックする、Then PDF ファイルが生成されダウンロードされる … **OK**: GET /webhooks/{id}/export/pdf、フロント Export PDF ボタン
+  - Given 生成された PDF、When 内容を確認する、Then リクエスト情報（HTTP メソッド・ヘッダー・IP）、Payload 情報（整形済み JSON）、AI 分析結果（概要・個別解説・フィールド説明）が含まれている … **OK**: build_webhook_pdf
+  - Given PDF のデザイン、When 確認する、Then Web UI のダークテーマを踏襲したカラーパレット・タイポグラフィで作成されている … **OK**: slate 系配色
+  - Given AI 分析が未実行の Webhook、When PDF を出力する、Then AI 分析結果セクションは「Not analyzed」と表示され、エラーにならない … **OK**
+
+### US-161 一覧ペインの表示件数拡大（500 件）（P1）【完了】
+
+開発者として、一覧ペインに最大 500 件の Webhook を表示したい。
+なぜなら現在の 50 件では調査対象の全体像が把握できず、ページ送りの手間が多いから。
+
+- 受け入れ基準
+  - Given 500 件以上の Webhook がある、When 一覧ペインを表示する、Then 1 ページあたり 500 件が表示される … **OK**: PAGE_SIZE=500
+  - Given 500 件表示中、When スクロールする、Then パフォーマンスの問題なくスムーズにスクロールできる … **OK**
+  - Given 500 件を超えるデータがある、When ページ操作する、Then 次ページで残りが表示される … **OK**
+
+### US-165 UI ボタンラベルの英語統一（P1）【完了】
+
+開発者として、操作ボタンのラベルを英語に統一したい。
+なぜならデータが英語であるため、ボタンも英語のほうが自然で、コードとの一貫性も保てるから。
+
+- 受け入れ基準
+  - Given Payload テーブル、When ボタンを確認する、Then 「全展開」→「Expand All」、「全折りたたみ」→「Collapse All」、「保存」→「Save」、「キャンセル」→「Cancel」と英語で表示される … **OK**
+  - Given 詳細ペインの遷移ボタン、When 確認する、Then 「← 前へ」→「← Prev」、「次へ →」→「Next →」と英語で表示される … **OK**
+  - Given 一覧ペインのページネーション、When 確認する、Then 「前」→「Prev」、「次」→「Next」と英語で表示される … **OK**
+  - Given 詳細ペインの再送ボタン、When 確認する、Then 「再送」→「Replay」、「送信」→「Send」、「送信中...」→「Sending...」と英語で表示される … **OK**
+  - Given AI 分析ボタン、When 確認する、Then 「AI で分析」→「Analyze」、「再分析を実行」→「Re-analyze」、「分析中...」→「Analyzing...」と英語で表示される … **OK**
+  - Given マスキングチェックボックス、When 確認する、Then 「機密情報をマスク」→「Mask Sensitive Data」と英語で表示される … **OK**
+
+### US-158 Payload 表示モード切替（テーブル / JSON 生データ）（P1）【完了】
+
+開発者として、Payload セクションでテーブル表示と JSON 生データ表示（インデント整形済み）を切り替えたい。
+なぜなら構造を把握するにはテーブルが便利だが、API 連携やドキュメント作成時には JSON をそのままコピーしたいから。
+
+- 受け入れ基準
+  - Given Payload セクションが表示されている、When 「Table」/「JSON」タブを切り替える、Then テーブル表示と JSON 生データ表示が切り替わる … **OK**
+  - Given JSON 表示モード、When JSON を確認する、Then インデント整形済み（2 スペース）の JSON が表示される … **OK**
+  - Given JSON 表示モード、When コピーボタンをクリックする、Then JSON 全文がクリップボードにコピーされ、コピー完了フィードバック（✓ Copied）が表示される … **OK**
+  - Given テーブル表示モード、When 確認する、Then 既存の PayloadTable 機能（展開/折りたたみ、辞書説明、マスキング等）が正常に動作する … **OK**
+
+### US-160 一覧ペインの未読エントリハイライトと既読管理（P1）【完了】
+
+開発者として、一覧ペインで未読（未選択）の Webhook エントリを視覚的に区別し、選択時に自動で既読にしたい。
+なぜなら 500 件表示の中からまだ確認していないエントリを素早く見つけたいから。
+
+- 受け入れ基準
+  - Given 新規 Webhook が受信された、When 一覧ペインを確認する、Then 未読エントリが太字テキストと左端のアクセントバーで視覚的に強調される … **OK**
+  - Given 未読エントリをクリックする、When 詳細ペインに表示される、Then そのエントリが自動的に既読に変わり、太字とアクセントバーが解除される … **OK**
+  - Given 既読/未読状態、When ブラウザをリロードする、Then 状態が DB に永続化されているため維持される … **OK**
+  - Given 全エントリが既読の状態で新規 Webhook が着弾する、When 一覧を確認する、Then 新着エントリのみ未読として表示される … **OK**
+
+### US-163 event_type フィルタのプルダウン選択肢表示（P1）【完了】
+
+開発者として、event_type フィルタにも source と同じくプルダウン選択肢を表示したい。
+なぜなら event_type の正確な名前を覚えていなくても選択できるようにしたいから。
+
+- 受け入れ基準
+  - Given 一覧ペインの event_type フィルタ、When フォーカスする、Then 受信済み event_type の一覧がプルダウンで表示される … **OK**: getStats().by_event_type
+  - Given プルダウンに候補がある、When テキストを入力する、Then 入力文字列で候補がフィルタリングされる … **OK**
+  - Given プルダウンの候補をクリックする、When 選択する、Then event_type フィルタに反映される … **OK**
+  - Given フィルタにテキストを直接入力する、When 部分一致で検索する、Then テキスト入力による検索も引き続き機能する … **OK**
+
+### US-164 フィルタ入力のインクリメンタルサーチ（P1）【完了】
+
+開発者として、source / event_type フィルタに 1 文字入力するごとに一覧の検索結果がダイナミックに更新されてほしい。
+なぜなら Enter キーを押したり値を選択したりする前に、候補を絞り込んで素早く目的のエントリを見つけたいから。
+
+- 受け入れ基準
+  - Given source フィルタにテキストを入力する、When 1 文字入力するごと、Then 300ms 程度のデバウンスの後、一覧が自動的にフィルタリングされる … **OK**: useDebounce 300ms
+  - Given event_type フィルタにテキストを入力する、When 1 文字入力するごと、Then 同様にデバウンス後に一覧が自動更新される … **OK**
+  - Given 高速にタイプする、When デバウンス中に次の文字が入力される、Then 最後の入力から 300ms 後にのみ API が呼ばれ、不要なリクエストが抑制される … **OK**
+  - Given フィルタをクリアする、When 入力欄を空にする、Then 全件表示に戻る … **OK**
+
+### US-162 INBOX ヘッダーのサービス接続状況表示（P1）【完了】
+
+開発者として、INBOX ヘッダーに各サービスの接続状況（公開 URL / ローカル API / PostgreSQL / Ollama）を一目で確認したい。
+なぜなら Webhook 調査の前提となるサービス稼働状況をブラウザ上で即座に把握したいから。
+
+- 受け入れ基準
+  - Given INBOX ヘッダーを表示する、When 確認する、Then 以下 4 項目が縦並びで接続状況とともに表示される: (1) 公開 URL（ngrok 等）と Live / Offline ステータス (2) ローカル API（localhost:8000）と Live / Offline ステータス (3) PostgreSQL プロセス稼働状況（Live / Offline） (4) Ollama プロセス稼働状況（Live / Offline） … **OK**: ServiceStatusPanel
+  - Given ngrok が起動している、When バックエンドが ngrok API（`http://localhost:4040/api/tunnels`）を自動検出する、Then 公開 URL と「Live」が緑ドットで表示される … **OK**
+  - Given ngrok が未起動、When 検出を試みる、Then 「Offline」がグレードットで表示される … **OK**
+  - Given いずれかのサービスがダウンした、When ステータスが変わる、Then 定期ポーリング（30 秒間隔）で状態が更新される … **OK**: setInterval 30s
+
+### US-167 一括既読操作と未読フィルタ（P2）【完了】
+
+開発者として、複数の未読エントリを一括で既読にし、未読のみをフィルタリングしたい。
+なぜなら 500 件表示で未読が大量にある場合、1 件ずつ開くのは非効率だから。
+
+- 受け入れ基準
+  - Given 一覧ペインに未読エントリがある、When 「Mark All Read」ボタンをクリックする、Then 現在のフィルタ条件に一致する全エントリが既読に変更される … **OK**: POST /mark-all-read
+  - Given 一覧ペイン、When 「Unread Only」フィルタを有効にする、Then 未読エントリだけが表示される … **OK**: listWebhooks is_read=false
+  - Given 全て既読にした後、When フィルタを解除する、Then 全エントリが通常表示に戻る … **OK**

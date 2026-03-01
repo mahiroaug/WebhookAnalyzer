@@ -112,3 +112,13 @@
 | US-155 | INBOX ヘッダーの Webhook 受信 URL 表示                  | OK           | URL 表示、クリック/アイコンでコピー、2秒間 ✓ フィードバック                                |
 | US-156 | WebSocket リアルタイム更新の修復と接続状態改善          | OK           | Vite ws:true、status connecting/reconnecting/connected、新着時 page 1 表示               |
 | US-157 | Payload テーブル「全展開」の全階層一括展開修正          | OK           | useExpandTrigger の useState 初期化子で expandAll > 0 をチェック、子マウント時から展開  |
+| US-159 | Payload テーブル全展開の再修正とデフォルト全展開       | OK           | expandTrigger 初期値 1、defaultExpanded true で全階層デフォルト展開                    |
+| US-166 | 個別 Webhook の PDF レポートエクスポート              | OK           | reportlab、GET /export/pdf、Export PDF ボタン、リクエスト/Payload/AI 分析を含む        |
+| US-161 | 一覧ペインの表示件数拡大（500 件）                    | OK           | PAGE_SIZE 50→500                                                            |
+| US-165 | UI ボタンラベルの英語統一                            | OK           | PayloadTable/WebhookDetailPage/WebhookListPane/WebhookListPage のボタンラベル |
+| US-158 | Payload 表示モード切替（テーブル / JSON 生データ）   | OK           | Table/JSON タブ、Copy ボタン、フォーマット済み JSON 表示                        |
+| US-160 | 一覧ペインの未読エントリハイライトと既読管理         | OK           | is_read カラム、PATCH /read、未読は font-semibold + 左ボーダー、選択で既読化      |
+| US-163 | event_type フィルタのプルダウン選択肢表示             | OK           | getStats().by_event_type で候補表示、source と同様のプルダウン                     |
+| US-164 | フィルタ入力のインクリメンタルサーチ                 | OK           | useDebounce 300ms、source/event_type 入力で自動フィルタ                            |
+| US-162 | INBOX ヘッダーのサービス接続状況表示                 | OK           | GET /api/health/services、ServiceStatusPanel、30秒ポーリング、ngrok/API/DB/Ollama |
+| US-167 | 一括既読操作と未読フィルタ                           | OK           | Mark All Read ボタン、Unread Only チェックボックス、POST /mark-all-read            |
