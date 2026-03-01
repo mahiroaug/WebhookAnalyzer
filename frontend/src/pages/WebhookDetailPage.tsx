@@ -531,37 +531,6 @@ export function WebhookDetailPage() {
         )}
       </AccordionSection>
 
-      {webhook.schema_drift?.has_drift && (
-        <AccordionSection
-          id="drift"
-          title="スキーマドリフト"
-          defaultOpen={false}
-          badge={webhook.schema_drift.risk_level === "high"
-            ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-900/30 text-red-300">高リスク</span>
-            : <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/30 text-amber-300">検知</span>
-          }
-        >
-          <div className="space-y-2 text-sm">
-            {webhook.schema_drift.added && webhook.schema_drift.added.length > 0 && (
-              <div><span className="font-medium text-green-400">追加:</span> <span className="font-mono">{webhook.schema_drift.added.join(", ")}</span></div>
-            )}
-            {webhook.schema_drift.removed && webhook.schema_drift.removed.length > 0 && (
-              <div><span className="font-medium text-red-400">削除:</span> <span className="font-mono">{webhook.schema_drift.removed.join(", ")}</span></div>
-            )}
-            {webhook.schema_drift.type_changed && webhook.schema_drift.type_changed.length > 0 && (
-              <div>
-                <span className="font-medium text-amber-400">型変更:</span>
-                <ul className="mt-1 list-disc list-inside space-y-0.5">
-                  {webhook.schema_drift.type_changed.map((tc, i) => (
-                    <li key={i} className="font-mono text-xs">{tc.path}: {tc.expected_type} → {tc.actual_type}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </AccordionSection>
-      )}
-
       <AccordionSection id="payload" title="Payload" defaultOpen={true}>
         <div className="flex items-center gap-2 mb-2">
           <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
@@ -637,6 +606,38 @@ export function WebhookDetailPage() {
             </div>
           )}
           {/* US-120: 再分析ボタンは 1 箇所のみ（下の AnalyzeButton に集約） */}
+        </AccordionSection>
+      )}
+
+      {/* US-150: スキーマドリフトは AI 分析結果の下に配置 */}
+      {webhook.schema_drift?.has_drift && (
+        <AccordionSection
+          id="drift"
+          title="スキーマドリフト"
+          defaultOpen={false}
+          badge={webhook.schema_drift.risk_level === "high"
+            ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-900/30 text-red-300">高リスク</span>
+            : <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/30 text-amber-300">検知</span>
+          }
+        >
+          <div className="space-y-2 text-sm">
+            {webhook.schema_drift.added && webhook.schema_drift.added.length > 0 && (
+              <div><span className="font-medium text-green-400">追加:</span> <span className="font-mono">{webhook.schema_drift.added.join(", ")}</span></div>
+            )}
+            {webhook.schema_drift.removed && webhook.schema_drift.removed.length > 0 && (
+              <div><span className="font-medium text-red-400">削除:</span> <span className="font-mono">{webhook.schema_drift.removed.join(", ")}</span></div>
+            )}
+            {webhook.schema_drift.type_changed && webhook.schema_drift.type_changed.length > 0 && (
+              <div>
+                <span className="font-medium text-amber-400">型変更:</span>
+                <ul className="mt-1 list-disc list-inside space-y-0.5">
+                  {webhook.schema_drift.type_changed.map((tc, i) => (
+                    <li key={i} className="font-mono text-xs">{tc.path}: {tc.expected_type} → {tc.actual_type}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </AccordionSection>
       )}
 
