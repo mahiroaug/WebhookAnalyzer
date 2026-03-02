@@ -45,6 +45,7 @@ class WebhookListItem(BaseModel):
     remote_ip: str | None = None
     matched_rules: list[MatchedRule] = []  # US-146
     is_read: bool = False  # US-160
+    is_favorite: bool = False  # US-179
 
 
 class WebhookListResponse(BaseModel):
@@ -52,6 +53,12 @@ class WebhookListResponse(BaseModel):
 
     items: list[WebhookListItem]
     total: int
+
+
+class FavoriteToggleResponse(BaseModel):
+    """US-179: お気に入りトグルのレスポンス"""
+
+    is_favorite: bool
 
 
 class ReplayRequest(BaseModel):

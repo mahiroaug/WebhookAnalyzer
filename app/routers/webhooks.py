@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.models.webhook import Webhook, WebhookAnalysis
 from app.schemas.webhook import (
+    FavoriteToggleResponse,
     AdjacentResponse,
     EventTypeGroup,
     EventTypeGroupResponse,
@@ -181,6 +182,7 @@ async def list_webhooks(
     analyzed: bool | None = None,
     has_drift: bool | None = None,
     is_read: bool | None = None,  # US-160
+    is_favorite: bool | None = None,  # US-179
     session_id: UUID | None = None,
     q: str | None = None,
     limit: int = 20,
@@ -232,6 +234,8 @@ async def list_webhooks(
             )
     if is_read is not None:
         base_stmt = base_stmt.where(Webhook.is_read == is_read)
+    if is_favorite is not None:
+        base_stmt = base_stmt.where(Webhook.is_favorite == is_favorite)
 
     # 総件数を取得
     count_stmt = select(func.count(Webhook.id))
@@ -274,6 +278,8 @@ async def list_webhooks(
             )
     if is_read is not None:
         count_stmt = count_stmt.where(Webhook.is_read == is_read)
+    if is_favorite is not None:
+        count_stmt = count_stmt.where(Webhook.is_favorite == is_favorite)
     total_result = await db.execute(count_stmt)
     total = total_result.scalar_one() or 0
 
@@ -313,6 +319,7 @@ async def list_webhooks(
                 MatchedRule(id=r["id"], name=r["name"]) for r in evaluate_rules(w.payload or {})
             ],
             is_read=w.is_read,
+            is_favorite=w.is_favorite,
         )
         for w in rows
     ]
@@ -461,6 +468,8 @@ async def get_grouped_by_event_type(
                         MatchedRule(id=r["id"], name=r["name"])
                         for r in evaluate_rules(sample_wh.payload or {})
                     ],
+                    is_read=sample_wh.is_read,
+                    is_favorite=sample_wh.is_favorite,
                 ),
                 is_known=event_type.lower() != "unknown",
             )
@@ -720,6 +729,22 @@ async def mark_webhook_read(
         raise HTTPException(status_code=404, detail="Webhook not found")
     webhook.is_read = True
     await db.commit()
+
+
+@router.patch("/{webhook_id}/favorite", response_model=FavoriteToggleResponse)
+async def toggle_webhook_favorite(
+    webhook_id: UUID,
+    db: AsyncSession = Depends(get_db),
+) -> FavoriteToggleResponse:
+    """US-179: Webhook のお気に入りをトグルする"""
+    stmt = select(Webhook).where(Webhook.id == webhook_id)
+    result = await db.execute(stmt)
+    webhook = result.scalar_one_or_none()
+    if not webhook:
+        raise HTTPException(status_code=404, detail="Webhook not found")
+    webhook.is_favorite = not webhook.is_favorite
+    await db.commit()
+    return FavoriteToggleResponse(is_favorite=webhook.is_favorite)
 
 
 @router.get("/{webhook_id}/export/pdf")

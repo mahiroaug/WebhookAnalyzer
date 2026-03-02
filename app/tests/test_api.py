@@ -521,6 +521,75 @@ async def test_mark_all_webhooks_read(
 
 
 @pytest.mark.asyncio
+async def test_toggle_webhook_favorite(
+    bitgo_transfer_payload: dict,
+) -> None:
+    """US-179: PATCH /webhooks/{id}/favorite でお気に入りをトグルできる"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        post_resp = await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+        webhook_id = post_resp.json()["id"]
+        list_resp = await client.get("/api/webhooks")
+        items = list_resp.json()["items"]
+        before = next((i for i in items if i["id"] == webhook_id), {})
+        assert before.get("is_favorite") is False
+        toggle_resp = await client.patch(f"/api/webhooks/{webhook_id}/favorite")
+    assert toggle_resp.status_code == 200
+    data = toggle_resp.json()
+    assert data.get("is_favorite") is True
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        toggle_resp2 = await client.patch(f"/api/webhooks/{webhook_id}/favorite")
+    assert toggle_resp2.status_code == 200
+    assert toggle_resp2.json().get("is_favorite") is False
+
+
+@pytest.mark.asyncio
+async def test_list_webhooks_filter_is_favorite(
+    bitgo_transfer_payload: dict,
+) -> None:
+    """US-179: is_favorite=true でお気に入りのみ一覧取得できる"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        r1 = await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+        assert r1.status_code == 201
+        wid = r1.json()["id"]
+        await client.patch(f"/api/webhooks/{wid}/favorite")
+        resp = await client.get("/api/webhooks", params={"is_favorite": "true"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total"] >= 1
+        fav_items = [i for i in data["items"] if i["id"] == wid]
+        assert len(fav_items) == 1
+        assert fav_items[0]["is_favorite"] is True
+        resp2 = await client.get("/api/webhooks", params={"is_favorite": "false"})
+        assert resp2.status_code == 200
+        non_fav = [i for i in resp2.json()["items"] if i["id"] == wid]
+        assert len(non_fav) == 0
+
+
+@pytest.mark.asyncio
+async def test_toggle_webhook_favorite_404(
+    bitgo_transfer_payload: dict,
+) -> None:
+    """US-179: 存在しない ID で 404"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        resp = await client.patch(
+            "/api/webhooks/00000000-0000-0000-0000-000000000000/favorite"
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_health_services_returns_structure() -> None:
     """US-162/US-177/US-178: GET /api/health/services が期待構造を返す"""
     async with AsyncClient(

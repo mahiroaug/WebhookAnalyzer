@@ -12,6 +12,7 @@ import {
   getFilterOptions,
   markWebhookRead,
   markAllWebhooksRead,
+  toggleWebhookFavorite,
   type WebhookListItem,
 } from "../services/api";
 import { SourceIcon } from "./SourceIcon";
@@ -80,6 +81,7 @@ export function WebhookListPane({
   const [sourceDropdownOpen, setSourceDropdownOpen] = useState(false);
   const [eventTypeDropdownOpen, setEventTypeDropdownOpen] = useState(false);
   const [filterUnreadOnly, setFilterUnreadOnly] = useState(false); // US-167
+  const [filterFavoritesOnly, setFilterFavoritesOnly] = useState(false); // US-179
   const [markingAll, setMarkingAll] = useState(false);
   const [muted, setMuted] = useState(() => {
     try { return localStorage.getItem("webhook-se-muted") === "1"; } catch { return false; }
@@ -104,6 +106,22 @@ export function WebhookListPane({
     [onSelect],
   );
 
+  const handleFavoriteClick = useCallback(
+    (e: React.MouseEvent, item: WebhookListItem) => {
+      e.stopPropagation();
+      toggleWebhookFavorite(item.id)
+        .then((res) => {
+          setItems((prev) =>
+            prev.map((w) =>
+              w.id === item.id ? { ...w, is_favorite: res.is_favorite } : w,
+            ),
+          );
+        })
+        .catch(() => {});
+    },
+    [],
+  );
+
   async function load(newId?: string) {
     setLoading(true);
     try {
@@ -115,6 +133,7 @@ export function WebhookListPane({
         event_type: debouncedEventType || undefined,
         q: searchQuery.trim() || undefined,
         is_read: filterUnreadOnly ? false : undefined,
+        is_favorite: filterFavoritesOnly ? true : undefined,
         limit: PAGE_SIZE,
         offset: (effectivePage - 1) * PAGE_SIZE,
       });
@@ -156,8 +175,8 @@ export function WebhookListPane({
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- load uses debouncedSource, debouncedEventType, searchQuery, page, filterUnreadOnly from closure
-  }, [debouncedSource, debouncedEventType, searchQuery, page, filterUnreadOnly]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load uses debouncedSource, debouncedEventType, searchQuery, page, filterUnreadOnly, filterFavoritesOnly from closure
+  }, [debouncedSource, debouncedEventType, searchQuery, page, filterUnreadOnly, filterFavoritesOnly]);
 
   const { connected, status, reconnect } = useWebhookWebSocket((newId) => {
     loadRef.current(newId);
@@ -198,7 +217,7 @@ export function WebhookListPane({
         <div className="mb-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden min-w-0">
           <ServiceStatusPanel />
         </div>
-        {/* US-167: Unread Only フィルタ / Mark All Read / ミュート */}
+        {/* US-167: Unread Only フィルタ / US-179: Favorites Only / Mark All Read / ミュート */}
         <div className="flex flex-wrap items-center gap-2 mb-2">
           <label className="flex items-center gap-1 text-xs cursor-pointer">
             <input
@@ -208,6 +227,15 @@ export function WebhookListPane({
               className="rounded border-slate-400"
             />
             Unread Only
+          </label>
+          <label className="flex items-center gap-1 text-xs cursor-pointer">
+            <input
+              type="checkbox"
+              checked={filterFavoritesOnly}
+              onChange={(e) => setFilterFavoritesOnly(e.target.checked)}
+              className="rounded border-slate-400"
+            />
+            Favorites Only
           </label>
           <button
             type="button"
@@ -369,7 +397,11 @@ export function WebhookListPane({
           <div className="p-4 text-center text-xs text-slate-400">読み込み中...</div>
         ) : items.length === 0 ? (
           <div className="p-4 text-center text-xs text-slate-400">
-            {searchQuery.trim() ? "該当する Webhook がありません" : "Webhook がありません"}
+            {filterFavoritesOnly
+              ? "No favorites yet"
+              : searchQuery.trim()
+                ? "該当する Webhook がありません"
+                : "Webhook がありません"}
           </div>
         ) : (
           items.map((w) => {
@@ -395,6 +427,15 @@ export function WebhookListPane({
                       : "text-xs hover:bg-slate-50 dark:hover:bg-slate-800/40"
                 } ${isNew ? "new-arrival-glow" : isUnread ? "unread-glow" : ""}`}
               >
+                <button
+                  type="button"
+                  onClick={(e) => handleFavoriteClick(e, w)}
+                  className="shrink-0 mt-0.5 text-amber-400 hover:text-amber-300 transition-colors focus:outline-none"
+                  title={w.is_favorite ? "Remove from favorites" : "Add to favorites"}
+                  aria-label={w.is_favorite ? "Remove from favorites" : "Add to favorites"}
+                >
+                  {w.is_favorite ? "★" : "☆"}
+                </button>
                 <SourceIcon source={w.source} size="w-5 h-5 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">

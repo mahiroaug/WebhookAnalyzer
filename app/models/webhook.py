@@ -37,6 +37,7 @@ class Webhook(Base):
     request_headers: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     schema_drift: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     is_read: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")  # US-160
+    is_favorite: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")  # US-179
     received_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

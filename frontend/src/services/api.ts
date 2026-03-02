@@ -20,6 +20,7 @@ export interface WebhookListItem {
   remote_ip?: string | null;
   matched_rules?: MatchedRule[];
   is_read?: boolean;
+  is_favorite?: boolean;  // US-179
 }
 
 export interface WebhookDetail {
@@ -109,6 +110,7 @@ export async function listWebhooks(
     analyzed?: boolean;
     has_drift?: boolean;
     is_read?: boolean;  // US-167
+    is_favorite?: boolean;  // US-179
     session_id?: string;
     q?: string;
     limit?: number;
@@ -121,6 +123,7 @@ export async function listWebhooks(
   if (params?.analyzed !== undefined) cleanParams.analyzed = String(params.analyzed);
   if (params?.has_drift !== undefined) cleanParams.has_drift = String(params.has_drift);
   if (params?.is_read !== undefined) cleanParams.is_read = String(params.is_read);
+  if (params?.is_favorite !== undefined) cleanParams.is_favorite = String(params.is_favorite);
   if (params?.session_id) cleanParams.session_id = params.session_id;
   if (params?.q) cleanParams.q = params.q;
   if (params?.limit != null) cleanParams.limit = String(params.limit);
@@ -155,6 +158,13 @@ export async function getAdjacentWebhooks(
 export async function markWebhookRead(id: string): Promise<void> {
   const res = await fetch(`${BASE}/webhooks/${id}/read`, { method: "PATCH" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
+/** US-179: Webhook のお気に入りをトグルする */
+export async function toggleWebhookFavorite(id: string): Promise<{ is_favorite: boolean }> {
+  const res = await fetch(`${BASE}/webhooks/${id}/favorite`, { method: "PATCH" });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
 }
 
 /** US-167: フィルタ条件に一致する全 Webhook を既読にする */
