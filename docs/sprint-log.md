@@ -133,3 +133,4 @@
 | US-176 | INBOX ヘッダーの簡素化と URL 全文表示                    | OK           | 受信 URL バー削除、ServiceStatusPanel の thead 削除、max-w-[140px] 制約削除で URL 全文表示 |
 | US-177 | ServiceStatusPanel の 2列ラベル化とコンパクト表示       | OK           | Part/Component 2列、絵文字🟢⚫、Vite行追加、localhost形式URL、text-[10px]、余白最小化 |
 | US-178 | ヘルスチェックの信頼性向上                              | OK           | latency_ms/checked_at/error、Ollamaモデル確認、ngrok E2E HEAD、ツールチップ表示 |
+| US-179 | お気に入りマークとお気に入りフィルタ                     | OK           | is_favorite カラム、PATCH /favorite トグル、Favorites Only チェックボックス、星☆★アイコン、「No favorites yet」空状態 |
