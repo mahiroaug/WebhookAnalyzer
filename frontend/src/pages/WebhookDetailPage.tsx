@@ -901,7 +901,7 @@ export function WebhookDetailPage({
           >
             {analyzing && (
               <span
-                className="inline-block w-4 h-4 border-2 border-slate-400 dark:border-slate-400 border-t-transparent rounded-full us133-spinner"
+                className="inline-block w-4 h-4 border-2 border-indigo-400 dark:border-indigo-300 border-t-transparent rounded-full us133-spinner"
                 aria-hidden
               />
             )}

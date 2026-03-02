@@ -187,6 +187,7 @@ Webhook Analyzer を `webhook.site` のような「受信確認 + 高速調査 +
 | 21 | US-182 | 既存 unknown Webhook のルールベース一括再分類 | P0 |
 | 21 | US-183 | unknown Webhook の UI 再分類ボタン | P0 |
 | 21 | US-184 | Fireblocks Notifications 分類の eventKey 依存除去 | P0 |
+| 22 | US-185 | フィルタクリアボタンと分析スピナー視認性改善 | P1 |
 
 ## バックログ（未着手）
 

@@ -330,8 +330,18 @@ export function WebhookListPane({
               onChange={(e) => onFilterSourceChange(e.target.value)}
               onFocus={() => setSourceDropdownOpen(true)}
               onBlur={() => setTimeout(() => setSourceDropdownOpen(false), 150)}
-              className="w-full min-w-0 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/50 px-2 py-1 text-xs"
+              className="w-full min-w-0 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/50 px-2 py-1 pr-6 text-xs"
             />
+            {filterSource && (
+              <button
+                type="button"
+                onClick={() => onFilterSourceChange("")}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs leading-none"
+                title="Clear"
+              >
+                x
+              </button>
+            )}
             {sourceDropdownOpen && (
               <div
                 className="absolute left-0 right-0 top-full mt-0.5 max-h-32 overflow-y-auto rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-lg z-10"
@@ -375,8 +385,18 @@ export function WebhookListPane({
               onChange={(e) => onFilterEventTypeChange(e.target.value)}
               onFocus={() => setEventTypeDropdownOpen(true)}
               onBlur={() => setTimeout(() => setEventTypeDropdownOpen(false), 150)}
-              className="w-full min-w-0 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/50 px-2 py-1 text-xs"
+              className="w-full min-w-0 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/50 px-2 py-1 pr-6 text-xs"
             />
+            {filterEventType && (
+              <button
+                type="button"
+                onClick={() => onFilterEventTypeChange("")}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs leading-none"
+                title="Clear"
+              >
+                x
+              </button>
+            )}
             {eventTypeDropdownOpen && (
               <div
                 className="absolute left-0 right-0 top-full mt-0.5 max-h-32 overflow-y-auto rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-lg z-10"

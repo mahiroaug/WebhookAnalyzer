@@ -45,8 +45,8 @@ function MoonIcon({ className }: { className?: string }) {
 }
 
 const navItems = [
-  { to: "/", label: "ダッシュボード" },
-  { to: "/settings/alert-rules", label: "検知ルール" },
+  { to: "/", label: "Dashboard" },
+  { to: "/settings/alert-rules", label: "Alert Rules" },
 ];
 
 export function Layout() {
@@ -75,9 +75,9 @@ export function Layout() {
               to="/"
               className="text-lg font-semibold text-slate-900 dark:text-dim-text shrink-0 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
             >
-              Webhook Analyzer
+              Webhook AI Analyzer
             </Link>
-            <div className="flex-1 max-w-xs mx-4">
+            <div className="flex-1 max-w-xs mx-4 relative">
               <input
                 type="text"
                 placeholder="全文検索..."
@@ -86,8 +86,18 @@ export function Layout() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleSearch(searchInput);
                 }}
-                className="w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/50 px-3 py-1.5 text-sm"
+                className="w-full rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/50 px-3 py-1.5 pr-7 text-sm"
               />
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={() => { setSearchInput(""); handleSearch(""); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-sm leading-none"
+                  title="Clear"
+                >
+                  x
+                </button>
+              )}
             </div>
             <div className="flex items-center gap-4 shrink-0">
               <button

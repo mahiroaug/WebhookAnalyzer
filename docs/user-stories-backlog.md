@@ -75,3 +75,7 @@
 
 > US-180, US-181, US-182, US-183, US-184 は完了。→ [`user-stories-completed.md`](./user-stories-completed.md)
 
+### Phase 22: UI 操作性改善
+
+> US-185 は完了。→ [`user-stories-completed.md`](./user-stories-completed.md)
+

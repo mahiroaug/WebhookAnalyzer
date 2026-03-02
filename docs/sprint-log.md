@@ -139,3 +139,4 @@
 | US-182 | 既存 unknown Webhook のルールベース一括再分類           | OK           | POST /api/webhooks/reclassify、source=unknown の全件に classifier 再適用、total/reclassified/unchanged レスポンス |
 | US-183 | unknown Webhook の UI 再分類ボタン                     | OK           | Reclassify All ボタン（INBOX ヘッダー、unknown 存在時のみ）、個別 Reclassify ボタン（DetailNavBar、unknown のみ）、POST /{id}/reclassify API |
 | US-184 | Fireblocks Notifications 分類の eventKey 依存除去      | OK           | classifier 条件から eventKey を除去、category+subject+event の 3 フィールドで判定、subject を正規化して event_type 導出、Reclassify ボタン unchanged 時フィードバック追加 |
+| US-185 | フィルタクリアボタンと分析スピナー視認性改善           | OK           | source/event_type/全文検索の各 input に x クリアボタン追加（値があるときのみ表示）、スピナー border を indigo-400/300 に変更しダークモード視認性向上 |

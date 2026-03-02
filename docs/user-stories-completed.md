@@ -1098,3 +1098,15 @@ Web3エンジニアとして、Fireblocks の Administration 系通知（Webhook
   - Given `category`/`subject`/`event` を持つが `eventKey` を持たない Fireblocks ペイロード（例: `subject: "Webhooks Notification"`, `event: "Created"`）が送信されたとき、When 受信すると、Then `source="fireblocks"`、`event_type="webhooks_notification.created"` で分類される … **OK**: classifier の条件から eventKey を除去、subject を正規化して event_type を導出
   - Given `eventKey` を持つ従来の Fireblocks Notifications ペイロード（例: `subject: "Transaction"`, `event: "Submitted"`）が送信されたとき、When 受信すると、Then 従来と同じ `event_type="transaction.submitted"` で分類される（後方互換） … **OK**: subject="Transaction" → normalized="transaction" で同一結果
   - Given 詳細ペインで unknown Webhook の Reclassify ボタンを押したとき、When 再分類の結果 unchanged であっても、Then「No rules matched」等のフィードバックが表示される … **OK**: reclassifyMsg state で結果を表示
+
+## Phase 22: UI 操作性改善
+
+### US-185 フィルタクリアボタンと分析スピナー視認性改善（P1）【完了】
+
+Web3エンジニアとして、フィルタ入力欄をワンタップでクリアでき、AI 分析中のスピナーが明確に回転していることを視認したい。
+なぜなら、フィルタのクリアにドロップダウンを開く手間がかかり、スピナーが見えないと分析中かどうか判断に迷うから。
+
+- 受け入れ基準
+  - Given source / event_type / 全文検索のいずれかに文字が入力されているとき、When 入力欄を確認すると、Then 右端に x（クリア）ボタンが表示され、押下すると入力がクリアされる … **OK**: 3 箇所の input に条件付き x ボタン追加、クリック時に値をリセット
+  - Given 入力欄が空のとき、When 確認すると、Then クリアボタンは非表示 … **OK**: `{value && (<button>x</button>)}` で条件表示
+  - Given AI 分析中（Analyzing...）のとき、When ボタンを確認すると、Then スピナーの回転が明確に視認できる（ダークモードでもコントラスト十分） … **OK**: border 色を slate-400 から indigo-400/indigo-300 に変更
