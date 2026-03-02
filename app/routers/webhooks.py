@@ -16,6 +16,7 @@ from app.schemas.webhook import (
     FavoriteToggleResponse,
     AdjacentResponse,
     ReclassifyResponse,
+    SingleReclassifyResponse,
     EventTypeGroup,
     EventTypeGroupResponse,
     FilterOptionsResponse,
@@ -883,3 +884,32 @@ async def replay_webhook(
             success=False,
             error=str(e)[:200],
         )
+
+
+@router.post("/{webhook_id}/reclassify", response_model=SingleReclassifyResponse)
+async def reclassify_single_webhook(
+    webhook_id: UUID,
+    db: AsyncSession = Depends(get_db),
+) -> SingleReclassifyResponse:
+    """US-183: 個別 Webhook に classifier を再適用する"""
+    stmt = select(Webhook).where(Webhook.id == webhook_id)
+    result = await db.execute(stmt)
+    webhook = result.scalar_one_or_none()
+    if not webhook:
+        raise HTTPException(status_code=404, detail="Webhook not found")
+
+    classification = classify_webhook(webhook.payload)
+    changed = (
+        classification.source != webhook.source
+        or classification.event_type != webhook.event_type
+    )
+    if changed:
+        webhook.source = classification.source
+        webhook.event_type = classification.event_type
+        webhook.group_key = classification.group_key
+    return SingleReclassifyResponse(
+        source=webhook.source,
+        event_type=webhook.event_type,
+        group_key=webhook.group_key,
+        changed=changed,
+    )

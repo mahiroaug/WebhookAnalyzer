@@ -1077,3 +1077,14 @@ Web3エンジニアとして、classifier ルール追加前に受信された `
 - 受け入れ基準
   - Given `source="unknown"` の Webhook が複数存在するとき、When `POST /api/webhooks/reclassify` を実行すると、Then 各 Webhook の payload に対して最新の classifier ルールが再適用され、マッチしたものは `source` / `event_type` / `group_key` が更新される。レスポンスには `total`（対象件数）、`reclassified`（更新件数）、`unchanged`（unknown のまま）が返される … **OK**: reclassify エンドポイント実装、classifier 再適用で更新
   - Given 全ての unknown Webhook が現行の classifier ルールにマッチしない場合、When 再分類を実行すると、Then 全件 `unchanged` として返され、既存データに副作用がない … **OK**: マッチしなければ更新なし
+
+### US-183 unknown Webhook の UI 再分類ボタン（P0）【完了】
+
+Web3エンジニアとして、unknown のまま残っている Webhook をフロントエンドから再分類したい。
+なぜなら、classifier ルール追加後に過去の unknown を手動で curl する運用は非効率だから。
+
+- 受け入れ基準
+  - Given INBOX に `source="unknown"` の Webhook が 1 件以上あるとき、When INBOX ヘッダーを確認すると、Then「Reclassify All」ボタンが表示される。クリックすると一括再分類が実行され、一覧がリロードされる … **OK**: WebhookListPane に Reclassify All ボタン追加、unknown がある場合のみ表示
+  - Given 詳細ペインで `source="unknown"` の Webhook を表示しているとき、When ナビバーを確認すると、Then「Reclassify」ボタンが表示される。クリックすると当該 Webhook のみ再分類され、詳細表示が更新される … **OK**: DetailNavBar に個別 Reclassify ボタン追加、POST /{id}/reclassify API 新設
+  - Given `source="unknown"` の Webhook が 0 件のとき、When INBOX ヘッダーを確認すると、Then「Reclassify All」ボタンは非表示になる … **OK**: items.some(w => w.source === "unknown") で条件表示
+  - Given 詳細ペインで `source` が "unknown" でない Webhook を表示しているとき、When ナビバーを確認すると、Then「Reclassify」ボタンは表示されない … **OK**: webhook.source === "unknown" で条件表示

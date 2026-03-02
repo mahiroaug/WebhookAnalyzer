@@ -12,6 +12,7 @@ import {
   getFilterOptions,
   markWebhookRead,
   markAllWebhooksRead,
+  reclassifyAll,
   toggleWebhookFavorite,
   type WebhookListItem,
 } from "../services/api";
@@ -83,6 +84,7 @@ export function WebhookListPane({
   const [filterUnreadOnly, setFilterUnreadOnly] = useState(false); // US-167
   const [filterFavoritesOnly, setFilterFavoritesOnly] = useState(false); // US-179
   const [markingAll, setMarkingAll] = useState(false);
+  const [reclassifying, setReclassifying] = useState(false);
   const [muted, setMuted] = useState(() => {
     try { return localStorage.getItem("webhook-se-muted") === "1"; } catch { return false; }
   });
@@ -173,6 +175,18 @@ export function WebhookListPane({
     }
   }, [debouncedSource, debouncedEventType, searchQuery]);
 
+  const handleReclassifyAll = useCallback(async () => {
+    setReclassifying(true);
+    try {
+      const result = await reclassifyAll();
+      if (result.reclassified > 0) {
+        load();
+      }
+    } finally {
+      setReclassifying(false);
+    }
+  }, []);
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load uses debouncedSource, debouncedEventType, searchQuery, page, filterUnreadOnly, filterFavoritesOnly from closure
@@ -247,6 +261,16 @@ export function WebhookListPane({
           >
             {markingAll ? "..." : "Mark All Read"}
           </button>
+          {items.some((w) => w.source === "unknown") && (
+            <button
+              type="button"
+              onClick={handleReclassifyAll}
+              disabled={reclassifying}
+              className="text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
+            >
+              {reclassifying ? "..." : "Reclassify All"}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {

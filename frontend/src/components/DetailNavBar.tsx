@@ -4,7 +4,7 @@
  */
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { replayWebhook, exportWebhookPdf, type WebhookDetail } from "../services/api";
+import { replayWebhook, exportWebhookPdf, reclassifyWebhook, type WebhookDetail } from "../services/api";
 
 export interface DetailNavBarData {
   webhook: WebhookDetail;
@@ -15,14 +15,16 @@ interface DetailNavBarProps {
   data: DetailNavBarData | null;
   searchQuery?: string;
   onNavigate?: (id: string) => void;
+  onReclassified?: () => void;
 }
 
-export function DetailNavBar({ data, searchQuery = "", onNavigate }: DetailNavBarProps) {
+export function DetailNavBar({ data, searchQuery = "", onNavigate, onReclassified }: DetailNavBarProps) {
   const navigate = useNavigate();
   const [replayOpen, setReplayOpen] = useState(false);
   const [replayUrl, setReplayUrl] = useState("");
   const [replaying, setReplaying] = useState(false);
   const [replayResult, setReplayResult] = useState<{ status?: number; error?: string; elapsed?: number } | null>(null);
+  const [reclassifying, setReclassifying] = useState(false);
 
   const goPrev = useCallback(() => {
     if (data?.adjacent?.prev_id) {
@@ -63,6 +65,19 @@ export function DetailNavBar({ data, searchQuery = "", onNavigate }: DetailNavBa
       setReplaying(false);
     }
   }, [data?.webhook?.id, replayUrl]);
+
+  const handleReclassify = useCallback(async () => {
+    if (!data?.webhook?.id) return;
+    setReclassifying(true);
+    try {
+      const result = await reclassifyWebhook(data.webhook.id);
+      if (result.changed && onReclassified) {
+        onReclassified();
+      }
+    } finally {
+      setReclassifying(false);
+    }
+  }, [data?.webhook?.id, onReclassified]);
 
   if (!data) {
     return (
@@ -116,6 +131,16 @@ export function DetailNavBar({ data, searchQuery = "", onNavigate }: DetailNavBa
           >
             Export PDF
           </button>
+          {webhook.source === "unknown" && (
+            <button
+              type="button"
+              onClick={handleReclassify}
+              disabled={reclassifying}
+              className="rounded border border-indigo-400 dark:border-indigo-500 bg-transparent px-2 py-1 text-xs font-medium text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 disabled:opacity-50"
+            >
+              {reclassifying ? "..." : "Reclassify"}
+            </button>
+          )}
         </div>
         <span className="flex items-center gap-2">
           <span className="text-sm font-semibold text-slate-500 dark:text-dim-text-muted">

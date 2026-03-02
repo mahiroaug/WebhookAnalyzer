@@ -27,6 +27,7 @@ export function TwoPanePage() {
   const [rightPane, setRightPane] = useState<RightPane>("detail");
   const [navBarData, setNavBarData] = useState<DetailNavBarData | null>(null);
   const [markedReadFromDetail, setMarkedReadFromDetail] = useState<string | null>(null);
+  const [detailRefreshKey, setDetailRefreshKey] = useState(0);
   const [filterSource, setFilterSource] = useState("");
   const [filterEventType, setFilterEventType] = useState("");
   const [paneWidth, setPaneWidth] = useState(() => {
@@ -156,12 +157,14 @@ export function TwoPanePage() {
             data={navBarData}
             searchQuery={searchQuery}
             onNavigate={handleNavigate}
+            onReclassified={() => setDetailRefreshKey((k) => k + 1)}
           />
         )}
 
         <div className="flex-1 overflow-y-auto p-4">
           {rightPane === "detail" && selectedId ? (
             <WebhookDetailPage
+              key={`${selectedId}-${detailRefreshKey}`}
               webhookId={selectedId}
               onNavigate={handleNavigate}
               onNavBarData={(d) => selectedId && d.webhook.id === selectedId && setNavBarData(d)}

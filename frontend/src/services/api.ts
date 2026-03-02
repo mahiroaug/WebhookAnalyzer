@@ -534,6 +534,25 @@ export async function getHealthServices(): Promise<HealthServicesResponse> {
   return res.json();
 }
 
+/** US-183: 全 unknown Webhook を一括再分類 */
+export async function reclassifyAll(): Promise<{ total: number; reclassified: number; unchanged: number }> {
+  const res = await fetch(`${BASE}/webhooks/reclassify`, { method: "POST" });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+/** US-183: 個別 Webhook を再分類 */
+export async function reclassifyWebhook(id: string): Promise<{
+  source: string;
+  event_type: string;
+  group_key: string;
+  changed: boolean;
+}> {
+  const res = await fetch(`${BASE}/webhooks/${id}/reclassify`, { method: "POST" });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 export async function getFieldTemplate(
   source: string,
   eventType: string

@@ -109,6 +109,57 @@ async def test_reclassify_all_unchanged_when_none_match(
 
 
 @pytest.mark.asyncio
+async def test_reclassify_single_webhook_updates_unknown(
+    fireblocks_notifications_payload: dict,
+) -> None:
+    """US-183: 個別 unknown Webhook が再分類される"""
+    from app.schemas.webhook import ClassificationResult
+
+    with patch("app.routers.webhooks.classify_webhook") as mock_classify:
+        mock_classify.return_value = ClassificationResult(
+            source="unknown", event_type="unknown", group_key="unknown:unknown"
+        )
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            post_resp = await client.post(
+                "/api/webhooks/receive",
+                json=fireblocks_notifications_payload,
+            )
+            wid = post_resp.json()["id"]
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        resp = await client.post(f"/api/webhooks/{wid}/reclassify")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["source"] == "fireblocks"
+    assert data["event_type"] == "transaction.submitted"
+    assert data["changed"] is True
+
+
+@pytest.mark.asyncio
+async def test_reclassify_single_webhook_no_change(
+    unknown_payload: dict,
+) -> None:
+    """US-183: マッチしない unknown は changed=false"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        post_resp = await client.post("/api/webhooks/receive", json=unknown_payload)
+        wid = post_resp.json()["id"]
+        resp = await client.post(f"/api/webhooks/{wid}/reclassify")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["source"] == "unknown"
+    assert data["changed"] is False
+
+
+@pytest.mark.asyncio
 async def test_list_webhooks_returns_received(
     bitgo_transfer_payload: dict,
 ) -> None:

@@ -69,6 +69,15 @@ class ReclassifyResponse(BaseModel):
     unchanged: int
 
 
+class SingleReclassifyResponse(BaseModel):
+    """US-183: 個別再分類のレスポンス"""
+
+    source: str
+    event_type: str
+    group_key: str
+    changed: bool
+
+
 class ReplayRequest(BaseModel):
     """US-145: 再送先 URL"""
 
