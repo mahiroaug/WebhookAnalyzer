@@ -1,4 +1,5 @@
 """FastAPI アプリケーション エントリーポイント"""
+
 import logging
 
 from fastapi import FastAPI

@@ -79,3 +79,15 @@
 
 > US-185 は完了。→ [`user-stories-completed.md`](./user-stories-completed.md)
 
+### Phase 23: AI 分析品質改善
+
+#### US-186 LLM 出力トークン切断時の JSON 修復とプロンプト短縮（P1）【未着手】
+
+Web3エンジニアとして、長大な Webhook ペイロード（Alchemy の topics 配列等）を分析したときに LLM 出力が途中切れで失敗しないようにしたい。
+なぜなら、現在 gemma3:4b のトークン上限で JSON が閉じないまま切断され「LLM 出力が JSON ではありません」エラーになり、分析が完了しないから。
+
+- 受け入れ基準
+  - Given 長大なペイロード（topics 配列を含む Alchemy Webhook 等）に対して AI 分析を実行したとき、When LLM 出力がトークン上限で途中切断されても、Then 閉じブレース補完による JSON 修復を試み、修復成功時は分析結果が正常に保存される
+  - Given Step 1 プロンプトに短縮指示（「各フィールド 1-2 文以内」）を追加したとき、When 分析を実行すると、Then 出力が短くなりトークン切断の発生率が低下する
+  - Given JSON 修復も失敗したとき、When 分析結果を確認すると、Then 従来通り「LLM 出力が JSON ではありません」エラーが表示される（既存のフォールバック維持）
+

@@ -1,4 +1,4 @@
-summary: フィードバック反映済み
+summary: BitGo 送金Webhook
 fields:
 - path: coin
   description: 送金に使用されているトークンの種類
