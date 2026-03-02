@@ -186,6 +186,7 @@ Webhook Analyzer を `webhook.site` のような「受信確認 + 高速調査 +
 | 21 | US-181 | AI 分析時の unknown ソース自動再分類 | P1 |
 | 21 | US-182 | 既存 unknown Webhook のルールベース一括再分類 | P0 |
 | 21 | US-183 | unknown Webhook の UI 再分類ボタン | P0 |
+| 21 | US-184 | Fireblocks Notifications 分類の eventKey 依存除去 | P0 |
 
 ## バックログ（未着手）
 
@@ -195,7 +196,7 @@ Webhook Analyzer を `webhook.site` のような「受信確認 + 高速調査 +
 
 > Phase 16 の全 US（US-158〜US-167）は完了済み。Phase 17 の全 US（US-168〜US-175）は完了済み。
 
-> Phase 20 の US-179 は完了済み。Phase 21 の US-180, US-181, US-182, US-183 は完了済み。
+> Phase 20 の US-179 は完了済み。Phase 21 の US-180, US-181, US-182, US-183, US-184 は完了済み。
 
 ## バックログ・ストーリー候補
 

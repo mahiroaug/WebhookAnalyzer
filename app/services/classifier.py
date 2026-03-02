@@ -40,15 +40,15 @@ def classify_webhook(payload: dict) -> ClassificationResult:
         source = "fireblocks"
         event_type = payload["eventType"]
 
-    # Fireblocks Notifications: category, subject, eventKey を使用する形式
+    # Fireblocks Notifications: category + subject + event で判定（eventKey 不要）
     elif (
         isinstance(payload.get("category"), str)
         and isinstance(payload.get("subject"), str)
-        and isinstance(payload.get("eventKey"), str)
         and isinstance(payload.get("event"), str)
     ):
         source = "fireblocks"
-        event_type = f"{payload['eventKey']}.{payload['event'].lower()}"
+        normalized_subject = payload["subject"].lower().replace(" ", "_")
+        event_type = f"{normalized_subject}.{payload['event'].lower()}"
 
     # Alchemy: webhookId exists and event.network exists
     elif "webhookId" in payload:

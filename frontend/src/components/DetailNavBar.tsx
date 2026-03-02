@@ -25,6 +25,7 @@ export function DetailNavBar({ data, searchQuery = "", onNavigate, onReclassifie
   const [replaying, setReplaying] = useState(false);
   const [replayResult, setReplayResult] = useState<{ status?: number; error?: string; elapsed?: number } | null>(null);
   const [reclassifying, setReclassifying] = useState(false);
+  const [reclassifyMsg, setReclassifyMsg] = useState<string | null>(null);
 
   const goPrev = useCallback(() => {
     if (data?.adjacent?.prev_id) {
@@ -69,11 +70,17 @@ export function DetailNavBar({ data, searchQuery = "", onNavigate, onReclassifie
   const handleReclassify = useCallback(async () => {
     if (!data?.webhook?.id) return;
     setReclassifying(true);
+    setReclassifyMsg(null);
     try {
       const result = await reclassifyWebhook(data.webhook.id);
-      if (result.changed && onReclassified) {
-        onReclassified();
+      if (result.changed) {
+        setReclassifyMsg(`→ ${result.source} / ${result.event_type}`);
+        if (onReclassified) onReclassified();
+      } else {
+        setReclassifyMsg("No rules matched");
       }
+    } catch (e) {
+      setReclassifyMsg(e instanceof Error ? e.message : "Error");
     } finally {
       setReclassifying(false);
     }
@@ -132,14 +139,21 @@ export function DetailNavBar({ data, searchQuery = "", onNavigate, onReclassifie
             Export PDF
           </button>
           {webhook.source === "unknown" && (
-            <button
-              type="button"
-              onClick={handleReclassify}
-              disabled={reclassifying}
-              className="rounded border border-indigo-400 dark:border-indigo-500 bg-transparent px-2 py-1 text-xs font-medium text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 disabled:opacity-50"
-            >
-              {reclassifying ? "..." : "Reclassify"}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleReclassify}
+                disabled={reclassifying}
+                className="rounded border border-indigo-400 dark:border-indigo-500 bg-transparent px-2 py-1 text-xs font-medium text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 disabled:opacity-50"
+              >
+                {reclassifying ? "..." : "Reclassify"}
+              </button>
+              {reclassifyMsg && (
+                <span className={`text-xs ${reclassifyMsg.startsWith("→") ? "text-green-400" : "text-amber-400"}`}>
+                  {reclassifyMsg}
+                </span>
+              )}
+            </>
           )}
         </div>
         <span className="flex items-center gap-2">

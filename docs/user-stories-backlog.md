@@ -73,14 +73,5 @@
 
 ### Phase 21: Unknown Webhook 自動分類
 
-> US-180, US-181, US-182, US-183 は完了。→ [`user-stories-completed.md`](./user-stories-completed.md)
-
-Web3エンジニアとして、unknown のまま残っている Webhook をフロントエンドから再分類したい。
-なぜなら、classifier ルール追加後に過去の unknown を手動で curl する運用は非効率だから。
-
-- 受け入れ基準
-  - Given INBOX に `source="unknown"` の Webhook が 1 件以上あるとき、When INBOX ヘッダーを確認すると、Then「Reclassify All」ボタンが表示される。クリックすると `POST /api/webhooks/reclassify` が呼ばれ、完了後に一覧がリロードされ、結果（reclassified / unchanged 件数）が視覚的にわかる
-  - Given 詳細ペインで `source="unknown"` の Webhook を表示しているとき、When ナビバーを確認すると、Then「Reclassify」ボタンが表示される。クリックすると当該 Webhook のみ再分類され、詳細表示が更新される
-  - Given `source="unknown"` の Webhook が 0 件のとき、When INBOX ヘッダーを確認すると、Then「Reclassify All」ボタンは非表示になる
-  - Given 詳細ペインで `source` が "unknown" でない Webhook を表示しているとき、When ナビバーを確認すると、Then「Reclassify」ボタンは表示されない
+> US-180, US-181, US-182, US-183, US-184 は完了。→ [`user-stories-completed.md`](./user-stories-completed.md)
 

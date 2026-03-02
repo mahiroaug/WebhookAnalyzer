@@ -96,11 +96,21 @@ class TestClassifyWebhook:
         result = classify_webhook(fireblocks_notifications_payload)
         assert result.event_type == "transaction.broadcasting"
 
+    def test_fireblocks_notifications_without_eventkey(
+        self,
+        fireblocks_admin_notifications_payload: dict,
+    ) -> None:
+        """US-184: eventKey なしの Fireblocks Notifications を正しく分類する"""
+        result = classify_webhook(fireblocks_admin_notifications_payload)
+        assert result.source == "fireblocks"
+        assert result.event_type == "webhooks_notification.created"
+        assert result.group_key == "fireblocks:webhooks_notification.created"
+
     def test_unknown(
         self,
         unknown_payload: dict,
     ) -> None:
-        """未知の形式を unknown に分類する（category/subject/eventKey を持たない）"""
+        """未知の形式を unknown に分類する"""
         result = classify_webhook(unknown_payload)
         assert result.source == "unknown"
         assert result.event_type == "unknown"
