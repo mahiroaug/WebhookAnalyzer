@@ -33,6 +33,26 @@ async def test_receive_webhook_saves_and_returns_classification(
 
 
 @pytest.mark.asyncio
+async def test_receive_fireblocks_notifications_classification(
+    fireblocks_notifications_payload: dict,
+) -> None:
+    """US-180: Fireblocks Notifications 形式を受信時に正しく分類する"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        resp = await client.post(
+            "/api/webhooks/receive",
+            json=fireblocks_notifications_payload,
+        )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["source"] == "fireblocks"
+    assert data["event_type"] == "transaction.submitted"
+    assert data["group_key"] == "fireblocks:transaction.submitted"
+
+
+@pytest.mark.asyncio
 async def test_list_webhooks_returns_received(
     bitgo_transfer_payload: dict,
 ) -> None:

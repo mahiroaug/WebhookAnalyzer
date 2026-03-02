@@ -182,6 +182,7 @@ Webhook Analyzer を `webhook.site` のような「受信確認 + 高速調査 +
 | 19 | US-177 | ServiceStatusPanel の 2列ラベル化とコンパクト表示 | P1 |
 | 19 | US-178 | ヘルスチェックの信頼性向上 | P1 |
 | 20 | US-179 | お気に入りマークとお気に入りフィルタ | P0 |
+| 21 | US-180 | Fireblocks Notifications 形式の自動分類 | P1 |
 
 ## バックログ（未着手）
 
@@ -191,7 +192,7 @@ Webhook Analyzer を `webhook.site` のような「受信確認 + 高速調査 +
 
 > Phase 16 の全 US（US-158〜US-167）は完了済み。Phase 17 の全 US（US-168〜US-175）は完了済み。
 
-> Phase 20 の US-179 は完了済み。バックログに未着手ストーリーは現在ありません。
+> Phase 20 の US-179 は完了済み。Phase 21 の US-180 は完了。US-181 が未着手。
 
 ## バックログ・ストーリー候補
 

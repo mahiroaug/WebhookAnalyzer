@@ -134,3 +134,4 @@
 | US-177 | ServiceStatusPanel の 2列ラベル化とコンパクト表示       | OK           | Part/Component 2列、絵文字🟢⚫、Vite行追加、localhost形式URL、text-[10px]、余白最小化 |
 | US-178 | ヘルスチェックの信頼性向上                              | OK           | latency_ms/checked_at/error、Ollamaモデル確認、ngrok E2E HEAD、ツールチップ表示 |
 | US-179 | お気に入りマークとお気に入りフィルタ                     | OK           | is_favorite カラム、PATCH /favorite トグル、Favorites Only チェックボックス、星☆★アイコン、「No favorites yet」空状態 |
+| US-180 | Fireblocks Notifications 形式の自動分類                  | OK           | classifier に category/subject/eventKey/event 検出を追加、event_type = eventKey.event.lower()、group_key 既存形式維持 |

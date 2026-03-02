@@ -77,11 +77,30 @@ class TestClassifyWebhook:
         assert result.event_type == "matching_receipts"
         assert result.group_key == "quicknode:matching_receipts"
 
+    def test_fireblocks_notifications(
+        self,
+        fireblocks_notifications_payload: dict,
+    ) -> None:
+        """US-180: Fireblocks Notifications 形式を正しく分類する"""
+        result = classify_webhook(fireblocks_notifications_payload)
+        assert result.source == "fireblocks"
+        assert result.event_type == "transaction.submitted"
+        assert result.group_key == "fireblocks:transaction.submitted"
+
+    def test_fireblocks_notifications_event_lowercase(
+        self,
+        fireblocks_notifications_payload: dict,
+    ) -> None:
+        """US-180: event を小文字化して event_type に含める"""
+        fireblocks_notifications_payload["event"] = "BROADCASTING"
+        result = classify_webhook(fireblocks_notifications_payload)
+        assert result.event_type == "transaction.broadcasting"
+
     def test_unknown(
         self,
         unknown_payload: dict,
     ) -> None:
-        """未知の形式を unknown に分類する"""
+        """未知の形式を unknown に分類する（category/subject/eventKey を持たない）"""
         result = classify_webhook(unknown_payload)
         assert result.source == "unknown"
         assert result.event_type == "unknown"

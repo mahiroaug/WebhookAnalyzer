@@ -1047,3 +1047,14 @@ Web3 エンジニアとして、一覧ペインの各エントリにお気に入
   - Given お気に入りに設定したエントリがある、When 「Favorites Only」チェックボックスを有効にする、Then お気に入りマークされたエントリだけが一覧に表示される … **OK**: is_favorite=true で API フィルタ、一覧更新
   - Given お気に入り状態を変更した、When ブラウザをリロードする、Then お気に入り状態が DB に永続化されているため維持される … **OK**: is_favorite カラム永続化、一覧レスポンスに含む
   - Given 「Favorites Only」フィルタ ON で該当エントリが 0 件の場合、When 一覧を確認する、Then 適切な空状態メッセージ（「No favorites yet」等）が表示される … **OK**
+
+## Phase 21: Unknown Webhook 自動分類
+
+### US-180 Fireblocks Notifications 形式の自動分類（P1）【完了】
+
+Web3エンジニアとして、Fireblocks の Notifications 形式（category/subject/eventKey を使うフォーマット）の Webhook を受信時に自動的に正しい source / event_type で分類したい。
+なぜなら、現在これらが unknown/unknown として保存され、フィルタ・検索・定義ファイル連携が効かず、調査効率が大幅に低下するから。
+
+- 受け入れ基準
+  - Given Fireblocks Notifications 形式のペイロード（`category`, `subject`, `eventKey` フィールドを持つ）が送信されたとき、When `/api/webhooks/receive` で受信すると、Then `source="fireblocks"`、`event_type="{eventKey}.{event を小文字化}"`（例: `transaction.submitted`）、`group_key="fireblocks:{event_type}"` で保存される … **OK**: classifier に category/subject/eventKey/event の検出を追加、eventKey.event.lower() で event_type を導出
+  - Given `category`/`subject`/`eventKey` を持たない未知のペイロードが送信されたとき、When `/api/webhooks/receive` で受信すると、Then 従来通り `source="unknown"`、`event_type="unknown"` で分類される（既存ルールへの副作用なし） … **OK**: 既存 unknown テストが通過

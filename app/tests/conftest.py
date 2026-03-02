@@ -87,6 +87,21 @@ def quicknode_payload() -> dict:
 
 
 @pytest.fixture
+def fireblocks_notifications_payload() -> dict:
+    """Fireblocks Notifications 形式サンプル（category/subject/eventKey を使用）"""
+    return {
+        "note": "Created by Fireblocks Web3 Provider",
+        "txId": "4563bf92-4b0a-4ac5-8ae5-a9760a66b1a7",
+        "category": "Transactions",
+        "subject": "Transaction",
+        "eventKey": "transaction",
+        "event": "Submitted",
+        "title": "Transaction - Submitted, optage2(testnet)",
+        "asset": "AMOY_POLYGON_TEST",
+    }
+
+
+@pytest.fixture
 def unknown_payload() -> dict:
     """unknown 分類用サンプル"""
     return {"foo": "bar", "random": 123}
