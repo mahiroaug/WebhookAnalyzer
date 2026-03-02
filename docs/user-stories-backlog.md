@@ -73,5 +73,5 @@
 
 ### Phase 21: Unknown Webhook 自動分類
 
-> US-180, US-181 は完了。→ [`user-stories-completed.md`](./user-stories-completed.md)
+> US-180, US-181, US-182 は完了。→ [`user-stories-completed.md`](./user-stories-completed.md)
 

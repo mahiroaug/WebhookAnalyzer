@@ -1068,3 +1068,12 @@ Web3エンジニアとして、`unknown/unknown` として保存された Webhoo
   - Given `source="unknown"` の Webhook が存在するとき、When AI 分析を実行すると、Then LLM がペイロードから source と event_type を推定し、Webhook レコードの `source` / `event_type` / `group_key` が更新される … **OK**: 推論ステップ追加、分析成功時に Webhook 更新
   - Given AI が source/event_type を推定できなかったとき、When 分析が完了すると、Then source/event_type は "unknown" のまま維持され、分析結果（summary / field_descriptions）は正常に保存される … **OK**: 推論失敗時は既存のまま、分析結果は保存
   - Given `source="unknown"` でない（既に分類済みの）Webhook のとき、When AI 分析を実行すると、Then 既存の `source` / `event_type` / `group_key` は変更されない … **OK**: 既知 Webhook は推論結果を適用しない
+
+### US-182 既存 unknown Webhook のルールベース一括再分類（P0）【完了】
+
+Web3エンジニアとして、classifier ルール追加前に受信された `unknown/unknown` の Webhook を一括で再分類したい。
+なぜなら、ルール追加後も過去の unknown はそのまま残っており、フィルタ・検索・定義ファイル連携が効かないから。
+
+- 受け入れ基準
+  - Given `source="unknown"` の Webhook が複数存在するとき、When `POST /api/webhooks/reclassify` を実行すると、Then 各 Webhook の payload に対して最新の classifier ルールが再適用され、マッチしたものは `source` / `event_type` / `group_key` が更新される。レスポンスには `total`（対象件数）、`reclassified`（更新件数）、`unchanged`（unknown のまま）が返される … **OK**: reclassify エンドポイント実装、classifier 再適用で更新
+  - Given 全ての unknown Webhook が現行の classifier ルールにマッチしない場合、When 再分類を実行すると、Then 全件 `unchanged` として返され、既存データに副作用がない … **OK**: マッチしなければ更新なし

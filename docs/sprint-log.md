@@ -136,3 +136,4 @@
 | US-179 | お気に入りマークとお気に入りフィルタ                     | OK           | is_favorite カラム、PATCH /favorite トグル、Favorites Only チェックボックス、星☆★アイコン、「No favorites yet」空状態 |
 | US-180 | Fireblocks Notifications 形式の自動分類                  | OK           | classifier に category/subject/eventKey/event 検出を追加、event_type = eventKey.event.lower()、group_key 既存形式維持 |
 | US-181 | AI 分析時の unknown ソース自動再分類                     | OK           | source=unknown 時のみ LLM で source/event_type 推論、分析成功時に Webhook 更新、YAML パスを推論結果で決定、既知 Webhook は更新しない |
+| US-182 | 既存 unknown Webhook のルールベース一括再分類           | OK           | POST /api/webhooks/reclassify、source=unknown の全件に classifier 再適用、total/reclassified/unchanged レスポンス |

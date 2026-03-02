@@ -61,6 +61,14 @@ class FavoriteToggleResponse(BaseModel):
     is_favorite: bool
 
 
+class ReclassifyResponse(BaseModel):
+    """US-182: 一括再分類のレスポンス"""
+
+    total: int
+    reclassified: int
+    unchanged: int
+
+
 class ReplayRequest(BaseModel):
     """US-145: 再送先 URL"""
 

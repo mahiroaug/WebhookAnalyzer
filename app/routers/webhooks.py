@@ -15,6 +15,7 @@ from app.models.webhook import Webhook, WebhookAnalysis
 from app.schemas.webhook import (
     FavoriteToggleResponse,
     AdjacentResponse,
+    ReclassifyResponse,
     EventTypeGroup,
     EventTypeGroupResponse,
     FilterOptionsResponse,
@@ -598,6 +599,31 @@ async def mark_all_webhooks_read(
             count += 1
     await db.commit()
     return {"marked_count": count}
+
+
+@router.post("/reclassify", response_model=ReclassifyResponse)
+async def reclassify_unknown_webhooks(
+    db: AsyncSession = Depends(get_db),
+) -> ReclassifyResponse:
+    """US-182: source=unknown の Webhook に classifier を再適用し、マッチしたものを更新する"""
+    stmt = select(Webhook).where(Webhook.source == "unknown")
+    result = await db.execute(stmt)
+    rows = result.scalars().all()
+    total = len(rows)
+    reclassified = 0
+    for w in rows:
+        classification = classify_webhook(w.payload)
+        if classification.source != "unknown" or classification.event_type != "unknown":
+            w.source = classification.source
+            w.event_type = classification.event_type
+            w.group_key = classification.group_key
+            reclassified += 1
+    unchanged = total - reclassified
+    return ReclassifyResponse(
+        total=total,
+        reclassified=reclassified,
+        unchanged=unchanged,
+    )
 
 
 @router.get("/report/markdown", response_class=PlainTextResponse)

@@ -53,6 +53,62 @@ async def test_receive_fireblocks_notifications_classification(
 
 
 @pytest.mark.asyncio
+async def test_reclassify_updates_unknown_webhooks_with_matching_payload(
+    fireblocks_notifications_payload: dict,
+) -> None:
+    """US-182: Fireblocks Notifications 形式の unknown が再分類される"""
+    from app.schemas.webhook import ClassificationResult
+
+    with patch("app.routers.webhooks.classify_webhook") as mock_classify:
+        mock_classify.return_value = ClassificationResult(
+            source="unknown", event_type="unknown", group_key="unknown:unknown"
+        )
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            post_resp = await client.post(
+                "/api/webhooks/receive",
+                json=fireblocks_notifications_payload,
+            )
+            assert post_resp.status_code == 201
+            assert post_resp.json()["source"] == "unknown"
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        reclassify_resp = await client.post("/api/webhooks/reclassify")
+        assert reclassify_resp.status_code == 200
+        data = reclassify_resp.json()
+        assert data["total"] >= 1
+        assert data["reclassified"] >= 1
+        assert data["unchanged"] == data["total"] - data["reclassified"]
+
+        detail = await client.get(f"/api/webhooks/{post_resp.json()['id']}")
+    assert detail.json()["source"] == "fireblocks"
+    assert detail.json()["event_type"] == "transaction.submitted"
+
+
+@pytest.mark.asyncio
+async def test_reclassify_all_unchanged_when_none_match(
+    unknown_payload: dict,
+) -> None:
+    """US-182: どのルールにもマッチしない unknown はそのまま"""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        await client.post("/api/webhooks/receive", json=unknown_payload)
+        reclassify_resp = await client.post("/api/webhooks/reclassify")
+    assert reclassify_resp.status_code == 200
+    data = reclassify_resp.json()
+    assert data["total"] >= 1
+    assert data["reclassified"] == 0
+    assert data["unchanged"] == data["total"]
+
+
+@pytest.mark.asyncio
 async def test_list_webhooks_returns_received(
     bitgo_transfer_payload: dict,
 ) -> None:
