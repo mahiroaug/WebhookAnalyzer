@@ -76,6 +76,18 @@ async def batch_analyze(
                     explanation=None,
                 )
             else:
+                yaml_source = webhook.source
+                yaml_event_type = webhook.event_type
+                if (
+                    webhook.source == "unknown"
+                    and analysis_result.inferred_source
+                    and analysis_result.inferred_event_type
+                ):
+                    webhook.source = analysis_result.inferred_source
+                    webhook.event_type = analysis_result.inferred_event_type
+                    webhook.group_key = f"{webhook.source}:{webhook.event_type}"
+                    yaml_source = webhook.source
+                    yaml_event_type = webhook.event_type
                 record = WebhookAnalysis(
                     webhook_id=webhook_id,
                     summary=analysis_result.summary,
@@ -84,8 +96,8 @@ async def batch_analyze(
                 )
                 try:
                     write_analysis_to_yaml(
-                        webhook.source,
-                        webhook.event_type,
+                        yaml_source,
+                        yaml_event_type,
                         analysis_result.summary,
                         analysis_result.field_descriptions,
                     )
@@ -159,6 +171,18 @@ async def trigger_analyze(
             explanation=None,
         )
     else:
+        yaml_source = webhook.source
+        yaml_event_type = webhook.event_type
+        if (
+            webhook.source == "unknown"
+            and analysis_result.inferred_source
+            and analysis_result.inferred_event_type
+        ):
+            webhook.source = analysis_result.inferred_source
+            webhook.event_type = analysis_result.inferred_event_type
+            webhook.group_key = f"{webhook.source}:{webhook.event_type}"
+            yaml_source = webhook.source
+            yaml_event_type = webhook.event_type
         record = WebhookAnalysis(
             webhook_id=webhook_id,
             summary=analysis_result.summary,
@@ -167,8 +191,8 @@ async def trigger_analyze(
         )
         try:
             write_analysis_to_yaml(
-                webhook.source,
-                webhook.event_type,
+                yaml_source,
+                yaml_event_type,
                 analysis_result.summary,
                 analysis_result.field_descriptions,
             )
@@ -256,6 +280,23 @@ async def trigger_analyze_stream(
 
         res = last_result
         async with async_session() as db:
+            yaml_source = webhook_source
+            yaml_event_type = webhook_event_type
+            if (
+                not res.get("failed")
+                and webhook_source == "unknown"
+                and res.get("inferred_source")
+                and res.get("inferred_event_type")
+            ):
+                webhook_stmt = select(Webhook).where(Webhook.id == webhook_id_val)
+                webhook_result = await db.execute(webhook_stmt)
+                wh = webhook_result.scalar_one_or_none()
+                if wh:
+                    wh.source = res["inferred_source"]
+                    wh.event_type = res["inferred_event_type"]
+                    wh.group_key = f"{wh.source}:{wh.event_type}"
+                    yaml_source = wh.source
+                    yaml_event_type = wh.event_type
             if res.get("failed"):
                 record = WebhookAnalysis(
                     webhook_id=webhook_id_val,
@@ -272,8 +313,8 @@ async def trigger_analyze_stream(
                 )
                 try:
                     write_analysis_to_yaml(
-                        webhook_source,
-                        webhook_event_type,
+                        yaml_source,
+                        yaml_event_type,
                         res.get("summary", ""),
                         res.get("field_descriptions") or {},
                     )

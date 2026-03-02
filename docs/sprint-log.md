@@ -135,3 +135,4 @@
 | US-178 | ヘルスチェックの信頼性向上                              | OK           | latency_ms/checked_at/error、Ollamaモデル確認、ngrok E2E HEAD、ツールチップ表示 |
 | US-179 | お気に入りマークとお気に入りフィルタ                     | OK           | is_favorite カラム、PATCH /favorite トグル、Favorites Only チェックボックス、星☆★アイコン、「No favorites yet」空状態 |
 | US-180 | Fireblocks Notifications 形式の自動分類                  | OK           | classifier に category/subject/eventKey/event 検出を追加、event_type = eventKey.event.lower()、group_key 既存形式維持 |
+| US-181 | AI 分析時の unknown ソース自動再分類                     | OK           | source=unknown 時のみ LLM で source/event_type 推論、分析成功時に Webhook 更新、YAML パスを推論結果で決定、既知 Webhook は更新しない |

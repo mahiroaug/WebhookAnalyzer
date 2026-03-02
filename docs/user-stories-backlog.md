@@ -73,15 +73,5 @@
 
 ### Phase 21: Unknown Webhook 自動分類
 
-> US-180 は完了。→ [`user-stories-completed.md`](./user-stories-completed.md)
-
-#### US-181 AI 分析時の unknown ソース自動再分類（P1）【未着手】
-
-Web3エンジニアとして、`unknown/unknown` として保存された Webhook を AI 分析実行時に自動的にソースとイベントタイプを推定・再分類してほしい。
-なぜなら、classifier のルールに未登録の新しいサービスや形式の Webhook でも、AI の推論力で正しいグループに分類でき、定義ファイル連携や検索性が向上するから。
-
-- 受け入れ基準
-  - Given `source="unknown"` の Webhook が存在するとき、When AI 分析を実行すると、Then LLM がペイロードから source と event_type を推定し、Webhook レコードの `source` / `event_type` / `group_key` が更新される
-  - Given AI が source/event_type を推定できなかったとき、When 分析が完了すると、Then source/event_type は "unknown" のまま維持され、分析結果（summary / field_descriptions）は正常に保存される
-  - Given `source="unknown"` でない（既に分類済みの）Webhook のとき、When AI 分析を実行すると、Then 既存の `source` / `event_type` / `group_key` は変更されない
+> US-180, US-181 は完了。→ [`user-stories-completed.md`](./user-stories-completed.md)
 

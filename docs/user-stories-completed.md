@@ -1058,3 +1058,13 @@ Web3エンジニアとして、Fireblocks の Notifications 形式（category/su
 - 受け入れ基準
   - Given Fireblocks Notifications 形式のペイロード（`category`, `subject`, `eventKey` フィールドを持つ）が送信されたとき、When `/api/webhooks/receive` で受信すると、Then `source="fireblocks"`、`event_type="{eventKey}.{event を小文字化}"`（例: `transaction.submitted`）、`group_key="fireblocks:{event_type}"` で保存される … **OK**: classifier に category/subject/eventKey/event の検出を追加、eventKey.event.lower() で event_type を導出
   - Given `category`/`subject`/`eventKey` を持たない未知のペイロードが送信されたとき、When `/api/webhooks/receive` で受信すると、Then 従来通り `source="unknown"`、`event_type="unknown"` で分類される（既存ルールへの副作用なし） … **OK**: 既存 unknown テストが通過
+
+### US-181 AI 分析時の unknown ソース自動再分類（P1）【完了】
+
+Web3エンジニアとして、`unknown/unknown` として保存された Webhook を AI 分析実行時に自動的にソースとイベントタイプを推定・再分類してほしい。
+なぜなら、classifier のルールに未登録の新しいサービスや形式の Webhook でも、AI の推論力で正しいグループに分類でき、定義ファイル連携や検索性が向上するから。
+
+- 受け入れ基準
+  - Given `source="unknown"` の Webhook が存在するとき、When AI 分析を実行すると、Then LLM がペイロードから source と event_type を推定し、Webhook レコードの `source` / `event_type` / `group_key` が更新される … **OK**: 推論ステップ追加、分析成功時に Webhook 更新
+  - Given AI が source/event_type を推定できなかったとき、When 分析が完了すると、Then source/event_type は "unknown" のまま維持され、分析結果（summary / field_descriptions）は正常に保存される … **OK**: 推論失敗時は既存のまま、分析結果は保存
+  - Given `source="unknown"` でない（既に分類済みの）Webhook のとき、When AI 分析を実行すると、Then 既存の `source` / `event_type` / `group_key` は変更されない … **OK**: 既知 Webhook は推論結果を適用しない

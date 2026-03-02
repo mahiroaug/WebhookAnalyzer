@@ -23,13 +23,15 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AnalysisResult:
-    """分析結果（US-127: explanation 追加）"""
+    """分析結果（US-127: explanation 追加、US-181: inferred_source/event_type 追加）"""
 
     summary: str
     field_descriptions: dict[str, str]
     explanation: str = ""
     failed: bool = False
     error_message: str | None = None
+    inferred_source: str | None = None
+    inferred_event_type: str | None = None
 
 
 # --- Step 0: エビデンス収集 ---
@@ -128,6 +130,19 @@ def sanitize_for_yaml(payload: dict, summary: str, field_descriptions: dict[str,
 
 
 # --- プロンプト定義 ---
+
+_PROMPT_INFER_SOURCE = """以下の Webhook JSON から、送信元サービス（source）とイベント種別（event_type）を推測してください。
+source は小文字の英語（例: fireblocks, bitgo, alchemy, quicknode）で、event_type はドット区切り（例: transaction.created, transfer）で返してください。
+推測できない場合は両方 "unknown" にしてください。
+
+Webhook JSON:
+```json
+{payload_json}
+```
+
+出力は必ず次の JSON 形式のみで返してください:
+{{"source": "サービス名", "event_type": "イベント種別"}}
+"""
 
 _PROMPT_STEP1 = """あなたは Webhook の各フィールドを初心者向けに解説するエキスパートです。
 
@@ -284,6 +299,20 @@ async def analyze_payload_with_ollama(
 
     payload_str = json.dumps(payload, ensure_ascii=False, indent=2)
 
+    inferred_source: str | None = None
+    inferred_event_type: str | None = None
+    if source == "unknown":
+        prompt_infer = _PROMPT_INFER_SOURCE.format(payload_json=payload_str)
+        content_infer = await _call_ollama(prompt_infer, model)
+        if content_infer:
+            parsed_infer = _extract_json(content_infer)
+            if parsed_infer and isinstance(parsed_infer, dict):
+                s = str(parsed_infer.get("source", "")).strip().lower()
+                e = str(parsed_infer.get("event_type", "")).strip().lower()
+                if s and e and s != "unknown" and e != "unknown":
+                    inferred_source = s
+                    inferred_event_type = e
+
     user_feedback_section = ""
     if user_feedback and user_feedback.strip():
         user_feedback_section = (
@@ -419,6 +448,8 @@ async def analyze_payload_with_ollama(
         field_descriptions=safe_field_descriptions,
         explanation=explanation,
         failed=False,
+        inferred_source=inferred_source,
+        inferred_event_type=inferred_event_type,
     )
 
 
@@ -452,6 +483,23 @@ async def analyze_payload_with_ollama_stream(
             + user_feedback.strip()
             + "\n\n"
         )
+
+    inferred_source: str | None = None
+    inferred_event_type: str | None = None
+    if source == "unknown":
+        t_infer = time.perf_counter()
+        yield {"step": "infer", "message": "Source/event_type 推定中...", "timestamp": datetime.now().isoformat()}
+        prompt_infer = _PROMPT_INFER_SOURCE.format(payload_json=payload_str)
+        content_infer = await _call_ollama(prompt_infer, model)
+        if content_infer:
+            parsed_infer = _extract_json(content_infer)
+            if parsed_infer and isinstance(parsed_infer, dict):
+                s = str(parsed_infer.get("source", "")).strip().lower()
+                e = str(parsed_infer.get("event_type", "")).strip().lower()
+                if s and e and s != "unknown" and e != "unknown":
+                    inferred_source = s
+                    inferred_event_type = e
+        yield {"step": "infer", "message": "Source 推定完了", "inferred_source": inferred_source, "inferred_event_type": inferred_event_type, "elapsed_ms": round((time.perf_counter() - t_infer) * 1000, 1), "timestamp": datetime.now().isoformat()}
 
     # Step 0: Evidence
     t0 = time.perf_counter()
@@ -558,15 +606,22 @@ async def analyze_payload_with_ollama_stream(
         field_descriptions=safe_field_descriptions,
         explanation=explanation,
         failed=False,
+        inferred_source=inferred_source,
+        inferred_event_type=inferred_event_type,
     )
     yield {"step": "done", "result": _result_to_dict(result), "timestamp": datetime.now().isoformat()}
 
 
 def _result_to_dict(r: AnalysisResult) -> dict:
-    return {
+    d: dict = {
         "summary": r.summary,
         "field_descriptions": r.field_descriptions,
         "explanation": r.explanation,
         "failed": r.failed,
         "error_message": r.error_message,
     }
+    if r.inferred_source is not None:
+        d["inferred_source"] = r.inferred_source
+    if r.inferred_event_type is not None:
+        d["inferred_event_type"] = r.inferred_event_type
+    return d

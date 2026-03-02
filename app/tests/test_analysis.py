@@ -297,6 +297,113 @@ async def test_analyze_not_found_webhook_returns_404() -> None:
 
 
 @pytest.mark.asyncio
+async def test_analyze_unknown_webhook_reclassifies_on_inference(
+    unknown_payload: dict,
+) -> None:
+    """US-181: unknown Webhook 分析時に LLM が source/event_type を推定すると Webhook が再分類される"""
+    mock_result = type("R", (), {
+        "summary": "Fireblocks のトランザクション送信通知です。",
+        "field_descriptions": {"txId": "トランザクションID"},
+        "explanation": "個別解説",
+        "failed": False,
+        "error_message": None,
+        "inferred_source": "fireblocks",
+        "inferred_event_type": "transaction.submitted",
+    })()
+
+    with patch(
+        "app.routers.analysis.analyze_payload_with_ollama",
+        new_callable=AsyncMock,
+        return_value=mock_result,
+    ):
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            post_resp = await client.post("/api/webhooks/receive", json=unknown_payload)
+            webhook_id = post_resp.json()["id"]
+            await client.post(f"/api/webhooks/{webhook_id}/analyze")
+            detail_resp = await client.get(f"/api/webhooks/{webhook_id}")
+
+    assert detail_resp.status_code == 200
+    data = detail_resp.json()
+    assert data["source"] == "fireblocks"
+    assert data["event_type"] == "transaction.submitted"
+    assert data["group_key"] == "fireblocks:transaction.submitted"
+
+
+@pytest.mark.asyncio
+async def test_analyze_unknown_webhook_keeps_unknown_when_inference_fails(
+    unknown_payload: dict,
+) -> None:
+    """US-181: AI が source/event_type を推定できなかった場合は unknown のまま、分析結果は保存される"""
+    mock_result = type("R", (), {
+        "summary": "不明な形式の Webhook です。",
+        "field_descriptions": {"foo": "不明"},
+        "explanation": "個別解説",
+        "failed": False,
+        "error_message": None,
+        "inferred_source": None,
+        "inferred_event_type": None,
+    })()
+
+    with patch(
+        "app.routers.analysis.analyze_payload_with_ollama",
+        new_callable=AsyncMock,
+        return_value=mock_result,
+    ):
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            post_resp = await client.post("/api/webhooks/receive", json=unknown_payload)
+            webhook_id = post_resp.json()["id"]
+            analyze_resp = await client.post(f"/api/webhooks/{webhook_id}/analyze")
+            detail_resp = await client.get(f"/api/webhooks/{webhook_id}")
+
+    assert analyze_resp.status_code == 200
+    assert analyze_resp.json()["summary"] == "不明な形式の Webhook です。"
+    assert detail_resp.status_code == 200
+    assert detail_resp.json()["source"] == "unknown"
+    assert detail_resp.json()["event_type"] == "unknown"
+
+
+@pytest.mark.asyncio
+async def test_analyze_known_webhook_does_not_update_source(
+    bitgo_transfer_payload: dict,
+) -> None:
+    """US-181: 既に分類済みの Webhook は source/event_type が変更されない"""
+    mock_result = type("R", (), {
+        "summary": "BitGo 送金Webhook",
+        "field_descriptions": {"hash": "ハッシュ"},
+        "explanation": "解説",
+        "failed": False,
+        "error_message": None,
+        "inferred_source": "alchemy",
+        "inferred_event_type": "graphql",
+    })()
+
+    with patch(
+        "app.routers.analysis.analyze_payload_with_ollama",
+        new_callable=AsyncMock,
+        return_value=mock_result,
+    ):
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            post_resp = await client.post("/api/webhooks/receive", json=bitgo_transfer_payload)
+            webhook_id = post_resp.json()["id"]
+            await client.post(f"/api/webhooks/{webhook_id}/analyze")
+            detail_resp = await client.get(f"/api/webhooks/{webhook_id}")
+
+    assert detail_resp.status_code == 200
+    data = detail_resp.json()
+    assert data["source"] == "bitgo"
+    assert data["event_type"] == "transfer"
+
+
+@pytest.mark.asyncio
 async def test_analyze_stream_returns_sse_events(
     bitgo_transfer_payload: dict,
     tmp_path: Path,
