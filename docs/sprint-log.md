@@ -143,3 +143,5 @@
 | US-186 | LLM 出力トークン切断時の JSON 修復とプロンプト短縮     | OK           | _try_repair_truncated_json で閉じブレース補完、_PROMPT_STEP1 に「各フィールド 1〜2 文以内」を追加、修復失敗時は従来通りエラー表示 |
 | US-187 | LLM 有効/無効のグローバルトグル                         | OK           | LlmEnabledContext、Layout にスライドスイッチ、handleAnalyze で OFF 時は alert でブロック、localStorage 永続化 |
 | US-188 | 新着エントリのグローエフェクト色をビビッドブルーに変更   | OK           | new-arrival-glow/unread-glow を rgba(59,130,246) 系に変更、WebhookListPage 新着行を bg-blue に統一 |
+| US-189 | uvicorn ファイルウォッチの監視範囲最適化                  | OK           | --reload-dir app で監視を app/ に限定、start-services.sh/main.py/README/post-create.sh を更新 |
+| US-190 | ヘルスチェック間隔の適正化                                 | OK           | ServiceStatusPanel 15min→5min、Ollama healthcheck 10s→5m |
