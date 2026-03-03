@@ -4,10 +4,12 @@
  * US-102: DIM カラーテーマ適用
  * US-103: ダークモード手動トグル
  * US-122: グローバルヘッダーに全文検索入力欄
+ * US-187: LLM 有効/無効のグローバルスライドスイッチ
  */
 import { useState, useEffect } from "react";
 import { Link, Outlet, NavLink, useSearchParams } from "react-router-dom";
 import { useDarkMode } from "../hooks/useDarkMode";
+import { useLlmEnabled } from "../contexts/LlmEnabledContext";
 
 function SunIcon({ className }: { className?: string }) {
   return (
@@ -51,6 +53,7 @@ const navItems = [
 
 export function Layout() {
   const { isDark, toggle } = useDarkMode();
+  const { enabled: llmEnabled, setEnabled: setLlmEnabled } = useLlmEnabled();
   const [searchParams, setSearchParams] = useSearchParams();
   const qFromUrl = searchParams.get("q") ?? "";
   const [searchInput, setSearchInput] = useState(qFromUrl);
@@ -100,6 +103,36 @@ export function Layout() {
               )}
             </div>
             <div className="flex items-center gap-4 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500 dark:text-dim-text-muted">LLM</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={llmEnabled}
+                  onClick={() => setLlmEnabled(!llmEnabled)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 ${
+                    llmEnabled
+                      ? "bg-indigo-600 dark:bg-indigo-500"
+                      : "bg-slate-300 dark:bg-slate-600"
+                  }`}
+                  title={llmEnabled ? "LLM ON" : "LLM OFF"}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition ${
+                      llmEnabled ? "translate-x-5" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+                <span
+                  className={`text-xs font-medium w-6 ${
+                    llmEnabled
+                      ? "text-indigo-600 dark:text-indigo-400"
+                      : "text-slate-400 dark:text-slate-500"
+                  }`}
+                >
+                  {llmEnabled ? "ON" : "OFF"}
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={toggle}

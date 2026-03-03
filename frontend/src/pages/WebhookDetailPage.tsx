@@ -25,6 +25,7 @@ import {
 } from "../components/DefinitionDiffModal";
 import { formatReceivedAt } from "../utils/formatDate";
 import type { DetailNavBarData } from "../components/DetailNavBar";
+import { useLlmEnabled } from "../contexts/LlmEnabledContext";
 
 /** US-120: Webhook 遷移時も開閉状態を維持するリクエストヘッダー details */
 const REQUEST_HEADERS_STORAGE_KEY = "webhook-detail-request-headers-open";
@@ -457,8 +458,14 @@ export function WebhookDetailPage({
     }
   }, [webhook, adjacent, onNavBarData]);
 
+  const { enabled: llmEnabled } = useLlmEnabled();
+
   async function handleAnalyze() {
     if (!id) return;
+    if (!llmEnabled) {
+      window.alert("LLM を有効にしてから実行してください");
+      return;
+    }
     setAnalyzing(true);
     setAnalyzeError(null);
     setAnalysisLogs([]);
