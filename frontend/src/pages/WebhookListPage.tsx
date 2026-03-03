@@ -503,7 +503,7 @@ export function WebhookListPage() {
                   }
                   className={`border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-colors ${
                     selectedIds.has(w.id) ? "bg-blue-900/20" : ""
-                  } ${isNew ? "bg-emerald-900/30 dark:bg-emerald-800/30" : ""}`}
+                  } ${isNew ? "bg-blue-900/30 dark:bg-blue-800/30" : ""}`}
                 >
                   <td className="p-3" onClick={(e) => toggleSelect(e, w.id)}>
                     <input
