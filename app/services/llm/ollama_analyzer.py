@@ -3,6 +3,7 @@
 US-127: 3 層出力（explanation → field_descriptions → summary）とルールベースサニタイズ
 US-129: reference_url がない場合に Web 検索で API ドキュメントを補完
 US-134: ストリーミング対応（進捗イベント yield）
+US-186: トークン切断時の JSON 修復、Step 1 プロンプト短縮指示
 """
 import asyncio
 import json
@@ -147,6 +148,7 @@ Webhook JSON:
 _PROMPT_STEP1 = """あなたは Webhook の各フィールドを初心者向けに解説するエキスパートです。
 
 以下の Webhook JSON の各フィールドについて、**具体値**と API リファレンスを根拠に、初心者向けの個別解説を日本語で書いてください。
+**各フィールドは 1〜2 文以内で簡潔に**書いてください。
 {user_feedback_section}
 
 {evidence_section}
@@ -233,8 +235,34 @@ def _ensure_payload_keys_in_descriptions(
     return result
 
 
+def _try_repair_truncated_json(content: str) -> dict | None:
+    """
+    US-186: トークン上限で途中切断された JSON を閉じブレース補完で修復する。
+    LLM の出力は通常 {"key": "long value... で切れるため、文字列とオブジェクトを閉じる。
+    """
+    content = content.strip()
+    if not content or not content.startswith("{"):
+        return None
+    # 典型的な補完パターンを試す（よくある切断位置に対応）
+    candidates = []
+    if not content.rstrip().endswith('"'):
+        candidates.append(content + '"')  # 文字列を閉じてから
+    else:
+        candidates.append(content)
+    for base in candidates:
+        # 開きブレースの数を閉じブレースで補う（簡易カウント、文字列内は誤検知するが試行する）
+        opened = base.count("{") + base.count("[")
+        closed = base.count("}") + base.count("]")
+        suffix = "}" * (opened - closed) if opened > closed else "}"
+        try:
+            return json.loads(base + suffix)
+        except json.JSONDecodeError:
+            pass
+    return None
+
+
 def _extract_json(content: str) -> dict | None:
-    """LLM 出力から JSON を抽出してパース。"""
+    """LLM 出力から JSON を抽出してパース。US-186: パース失敗時に修復を試行。"""
     if "```json" in content:
         start = content.find("```json") + 7
         end = content.find("```", start)
@@ -246,7 +274,12 @@ def _extract_json(content: str) -> dict | None:
     try:
         return json.loads(content)
     except json.JSONDecodeError:
-        return None
+        pass
+    # US-186: 閉じブレース補完で修復を試みる
+    repaired = _try_repair_truncated_json(content)
+    if repaired is not None:
+        return repaired
+    return None
 
 
 async def _call_ollama(prompt: str, model: str | None = None) -> str | None:

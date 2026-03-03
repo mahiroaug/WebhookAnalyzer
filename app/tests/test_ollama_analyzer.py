@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.services.llm.ollama_analyzer import (
     _ensure_payload_keys_in_descriptions,
+    _extract_json,
     analyze_payload_with_ollama,
     sanitize_for_yaml,
 )
@@ -118,3 +119,27 @@ def test_sanitize_for_yaml_removes_payload_values() -> None:
     safe_summary, safe_descriptions = sanitize_for_yaml(payload, summary, field_descriptions)
     assert "0x1234567890abcdef" not in safe_summary
     assert "0x1234567890abcdef" not in safe_descriptions["txHash"]
+
+
+def test_extract_json_repairs_truncated_step1() -> None:
+    """US-186: トークン上限で途中切断された Step 1 の JSON を閉じブレース補完で修復"""
+    truncated = '{"explanation": "フィールドAはxxx。フィールドBはyyy。フィールドCは'
+    result = _extract_json(truncated)
+    assert result is not None
+    assert isinstance(result, dict)
+    assert "explanation" in result
+    assert "フィールドAはxxx" in result["explanation"]
+
+
+def test_extract_json_repairs_truncated_field_descriptions() -> None:
+    """US-186: 途中切断された field_descriptions を修復"""
+    truncated = '{"field_descriptions": {"hash": "ハッシュ値", "amount": "金額'
+    result = _extract_json(truncated)
+    assert result is not None
+    assert result.get("field_descriptions", {}).get("hash") == "ハッシュ値"
+
+
+def test_extract_json_repair_failure_returns_none() -> None:
+    """US-186: 修復も失敗した場合は None（従来のフォールバック維持）"""
+    garbage = "this is not json at all {{"
+    assert _extract_json(garbage) is None
