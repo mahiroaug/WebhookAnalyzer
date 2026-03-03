@@ -1122,3 +1122,14 @@ Web3エンジニアとして、長大な Webhook ペイロード（Alchemy の t
   - Given 長大なペイロード（topics 配列を含む Alchemy Webhook 等）に対して AI 分析を実行したとき、When LLM 出力がトークン上限で途中切断されても、Then 閉じブレース補完による JSON 修復を試み、修復成功時は分析結果が正常に保存される … **OK**: _try_repair_truncated_json で文字列・オブジェクト閉じ補完、_extract_json から呼び出し
   - Given Step 1 プロンプトに短縮指示（「各フィールド 1-2 文以内」）を追加したとき、When 分析を実行すると、Then 出力が短くなりトークン切断の発生率が低下する … **OK**: _PROMPT_STEP1 に「**各フィールドは 1〜2 文以内で簡潔に**」を追加
   - Given JSON 修復も失敗したとき、When 分析結果を確認すると、Then 従来通り「LLM 出力が JSON ではありません」エラーが表示される（既存のフォールバック維持） … **OK**: 修復失敗時は None を返し既存のエラーハンドリングが動作
+
+### US-187 LLM 有効/無効のグローバルトグル（P1）【完了】
+
+Web3エンジニアとして、AI 分析機能の有効/無効をグローバルヘッダーのスライドスイッチで切り替えたい。
+なぜなら、LLM（Ollama）が常時リクエストを受け付ける状態では GPU ファンが唸り続け、分析が不要な調査時に騒音やリソース消費が気になるから。
+
+- 受け入れ基準
+  - Given グローバルヘッダーを確認する、When 表示する、Then ダークモードトグル横に「LLM」ラベル付きスライドスイッチ（ON/OFF）が表示され、現在の状態が視覚的に識別できる … **OK**: LlmEnabledContext、Layout にスライドスイッチ追加
+  - Given LLM トグルが OFF の状態で、When 詳細画面の「Analyze」「Re-analyze」「Retry」ボタンをクリックする、Then 分析は実行されず「LLM を有効にしてから実行してください」のポップアップが表示される … **OK**: handleAnalyze 冒頭でチェック、window.alert で表示
+  - Given LLM トグルが OFF の状態で、When ページをリロードする、Then OFF 状態が維持される（localStorage 保存） … **OK**: webhook-analyzer-llm-enabled で localStorage 永続化
+  - Given LLM トグルを ON に切り替えた後、When 分析ボタンをクリックする、Then 通常通り AI 分析が実行される（後方互換） … **OK**: ON 時は既存の handleAnalyze フローがそのまま動作

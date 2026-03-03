@@ -141,3 +141,4 @@
 | US-184 | Fireblocks Notifications 分類の eventKey 依存除去      | OK           | classifier 条件から eventKey を除去、category+subject+event の 3 フィールドで判定、subject を正規化して event_type 導出、Reclassify ボタン unchanged 時フィードバック追加 |
 | US-185 | フィルタクリアボタンと分析スピナー視認性改善           | OK           | source/event_type/全文検索の各 input に x クリアボタン追加（値があるときのみ表示）、スピナー border を indigo-400/300 に変更しダークモード視認性向上 |
 | US-186 | LLM 出力トークン切断時の JSON 修復とプロンプト短縮     | OK           | _try_repair_truncated_json で閉じブレース補完、_PROMPT_STEP1 に「各フィールド 1〜2 文以内」を追加、修復失敗時は従来通りエラー表示 |
+| US-187 | LLM 有効/無効のグローバルトグル                         | OK           | LlmEnabledContext、Layout にスライドスイッチ、handleAnalyze で OFF 時は alert でブロック、localStorage 永続化 |
