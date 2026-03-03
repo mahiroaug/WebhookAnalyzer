@@ -1133,3 +1133,13 @@ Web3エンジニアとして、AI 分析機能の有効/無効をグローバル
   - Given LLM トグルが OFF の状態で、When 詳細画面の「Analyze」「Re-analyze」「Retry」ボタンをクリックする、Then 分析は実行されず「LLM を有効にしてから実行してください」のポップアップが表示される … **OK**: handleAnalyze 冒頭でチェック、window.alert で表示
   - Given LLM トグルが OFF の状態で、When ページをリロードする、Then OFF 状態が維持される（localStorage 保存） … **OK**: webhook-analyzer-llm-enabled で localStorage 永続化
   - Given LLM トグルを ON に切り替えた後、When 分析ボタンをクリックする、Then 通常通り AI 分析が実行される（後方互換） … **OK**: ON 時は既存の handleAnalyze フローがそのまま動作
+
+### US-188 新着エントリのグローエフェクト色をビビッドブルーに変更（P1）【完了】
+
+Web3エンジニアとして、新着 Webhook エントリのグロー（発光）エフェクトをビビッドなブルーに変更したい。
+なぜなら、現在のグリーンは Live インジケータの緑と紛らわしく、ブルー LED イルミネーション的な鮮やかな青色のほうが「新着」の注意喚起として直感的で、ダークモードとの親和性も高いから。
+
+- 受け入れ基準
+  - Given 新規 Webhook が WebSocket 経由で着弾する、When 一覧ペインを確認する、Then 新着エントリの枠がビビッドブルー（rgba(59, 130, 246, ...) 〜 rgba(96, 165, 250, ...) 系、ブルー LED 的な明るい発光）でグローする … **OK**: index.css の new-arrival-glow を blue-400/500 系に変更
+  - Given 未読エントリ（新着 3 秒後〜既読まで）、When 一覧ペインを確認する、Then 未読グローも同じブルー系の控えめな発光で表示される（緑色は使用しない） … **OK**: unread-glow を rgba(59, 130, 246, 0.4) に変更
+  - Given WebhookListPage（テーブル表示）の新着行、When 確認する、Then テーブル行の背景もブルー系で統一される（emerald 系ではない） … **OK**: bg-emerald-900/30 → bg-blue-900/30、dark:bg-emerald-800/30 → dark:bg-blue-800/30

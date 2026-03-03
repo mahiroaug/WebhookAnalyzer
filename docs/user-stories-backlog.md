@@ -87,13 +87,5 @@
 
 > US-187 は完了。→ [`user-stories-completed.md`](./user-stories-completed.md)
 
-#### US-188 新着エントリのグローエフェクト色をビビッドブルーに変更（P1）【未着手】
-
-Web3エンジニアとして、新着 Webhook エントリのグロー（発光）エフェクトをビビッドなブルーに変更したい。
-なぜなら、現在のグリーンは Live インジケータの緑と紛らわしく、ブルー LED イルミネーション的な鮮やかな青色のほうが「新着」の注意喚起として直感的で、ダークモードとの親和性も高いから。
-
-- 受け入れ基準
-  - Given 新規 Webhook が WebSocket 経由で着弾する、When 一覧ペインを確認する、Then 新着エントリの枠がビビッドブルー（rgba(59, 130, 246, ...) 〜 rgba(96, 165, 250, ...) 系、ブルー LED 的な明るい発光）でグローする
-  - Given 未読エントリ（新着 3 秒後〜既読まで）、When 一覧ペインを確認する、Then 未読グローも同じブルー系の控えめな発光で表示される（緑色は使用しない）
-  - Given WebhookListPage（テーブル表示）の新着行、When 確認する、Then テーブル行の背景もブルー系で統一される（emerald 系ではない）
+> US-188 は完了。→ [`user-stories-completed.md`](./user-stories-completed.md)
 
