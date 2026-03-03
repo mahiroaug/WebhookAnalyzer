@@ -69,7 +69,7 @@ services:
       - "11434:11434"
     healthcheck:
       test: ["CMD", "ollama", "list"]
-      interval: 10s
+      interval: 5m
       timeout: 5s
       retries: 12
       start_period: 15s
