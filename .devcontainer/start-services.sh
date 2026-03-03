@@ -29,7 +29,7 @@ echo "=== Starting backend and frontend ==="
 
 # uvicorn: ポート 8000 が未使用なら起動
 if ! curl -sf http://localhost:8000/health > /dev/null 2>&1; then
-  nohup uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 \
+  nohup uvicorn app.main:app --reload --reload-dir app --host 0.0.0.0 --port 8000 \
     >> /tmp/uvicorn.log 2>&1 &
   disown
   echo "  uvicorn started (port 8000)"

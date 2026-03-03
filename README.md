@@ -97,7 +97,7 @@ External Service -> ngrok(optional) -> FastAPI(:8000)
 
 Dev Container 起動時（`postStartCommand`）に、以下を自動起動します。
 
-- `uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`
+- `uvicorn app.main:app --reload --reload-dir app --host 0.0.0.0 --port 8000`
 - `npx vite --host`（`/workspace/frontend`）
 - `ngrok http 8000`（`.env` に `NGROK_AUTH_TOKEN` がある場合）
 
@@ -111,7 +111,7 @@ tail -f /tmp/uvicorn.log /tmp/vite.log /tmp/ngrok.log
 
 ```bash
 # backend
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --reload-dir app --host 0.0.0.0 --port 8000
 
 # frontend
 cd frontend && npm run dev
