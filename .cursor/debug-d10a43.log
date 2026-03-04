@@ -1,0 +1,70 @@
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292240661,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292240662,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:effect","message":"useEffect fired, calling setSearchInput","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292240697,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:effect","message":"useEffect fired, calling setSearchInput","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292240700,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"t"},"timestamp":1772292318316,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"t"},"timestamp":1772292318317,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"te"},"timestamp":1772292318370,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"te"},"timestamp":1772292318371,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"tes"},"timestamp":1772292318450,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"tes"},"timestamp":1772292318450,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"test"},"timestamp":1772292318497,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"test"},"timestamp":1772292318498,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292318851,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292318852,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:effect","message":"useEffect fired, calling setSearchInput","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292318871,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292322056,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292322057,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292322065,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292322065,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292369411,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292369411,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292370687,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292370688,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"test"},"timestamp":1772292371490,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"test"},"timestamp":1772292371490,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292371495,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292371496,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:effect","message":"useEffect fired, calling setSearchInput","data":{"qFromUrl":"","searchInput":"test"},"timestamp":1772292371495,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292372571,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292372571,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292373508,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292373508,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292374683,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292374683,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292375442,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292375443,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"t"},"timestamp":1772292402418,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"te"},"timestamp":1772292402482,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"t"},"timestamp":1772292402418,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"te"},"timestamp":1772292402482,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"tes"},"timestamp":1772292402546,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"tes"},"timestamp":1772292402546,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"test"},"timestamp":1772292402578,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"test"},"timestamp":1772292402577,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292403123,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292403124,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:effect","message":"useEffect fired, calling setSearchInput","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292403146,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292405459,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292405460,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292405468,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292405468,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292405797,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292405797,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292406276,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"test","searchInput":"test"},"timestamp":1772292406277,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"test"},"timestamp":1772292407380,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":"test"},"timestamp":1772292407381,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:effect","message":"useEffect fired, calling setSearchInput","data":{"qFromUrl":"","searchInput":"test"},"timestamp":1772292407395,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292407395,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292407396,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292409089,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292409090,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292409607,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292409607,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292410095,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292410095,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292410695,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292410695,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292411137,"hypothesisId":"A"}
+{"sessionId":"d10a43","location":"Layout.tsx:render","message":"Layout render","data":{"qFromUrl":"","searchInput":""},"timestamp":1772292411138,"hypothesisId":"A"}

@@ -1,0 +1,29 @@
+summary: このWebhookは、トランザクションの状態変化に関する情報を提供します。各フィールドは、トランザクションの識別、状態の追跡、および関連するウォレット、エンタープライズ、組織などのコンテキスト情報を伝達するために使用されます。
+fields:
+- path: webhookType
+  description: Webhookのタイプを示すフィールド。このWebhookがどのような種類の情報を送信しているかを示します。
+  reference_url: https://developers.bitgo.com/
+- path: enterpriseId
+  description: BitGoエンタープライズの識別子。トランザクションがどのエンタープライズに関連しているかを特定するために使用されます。
+  reference_url: https://developers.bitgo.com/
+- path: walletId
+  description: 関連するウォレットの識別子。トランザクションに関連するウォレットを特定するために使用されます。
+  reference_url: https://developers.bitgo.com/
+- path: txRequestId
+  description: 特定のトランザクションを一意に識別するためのID。トランザクションの履歴追跡や管理に使用されます。
+  reference_url: https://developers.bitgo.com/
+- path: oldState
+  description: Webhook送信前にトランザクションの状態を示すフィールド。トランザクションの履歴追跡に使用されます。
+  reference_url: https://developers.bitgo.com/
+- path: newState
+  description: トランザクションの状態を示すフィールド。通常、トランザクションの処理段階や結果を表します。
+  reference_url: https://developers.bitgo.com/
+- path: sequenceIds
+  description: 複数のトランザクションを識別するためのIDの配列。トランザクションのシーケンスを管理するために使用されます。
+  ai_generated: true
+- path: organizationId
+  description: BitGo組織の識別子。トランザクションがどの組織に関連しているかを特定するために使用されます。
+  ai_generated: true
+- path: txRequestVersion
+  description: トランザクションリクエストのバージョン番号。トランザクションリクエストの構造を定義し、バージョン管理に使用されます。
+  ai_generated: true

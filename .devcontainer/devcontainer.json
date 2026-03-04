@@ -29,9 +29,10 @@
   "dockerComposeFile": ["docker-compose.yml", "docker-compose.override.yml"],
   "service": "app",
   "workspaceFolder": "/workspace",
+  "remoteUser": "cursor",
   "mounts": [
     // ホストの Git 設定を読み取り専用の別名で取り込む（コンテナ側の global は書き込み可能にする）
-    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.gitconfig,target=/home/vscode/.gitconfig-host,type=bind,consistency=cached"
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.gitconfig,target=/home/cursor/.gitconfig-host,type=bind,consistency=cached"
   ],
 
   // ---------------------------------------------------------------------------
@@ -99,7 +100,8 @@
 
         // --- developer tools ---
         "mhutchie.git-graph",
-        "dotenv.dotenv-vscode"
+        "dotenv.dotenv-vscode",
+        "bierner.markdown-mermaid"
       ],
       "settings": {
         // Python インタープリターのパス (コンテナ内)
@@ -126,13 +128,19 @@
   "postCreateCommand": "bash .devcontainer/post-create.sh",
 
   // ---------------------------------------------------------------------------
+  // 起動時サービス自動起動
+  // ---------------------------------------------------------------------------
+  // コンテナ起動のたびに実行。uvicorn と Vite をバックグラウンドで起動する。
+  "postStartCommand": "bash .devcontainer/start-services.sh",
+
+  // ---------------------------------------------------------------------------
   // 環境変数
   // ---------------------------------------------------------------------------
   // コンテナ内のシェル・プロセスに渡される環境変数。
   // ${localEnv:...} はホスト側の環境変数を参照する構文。
   "remoteEnv": {
     // Git の global 設定を書き込み可能ファイルへ分離
-    "GIT_CONFIG_GLOBAL": "/home/vscode/.config/git/config",
+    "GIT_CONFIG_GLOBAL": "/home/cursor/.config/git/config",
     // --- ローカル LLM (デフォルト) ---
     "OLLAMA_HOST": "http://ollama:11434", // Ollama サービスのエンドポイント
     "LLM_PROVIDER": "ollama", // デフォルトの LLM プロバイダー

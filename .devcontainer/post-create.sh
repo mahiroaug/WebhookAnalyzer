@@ -20,6 +20,18 @@ echo "=== Setting up Webhook Analyzer ==="
 cd /workspace
 
 # ---------------------------------------------------------------------------
+# 0. Git safe.directory (リビルド時の dubious ownership 対策)
+# ---------------------------------------------------------------------------
+# /workspace はマウントのため所有者が cursor と一致せず Git がブロックする。
+# post-create で cursor の config に追加し、リビルド後も自動で有効にする。
+mkdir -p /home/cursor/.config/git
+GIT_CONFIG=/home/cursor/.config/git/config
+if ! grep -q 'safe.directory.*/workspace' "$GIT_CONFIG" 2>/dev/null; then
+  git config --file "$GIT_CONFIG" --add safe.directory /workspace
+fi
+chown -R cursor:cursor /home/cursor/.config/git 2>/dev/null || true
+
+# ---------------------------------------------------------------------------
 # 1. Python パッケージのインストール
 # ---------------------------------------------------------------------------
 # Dockerfile でも事前インストールしているが、
@@ -27,7 +39,28 @@ cd /workspace
 pip install --no-cache-dir -r requirements.txt
 
 # ---------------------------------------------------------------------------
-# 2. フロントエンド依存パッケージのインストール
+# 2. データベースマイグレーション
+# ---------------------------------------------------------------------------
+if command -v alembic > /dev/null 2>&1; then
+  echo "Running database migrations..."
+  alembic upgrade head || echo "WARNING: Migration failed (DB might not be ready yet)"
+fi
+
+# ---------------------------------------------------------------------------
+# 2.5. ngrok Authtoken ( .env の NGROK_AUTH_TOKEN から設定 )
+# ---------------------------------------------------------------------------
+if [ -f .env ] && command -v ngrok > /dev/null 2>&1; then
+  if grep -q '^NGROK_AUTH_TOKEN=' .env 2>/dev/null; then
+    NGROK_TOKEN=$(grep '^NGROK_AUTH_TOKEN=' .env | cut -d= -f2- | tr -d '"' | tr -d "'")
+    if [ -n "$NGROK_TOKEN" ]; then
+      ngrok config add-authtoken "$NGROK_TOKEN" 2>/dev/null || true
+      echo "ngrok: authtoken configured from .env"
+    fi
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# 3. フロントエンド依存パッケージのインストール
 # ---------------------------------------------------------------------------
 # frontend ディレクトリが存在し、package.json がある場合のみ実行。
 # 初回はまだ frontend が無い場合があるのでチェックしている。
@@ -37,7 +70,7 @@ if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 3. Ollama モデルのセットアップ
+# 4. Ollama モデルのセットアップ
 # ---------------------------------------------------------------------------
 echo ""
 echo "=== Pulling default Ollama model ==="
@@ -85,7 +118,11 @@ echo "=== Setup complete ==="
 echo ""
 echo "  GPU:      ${GPU_STATUS}"
 echo "  LLM:      Ollama (${OLLAMA_MODEL}) @ http://ollama:11434"
-echo "  Backend:  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+echo "  Backend:  uvicorn app.main:app --reload --reload-dir app --host 0.0.0.0 --port 8000"
 echo "  Frontend: cd frontend && npm run dev"
 echo ""
 echo "  Switch LLM provider via env: LLM_PROVIDER=ollama|openai|anthropic"
+echo ""
+echo "  ngrok (外部 Webhook 受信用):"
+echo "    .env に NGROK_AUTH_TOKEN があれば post-create で authtoken 設定済み"
+echo "    コンテナ起動時に自動で ngrok http 8000 が起動します"

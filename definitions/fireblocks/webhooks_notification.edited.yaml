@@ -1,0 +1,47 @@
+summary: このWebhookは、イベントに関する詳細情報を提供します。これには、イベントの種類、トリガーユーザー、ステータス、および関連するメタデータ（作成日時、ワークスペース、カテゴリなど）が含まれます。
+fields:
+- path: new
+  description: Webhook が新しいイベントを通知しているか、既存のイベントが更新されたかを示します。
+  ai_generated: true
+- path: user
+  description: Webhook をトリガーしたユーザーの名前です。
+  ai_generated: true
+- path: event
+  description: 発生したイベントの種類です。
+  ai_generated: true
+- path: title
+  description: Webhook のタイトルです。
+  ai_generated: true
+- path: status
+  description: Webhook のステータスです。
+  ai_generated: true
+- path: userId
+  description: ユーザーのユニークな識別子 (ID) です。
+  ai_generated: true
+- path: subject
+  description: Webhook の件名です。
+  ai_generated: true
+- path: category
+  description: Webhook のカテゴリです。
+  ai_generated: true
+- path: previous
+  description: 以前のイベントに関する情報です。
+  ai_generated: true
+- path: createdAt
+  description: Webhook が作成された日時です。
+  ai_generated: true
+- path: groupName
+  description: Webhook が関連付けられているグループの名前です。
+  ai_generated: true
+- path: workspace
+  description: Webhook が動作するワークスペースの名前です。
+  ai_generated: true
+- path: categoryId
+  description: Webhook のカテゴリ ID です。
+  ai_generated: true
+- path: description
+  description: Webhook の説明です。
+  ai_generated: true
+- path: notificationSubject
+  description: 通知の件名です。
+  ai_generated: true

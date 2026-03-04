@@ -21,7 +21,8 @@ alwaysApply: false
 ## 注意事項
 
 - `docker-compose.override.yml` は `setup-platform.sh` が自動生成するため手動編集しない
-- 新しい Python パッケージは `requirements.txt` に追加する
-- 新しい Node.js パッケージは `frontend/package.json` に追加する
+- 新しい Python パッケージは `requirements.txt` に追加する（`post-create.sh` で `pip install` される）
+- 新しい Node.js パッケージは `frontend/package.json` に追加する（`post-create.sh` で `npm install` される）
+- パッケージ追加時はリビルドなしでも動くよう `post-create.sh` の処理順を確認する
 - ポートを追加する場合は `devcontainer.json` の `forwardPorts` にも追加する
 - シェルスクリプトは `#!/bin/bash` + `set -euo pipefail` で始める

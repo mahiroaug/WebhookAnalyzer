@@ -1,0 +1,7 @@
+fields:
+- path: eventType
+  description: イベント種類（vault_account.created）
+  reference_url: https://developers.fireblocks.com/reference/webhooks-structures-eventtypes-wallet
+- path: data
+  description: Vault アカウント作成の詳細データ
+  reference_url: https://developers.fireblocks.com/reference/webhooks-structures-eventtypes-wallet

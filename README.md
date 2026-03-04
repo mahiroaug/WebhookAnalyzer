@@ -1,183 +1,270 @@
 # Webhook Analyzer
 
-外部サービスからの Webhook を受信し、**ローカル LLM で自動識別・分類**して、生 JSON を分類別に保管する分析ツール。  
-[webhook.site](https://webhook.site) のローカル版 + AI 自動分類機能を目指しています。
+外部サービスからの Webhook を受信し、ペイロードを分類・保存・可視化する開発向けツールです。  
+バックエンドは FastAPI、フロントエンドは React (Vite)、DB は PostgreSQL、LLM は Ollama（既定）を使用します。
 
-## 主な機能
+## まず最初に（最短起動）
 
-| 機能 | 説明 |
-|------|------|
-| Webhook 受信 | 任意の外部サービスからの HTTP リクエストを受け付ける汎用エンドポイント |
-| AI 自動分類 | 受信したペイロードをローカル LLM (Ollama) で自動識別・カテゴリ分類 |
-| 生 JSON 保管 | 受信データを分類別に PostgreSQL へ保管。jsonb 型で柔軟な検索が可能 |
-| リアルタイム通知 | WebSocket で新着 Webhook をブラウザにリアルタイム配信 |
-| マルチ LLM 対応 | Ollama (ローカル) をデフォルトに、OpenAI / Anthropic API にも切り替え可能 |
+### 0) 前提
 
-## アーキテクチャ
+- Docker Desktop（macOS / Windows）または Docker Engine + Docker Compose（Linux）
+- Cursor または VS Code + Dev Containers 拡張
+- Windows の場合は WSL2 有効化
 
-```
-外部サービス ──HTTP POST──▶ FastAPI (port 8000)
-                              │
-                              ├─▶ Ollama (port 11434) で AI 分類
-                              ├─▶ PostgreSQL (port 5432) に保管
-                              └─▶ WebSocket でフロントエンドに通知
-                                        │
-                              React UI (port 5173) ◀─┘
-```
-
-## 必要なもの
-
-- **Docker Desktop** (macOS / Windows) または **Docker Engine + Docker Compose** (Linux)
-- **Cursor** または **VS Code** (Dev Containers 拡張機能)
-- Windows の場合: **WSL2** が有効であること
-- (オプション) NVIDIA GPU + ドライバー — WSL2 / Linux で自動検出される
-
-## セットアップ
-
-### 1. リポジトリをクローン
+### 1) クローン
 
 ```bash
 git clone <repository-url>
-cd 20260100_webhook
+cd WebhookAnalyzer
 ```
 
-### 2. Dev Container で開く
+### 2) `.env` を作成（任意）
 
-Cursor / VS Code でプロジェクトを開き、コマンドパレットから実行:
+外部公開（ngrok）やクラウド LLM を使う場合のみ作成します。
 
+```bash
+# ngrok（設定するとコンテナ起動時に自動トンネル起動）
+NGROK_AUTH_TOKEN=your_ngrok_token
+
+# OpenAI / Anthropic を使う場合（どちらか）
+# LLM_PROVIDER=openai
+# OPENAI_API_KEY=sk-...
+#
+# LLM_PROVIDER=anthropic
+# ANTHROPIC_API_KEY=sk-ant-...
 ```
+
+### 3) Dev Container で起動
+
+コマンドパレットで以下を実行:
+
+```text
 Dev Containers: Reopen in Container
 ```
 
-初回起動時に以下が自動で行われます:
+初回は自動セットアップ（pip / npm / マイグレーション / Ollama モデル準備）に時間がかかります。
 
-1. **プラットフォーム自動判定** (macOS / WSL2 / Linux、NVIDIA GPU の有無)
-2. Python パッケージのインストール (`requirements.txt`)
-3. Ollama のデフォルトモデル (`gemma3:4b`) のダウンロード (~3GB)
-4. PostgreSQL データベースの作成
-
-### 3. サーバーを起動
-
-コンテナ内のターミナルで:
+### 4) 動作確認（推奨）
 
 ```bash
-# バックエンド
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+./scripts/e2e_smoke.sh
+```
 
-# フロントエンド (別ターミナルで)
+以下が OK になれば利用準備完了です。
+
+- API（uvicorn, 8000）
+- Frontend（vite, 5173）
+- Webhook API（receive/list/detail/stats）
+- ngrok エージェント（起動時のみ）
+
+### 5) アクセス先
+
+- フロントエンド: http://localhost:5173
+- バックエンド: http://localhost:8000
+- ngrok 公開 URL: `./scripts/e2e_smoke.sh` の出力、または `http://127.0.0.1:4040/api/tunnels`
+
+---
+
+## 概要
+
+### 主な機能
+
+| 機能         | 説明                                     |
+| ------------ | ---------------------------------------- |
+| Webhook 受信 | 任意サービスから HTTP POST を受信        |
+| データ保存   | 受信 payload を PostgreSQL(jsonb) に保存 |
+| 分類・分析   | LLM によるカテゴリ分類 / 分析            |
+| UI 表示      | 一覧・詳細・統計をブラウザで確認         |
+| 外部公開     | ngrok でローカル API を一時公開可能      |
+
+### システム構成（概略）
+
+```text
+External Service -> ngrok(optional) -> FastAPI(:8000)
+                                         |- PostgreSQL(:5432)
+                                         |- Ollama(:11434)
+                                         `- Web UI(Vite :5173)
+```
+
+## ドキュメント
+
+- [Webhook UI ユーザーストーリー](./docs/user-stories-webhook-dashboard.md)
+- [ネットワーク構成図](./docs/NETWORK_ARCHITECTURE.md)
+
+## 起動と運用
+
+### 自動起動されるプロセス
+
+Dev Container 起動時（`postStartCommand`）に、以下を自動起動します。
+
+- `uvicorn app.main:app --reload --reload-dir app --host 0.0.0.0 --port 8000`
+- `npx vite --host`（`/workspace/frontend`）
+- `ngrok http 8000`（`.env` に `NGROK_AUTH_TOKEN` がある場合）
+
+### ログ確認
+
+```bash
+tail -f /tmp/uvicorn.log /tmp/vite.log /tmp/ngrok.log
+```
+
+### 手動起動（必要な場合）
+
+```bash
+# backend
+uvicorn app.main:app --reload --reload-dir app --host 0.0.0.0 --port 8000
+
+# frontend
 cd frontend && npm run dev
+
+# ngrok
+ngrok http 8000
 ```
 
-### 4. Webhook を送ってみる
+## テスト
+
+### E2E スモーク
 
 ```bash
-# テスト送信 (ホスト側から)
-curl -X POST http://localhost:8000/webhook \
+./scripts/e2e_smoke.sh
+```
+
+このスクリプトは次を確認します。
+
+- Health check
+- Webhook 受信 / 一覧 / 詳細 / 統計
+- Frontend HTML 応答
+- ngrok エージェント（起動していれば公開 URL を表示）
+
+### Webhook 送信の手動確認
+
+#### localhost送信(HTTP POST)
+
+```bash
+curl -X POST http://localhost:8000/api/webhooks/receive \
   -H "Content-Type: application/json" \
-  -d '{"event": "push", "repository": "my-repo", "commits": [{"message": "初回コミット"}]}'
+  -d '{"type":"transfer","coin":"test","hash":"0x123"}'
 ```
 
-## LLM プロバイダーの切り替え
+#### ngrok公開URL送信(HTTPS POST)
 
-デフォルトはローカル LLM (Ollama) を使用します。クラウド LLM に切り替える場合は環境変数を設定してください。
-
-### Ollama (デフォルト)
+`<PUBLIC_URL>` は `e2e_smoke.sh` のngrok出力(https://xxx.ngrok-free.app)を参照のこと
 
 ```bash
-# 別のモデルに変更する場合
-export OLLAMA_MODEL=gemma3:12b    # より高精度なモデル
-export OLLAMA_MODEL=qwen3:8b      # 別の選択肢
+curl -X POST https://<PUBLIC_URL>/api/webhooks/receive \
+  -H "Content-Type: application/json" \
+  -d '{"type":"transfer","coin":"test","hash":"0xabc"}'
 ```
 
-コンテナ内からモデルを追加ダウンロード:
+### サンプルデータ バルク投入
+
+`experimental/sample_data` のデータを一括投入して、件数が多い状態で画面・API を確認できます。
 
 ```bash
-curl http://ollama:11434/api/pull -d '{"name": "gemma3:12b"}'
+python scripts/load_sample_webhooks.py
+./scripts/e2e_smoke.sh
+```
+
+投入後は http://localhost:5173 の一覧・詳細画面で表示を確認してください。
+
+## LLM 設定
+
+既定は Ollama です。`app/config.py` は `.env` を読み込みます。
+
+### Ollama（既定）
+
+- 既定値
+  - `LLM_PROVIDER=ollama`
+  - `OLLAMA_HOST=http://ollama:11434`
+  - `OLLAMA_MODEL=gemma3:4b`
+
+モデル追加例:
+
+```bash
+curl http://ollama:11434/api/pull -d '{"name":"gemma3:12b"}'
 ```
 
 ### OpenAI
 
-```bash
-# ホスト OS 側で API キーを設定 (コンテナに自動で引き渡される)
-export OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
-export LLM_PROVIDER=openai
+`.env` に設定:
+
+```dotenv
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 ### Anthropic
 
+`.env` に設定:
+
+```dotenv
+LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+## GPU / プラットフォーム
+
+`Reopen in Container` 時に `.devcontainer/setup-platform.sh` が OS と NVIDIA GPU を判定し、`docker-compose.override.yml` を自動生成します。
+
+### macOS
+
+- Docker VM 上で動作（Ollama は CPU モード）
+- Docker メモリは 8GB 以上を推奨
+
+### Windows (WSL2)
+
+- WSL2 必須（WSL1 非対応）
+- 可能ならリポジトリは WSL 側ファイルシステムに配置
+- NVIDIA GPU 利用時は WSL2 対応ドライバーが必要
+
+### Linux
+
+- `nvidia-container-toolkit` があれば GPU 自動検出
+- 動作確認例:
+
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxxxxxxxxxx
-export LLM_PROVIDER=anthropic
-```
-
-## プロジェクト構成
-
-```
-20260100_webhook/
-├── .devcontainer/
-│   ├── devcontainer.json      # Dev Container 設定 (ポート, 拡張機能, 環境変数)
-│   ├── docker-compose.yml     # サービス定義 (app, db, ollama)
-│   ├── docker-compose.gpu.yml # NVIDIA GPU オーバーライド (手動適用時の参考)
-│   ├── Dockerfile             # 開発コンテナイメージ (Python 3.12)
-│   ├── setup-platform.sh      # プラットフォーム自動判定スクリプト
-│   └── post-create.sh         # 初回セットアップスクリプト
-├── app/                     # FastAPI バックエンド (※これから作成)
-│   ├── main.py              # エントリーポイント
-│   ├── models/              # SQLAlchemy モデル
-│   ├── routers/             # API エンドポイント
-│   └── services/            # LLM 分類ロジック
-├── frontend/                # React フロントエンド (※これから作成)
-├── requirements.txt         # Python 依存パッケージ
-└── README.md
+docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi
 ```
 
 ## ポート一覧
 
-| ポート | サービス | URL |
-|--------|----------|-----|
-| 8000 | FastAPI バックエンド | http://localhost:8000 |
-| 5173 | React フロントエンド (Vite) | http://localhost:5173 |
-| 5432 | PostgreSQL | `postgresql://webhook:webhook@localhost:5432/webhook_analyzer` |
-| 11434 | Ollama API | http://localhost:11434 |
+| ポート | 用途            | URL / 接続先                                                   |
+| ------ | --------------- | -------------------------------------------------------------- |
+| 8000   | FastAPI API     | http://localhost:8000                                          |
+| 5173   | React (Vite)    | http://localhost:5173                                          |
+| 5432   | PostgreSQL      | `postgresql://webhook:webhook@localhost:5432/webhook_analyzer` |
+| 11434  | Ollama API      | http://localhost:11434                                         |
+| 4040   | ngrok Agent API | http://127.0.0.1:4040/api/tunnels                              |
 
-## データのリセット
+## ディレクトリ構成
 
-```bash
-# PostgreSQL のデータと Ollama のモデルを全削除
-docker compose -f .devcontainer/docker-compose.yml down -v
+```text
+WebhookAnalyzer/
+├── .devcontainer/          # Dev Container / Docker Compose / 起動スクリプト
+├── app/                    # FastAPI backend
+├── frontend/               # React + Vite frontend
+├── scripts/                # 補助スクリプト（e2e_smoke など）
+├── requirements.txt
+└── README.md
 ```
 
-## プラットフォーム自動判定
+## クリーンアップ
 
-「Reopen in Container」実行時に `.devcontainer/setup-platform.sh` が自動で走り、以下を判定します:
+### DB のデータのみ初期化
 
-| 判定項目 | 方法 |
-|----------|------|
-| OS | `uname` + `/proc/version` で macOS / WSL2 / Linux を識別 |
-| NVIDIA GPU | `nvidia-smi` + Docker ランタイムの nvidia 対応を確認 |
+テーブル構造を保持したまま全レコードを削除する（DevContainer 内で実行）:
 
-判定結果に基づいて `docker-compose.override.yml` が自動生成され、GPU がある環境では Ollama に GPU が割り当てられます。手動設定は不要です。
+```bash
+psql -h db -U webhook -d webhook_analyzer -c \
+  "TRUNCATE webhooks, webhook_analyses, webhook_sessions, investigation_sessions RESTART IDENTITY CASCADE;"
+```
 
-### macOS (Apple Silicon / Intel)
+### DB ボリュームごと削除
 
-- Docker Desktop (または Rancher Desktop) で動作
-- Ollama は **CPU モードで動作** (Docker VM 経由のため GPU パススルー不可)
-- Apple Silicon でも CPU モードで十分実用的な速度で分類可能
-- Docker Desktop の **メモリ割り当てを 8GB 以上**に設定推奨
-  - Docker Desktop → Settings → Resources → Memory
+ボリュームを含めて停止・削除（テーブル構造も消えるため、再起動後に Alembic マイグレーションが必要）:
 
-### Windows (WSL2)
-
-- **WSL2 が必須** (WSL1 は非対応)
-- Docker Desktop for Windows + WSL2 バックエンド、または WSL2 内の Docker Engine で動作
-- NVIDIA GPU がある場合: Windows 側に NVIDIA ドライバー (WSL2 対応版) をインストールすれば自動検出される
-- リポジトリは **WSL2 ファイルシステム内** (`\\wsl$\Ubuntu\home\...`) に配置することを推奨。Windows 側 (`/mnt/c/...`) に置くとファイル I/O が大幅に遅くなる
-
-### Linux
-
-- Docker Engine + Docker Compose で動作
-- NVIDIA GPU + `nvidia-container-toolkit` がインストール済みなら自動検出
-- GPU の動作確認: `docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi`
+```bash
+docker compose -f .devcontainer/docker-compose.yml down -v
+```
 
 ## ライセンス
 

@@ -1,0 +1,44 @@
+summary: このWebhookは、アセットに関する詳細な情報をJSONオブジェクトとして提供します。これには、残高、担保、ロックされた量、および関連するブロックチェーン情報が含まれます。
+fields:
+- path: eventType
+  description: 発生したイベントの種類を示します。
+  reference_url: https://developers.fireblocks.com/reference/webhooks-structures-eventtypes-wallet
+- path: data
+  description: JSON オブジェクトで、関連するデータを含みます。
+  reference_url: https://developers.fireblocks.com/reference/webhooks-structures-eventtypes-wallet
+- path: id
+  description: Webhooks のユニークな識別子。
+  ai_generated: true
+- path: total
+  description: 数値で、アセットの現在の残高を表します。
+  ai_generated: true
+- path: frozen
+  description: 数値で、凍結されているアセットの量を示します。
+  ai_generated: true
+- path: staked
+  description: 数値で、担保として預けられているアセットの量を示します。
+  ai_generated: true
+- path: assetId
+  description: アセットの識別子。
+  ai_generated: true
+- path: pending
+  description: 数値で、処理中または未確定の残高を示します。
+  ai_generated: true
+- path: blockHash
+  description: ブロックのハッシュで、取引の追跡に使用されます。
+  ai_generated: true
+- path: blockHeight
+  description: ブロックの高さで、ブロックチェーン上のブロックの順序を特定するために使用されます。
+  ai_generated: true
+- path: lockedAmount
+  description: ロックされているアセットの量を示します。
+  ai_generated: true
+- path: vaultAccountId
+  description: 関連するVaultアカウントのID。
+  ai_generated: true
+- path: createdAt
+  description: 不明
+  ai_generated: true
+- path: workspaceId
+  description: Webhook が関連付けられているワークスペースのID。
+  ai_generated: true

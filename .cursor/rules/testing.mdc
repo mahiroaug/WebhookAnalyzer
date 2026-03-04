@@ -1,0 +1,62 @@
+---
+description: TDD ワークフローとテスト規約
+alwaysApply: false
+---
+
+# テスト規約
+
+## TDD（テスト駆動開発） — 必須ワークフロー
+
+API エンドポイントやビジネスロジックを追加・変更する際は、以下のサイクルを守る。
+
+1. **Red**: テスト関数を先に書き、`pytest app/tests/ -v` で失敗を確認する
+2. **Green**: テストが通る最小限の実装を行う
+3. **Refactor**: コードを整理し、テストが引き続き通ることを確認する
+
+### テスト先行の対象
+
+| 変更内容                | テスト先行の方法                                                    |
+| ----------------------- | ------------------------------------------------------------------- |
+| 新規 API エンドポイント | テスト関数で期待するステータスコード・レスポンス構造を先に書く      |
+| ビジネスロジック追加    | 入出力の単体テストを先に書く（`test_classifier.py` のパターン参照） |
+| 既存 API の仕様変更     | 変更後の期待値でテストを更新してから実装を修正する                  |
+
+## バックエンド（pytest）
+
+### 配置
+
+- テストファイル: `app/tests/test_{router名}.py`
+- conftest: `app/tests/conftest.py`（共通フィクスチャ）
+
+### テストクライアント
+
+```python
+from httpx import ASGITransport, AsyncClient
+from app.main import app
+
+async with AsyncClient(
+    transport=ASGITransport(app=app),
+    base_url="http://test",
+) as client:
+    response = await client.get("/api/webhooks")
+```
+
+### カバレッジ基準
+
+- 正常系（200/201）
+- 主要異常系（404, 400, 413 等）
+- 境界値（空リスト、limit=0、不正 UUID 等）
+
+### 命名
+
+- `test_{操作}_{条件}` — 例: `test_list_webhooks_with_source_filter`
+
+## フロントエンド
+
+- ブラウザ検証（acceptance-testing スキル）を主とする
+
+## テスト実行タイミング
+
+- API 変更 → `pytest app/tests/ -v`
+- フロントエンド変更 → ブラウザで受け入れ基準を検証
+- 両方 → pytest → ブラウザの順

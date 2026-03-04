@@ -36,6 +36,21 @@ alwaysApply: true
 ## 言語・スタイル
 
 - コード中のコメント・docstring は**日本語**で記述する
-- Git コミットメッセージは日本語で記述する
+- Git コミットメッセージは**英語**で記述する（agile-development.mdc 参照）
 - ユーザーへの応答は日本語で行う
 - 変数名・関数名・クラス名は英語 (snake_case / PascalCase)
+
+## 関連ルールファイル
+
+領域ごとの詳細規約は以下を参照すること。該当領域の作業時には必ず確認する。
+
+| ルールファイル | 概要 |
+| --- | --- |
+| `agile-development.mdc` | アジャイル開発プロセスとブランチ運用ルール |
+| `testing.mdc` | TDD ワークフローとテスト規約 |
+| `backend-python.mdc` | Python / FastAPI バックエンドのコーディング規約 |
+| `frontend-react.mdc` | React / TypeScript フロントエンドのコーディング規約 |
+| `database.mdc` | PostgreSQL / SQLAlchemy / Alembic のデータベース規約 |
+| `llm-service.mdc` | LLM サービス連携 (Ollama / OpenAI / Anthropic) の規約 |
+| `ui-design.mdc` | UI デザインガイド（カラー・状態表現・コンポーネント密度） |
+| `devcontainer.mdc` | DevContainer / Docker 関連ファイルの規約 |

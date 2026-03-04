@@ -1,0 +1,23 @@
+summary: このイベントは、ウォレットの承認待ちの状態に関する情報を提供します。ウォレットID、ステータス、および承認要求に関連する識別子を含む詳細なデータを提供し、トランザクションの状況を追跡および管理するのに役立ちます。
+fields:
+- path: type
+  description: イベントの種類を表す文字列。この場合、承認待ちの状態に関するイベントを通知するために使用されます。
+  reference_url: https://developers.bitgo.com/
+- path: pendingApprovalType
+  description: 承認待ちの状態が何に関連しているかを示す文字列。この場合、トランザクションリクエストに関連していることを示します。
+  reference_url: https://developers.bitgo.com/
+- path: pendingApprovalId
+  description: 承認待ちの状態に関連付けられた一意の識別子。承認要求を追跡し、管理するために使用されます。
+  reference_url: https://developers.bitgo.com/
+- path: walletId
+  description: BitGoウォレットシステム内でウォレットを特定するために使用される一意の識別子。
+  reference_url: https://developers.bitgo.com/
+- path: walletLabel
+  description: ウォレットの名前またはラベル。ウォレットの識別と管理に使用されます。
+  reference_url: https://developers.bitgo.com/
+- path: state
+  description: ウォレットのトランザクションの状態を表す文字列。承認されるまで、ウォレットのステータスはこの値のままです。
+  reference_url: https://developers.bitgo.com/
+- path: simulation
+  description: シミュレーションモードが有効になっているかどうかを示すブール値。有効になっていない場合、ウォレットはトランザクションを実際に実行しません。
+  ai_generated: true
